@@ -245,7 +245,7 @@ $string['lti:manage'] = 'Be an Instructor when the tool is launched';
 $string['lti:requesttooladd'] = 'Request a tool is configured site-wide';
 $string['lti:view'] = 'Launch external tool activities';
 $string['ltisettings'] = 'LTI settings';
-$string['lti_administration'] = 'LTI administration';
+$string['lti_administration'] = 'Edit preconfigured tool';
 $string['lti_errormsg'] = 'The tool returned the following error message: "{$a}"';
 $string['lti_launch_error'] = 'An error occurred when launching the external tool:';
 $string['lti_launch_error_tool_request'] = '<p>
@@ -343,8 +343,8 @@ along with the consumer key from the tool provider.
 Tools which do not require secure communication from Moodle and do not provide additional services (such as grade reporting)
 may not require a shared secret.';
 $string['pending'] = 'Pending';
-$string['pluginadministration'] = 'LTI administration';
-$string['pluginname'] = 'LTI';
+$string['pluginadministration'] = 'External tool administration';
+$string['pluginname'] = 'External tool';
 $string['preferheight'] = 'Preferred height';
 $string['preferwidget'] = 'Prefer widget launch';
 $string['preferwidth'] = 'Preferred width';

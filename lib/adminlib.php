@@ -3545,6 +3545,49 @@ class admin_setting_configiplist extends admin_setting_configtextarea {
     }
 }
 
+/**
+ * Used to validate a textarea used for port numbers.
+ *
+ * @since 3.1.1.
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright 2016 Jake Dallimore (jrhdallimore@gmail.com)
+ */
+class admin_setting_configportlist extends admin_setting_configtextarea {
+
+    /**
+     * Validate the contents of the textarea as port numbers.
+     *
+     * Used to validate a new line separated list of ports collected from
+     * a textarea control
+     *
+     * @param string $data A list of ports separated by new lines
+     * @return mixed bool true for success or string:error on failure
+     */
+    public function validate($data) {
+        if(!empty($data)) {
+            $ports = explode("\n", $data);
+        } else {
+            return true;
+        }
+        $result = true;
+        foreach($ports as $port) {
+            $port = trim($port);
+            // Is the string a valid integer number?
+            if (strval(intval($port)) === $port && intval($port) > 0) {
+                $result = true;
+            } else {
+                $result = false;
+                break;
+            }
+        }
+        if($result) {
+            return true;
+        } else {
+            return get_string('validateerror', 'admin');
+        }
+    }
+}
+
 
 /**
  * An admin setting for selecting one or more users who have a capability

@@ -2751,6 +2751,8 @@ class curl {
     private $cookie   = false;
     /** @var bool tracks multiple headers in response - redirect detection */
     private $responsefinished = false;
+    /** @var \core\curl_blacklist provides IP/port restrictions for cURL requests */
+    private $blacklist;
 
     /**
      * Curl constructor.
@@ -2824,6 +2826,10 @@ class curl {
 
         if (!isset($this->emulateredirects)) {
             $this->emulateredirects = ini_get('open_basedir');
+        }
+
+        if ($CFG->curlblacklistenable) {
+            $this->blacklist = new \core\curl_blacklist();
         }
     }
 
@@ -3234,6 +3240,18 @@ class curl {
      * @return bool
      */
     protected function request($url, $options = array()) {
+        // If curl blacklist is enabled, check the URL against the blacklist before making the curl call.
+        // Note, we'll also check the finalurl, in the case of a redirect to address remote->local redirect issues.
+        if (!empty($this->blacklist) && $this->blacklist->url_is_blacklisted($url) === true) {
+            $this->info             = array();
+            $this->error            = $this->blacklist->get_error_string();
+            $this->errno            = 0;
+            $this->response         = array();
+            $this->rawresponse      = array();
+            $this->responsefinished = false;
+            return $this->error;
+        }
+
         // Set the URL as a curl option.
         $this->setopt(array('CURLOPT_URL' => $url));
 
@@ -3258,6 +3276,23 @@ class curl {
         $this->error = curl_error($curl);
         $this->errno = curl_errno($curl);
         // Note: $this->response and $this->rawresponse are filled by $hits->formatHeader callback.
+
+        // Check the blacklist in the case of a redirect. Here, the problem is that a remote server can host a file
+        // which redirects via a header('Location: http://127.0.0.1') call. The original url is valid but the final,
+        // effective url may not be. I.e. cURL blindly follows it back to localhost or some other blocked IP.
+        // The solution is to simply check the effective URL against the blacklist to be sure.
+        if (!empty($this->blacklist) && $this->info['redirect_count'] > 0) {
+            if ($this->blacklist->url_is_blacklisted($this->info['url']) === true) {
+                $this->info             = array();
+                $this->error            = $this->blacklist->get_error_string();
+                $this->errno            = 0;
+                $this->response         = array();
+                $this->rawresponse      = array();
+                $this->responsefinished = false;
+                curl_close($curl);
+                return $this->error;
+            }
+        }
 
         if ($this->emulateredirects and $this->options['CURLOPT_FOLLOWLOCATION'] and $this->info['http_code'] != 200) {
             $redirects = 0;

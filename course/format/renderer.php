@@ -906,7 +906,8 @@ abstract class format_section_renderer_base extends plugin_renderer_base {
         if ($PAGE->user_is_editing() and has_capability('moodle/course:update', $context)) {
             // Print stealth sections if present.
             foreach ($modinfo->get_section_info_all() as $section => $thissection) {
-                if ($section <= $course->numsections or empty($modinfo->sections[$section])) {
+                if ($section <= $course->numsections or empty($modinfo->sections[$section])
+                    or $thissection->deletioninprogress) {
                     // this is not stealth section or it is empty
                     continue;
                 }

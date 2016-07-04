@@ -121,6 +121,9 @@ class core_competency_hooks_testcase extends advanced_testcase {
 
         course_delete_module($assign1b->cmid);
 
+        // Now, run the course module deletion adhoc task.
+        phpunit_util::run_all_adhoc_tasks();
+
         $this->assertEquals(2, course_competency::count_records(['courseid' => $c1->id]));
         $this->assertEquals(1, course_module_competency::count_records(['cmid' => $assign1a->cmid]));
         $this->assertEquals(0, course_module_competency::count_records(['cmid' => $assign1b->cmid]));

@@ -58,6 +58,9 @@ Feature: Backup user data
     And I follow "Course 1"
     And I turn editing mode on
     And I delete "Quiz 1" activity
+    And I trigger cron
+    And I am on site homepage
+    And I follow "Course 1"
     And I follow "Recycle bin"
     And I should see "Quiz 1"
     And I follow "Restore"

@@ -2036,8 +2036,8 @@ class core_course_external extends external_api {
             $modcontext = context_module::instance($cm->id);
             require_capability('moodle/course:manageactivities', $modcontext);
 
-            // Delete the module.
-            course_delete_module($cm->id);
+            // Delete the module now (i.e. not using an ahdoc approach).
+            course_delete_module_now($cm->id);
         }
     }
 

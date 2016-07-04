@@ -31,6 +31,9 @@ Feature: Basic recycle bin functionality
       | Assignment name | Test assign |
       | Description | Test |
     And I delete "Test assign" activity
+    And I trigger cron
+    And I am on site homepage
+    And I follow "Course 1"
     When I follow "Recycle bin"
     Then I should see "Test assign"
     And I should see "Contents will be permanently deleted after 7 days"
@@ -69,6 +72,9 @@ Feature: Basic recycle bin functionality
       | Assignment name | Test assign |
       | Description | Test |
     And I delete "Test assign" activity
+    And I trigger cron
+    And I am on site homepage
+    And I follow "Course 1"
     And I follow "Recycle bin"
     When I click on "Delete" "link"
     Then I should see "Are you sure you want to delete the selected item from the recycle bin?"
@@ -92,6 +98,9 @@ Feature: Basic recycle bin functionality
       | Description | Test 2 |
     And I delete "Test assign 1" activity
     And I delete "Test assign 2" activity
+    And I trigger cron
+    And I am on site homepage
+    And I follow "Course 1"
     And I follow "Recycle bin"
     And I should see "Test assign 1"
     And I should see "Test assign 2"

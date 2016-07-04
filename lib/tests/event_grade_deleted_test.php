@@ -68,6 +68,10 @@ class core_event_grade_deleted_testcase extends advanced_testcase {
         // Trigger the event.
         $sink = $this->redirectEvents();
         course_delete_module($quiz->cmid);
+
+        // Now, run the course-module deletion adhoc task.
+        phpunit_util::run_all_adhoc_tasks();
+
         $events = $sink->get_events();
         $event = $events[1];
         $sink->close();

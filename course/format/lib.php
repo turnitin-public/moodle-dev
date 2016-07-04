@@ -351,6 +351,7 @@ abstract class format_base {
             $sectionnum = $section;
         }
 
+
         if (get_string_manager()->string_exists('sectionname', 'format_' . $this->format)) {
             return get_string('sectionname', 'format_' . $this->format) . ' ' . $sectionnum;
         }
@@ -1015,7 +1016,7 @@ abstract class format_base {
 
         // Delete all modules from the section.
         foreach (preg_split('/,/', $section->sequence, -1, PREG_SPLIT_NO_EMPTY) as $cmid) {
-            course_delete_module($cmid);
+            course_delete_module_now($cmid);
         }
 
         // Delete section and it's format options.

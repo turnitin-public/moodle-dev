@@ -96,7 +96,6 @@
     $PAGE->set_pagelayout('course');
 
     if ($section and $section > 0) {
-
         // Get section details and check it exists.
         $modinfo = get_fast_modinfo($course);
         $coursesections = $modinfo->get_section_info($section, MUST_EXIST);

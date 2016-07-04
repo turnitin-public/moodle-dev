@@ -2083,5 +2083,28 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2016070700.01);
     }
 
+    if ($oldversion < 2016072100.01) {
+        // Define a field 'deletioninprogress' in the 'course_modules' table. To background deletion tasks.
+        $table = new xmldb_table('course_modules');
+        $field = new xmldb_field('deletioninprogress', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'availability');
+
+        // Conditionally launch add field 'deletioninprogress'.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define a field 'deletioninprogress' in the 'course_modules' table. To background deletion tasks.
+        $table = new xmldb_table('course_sections');
+        $field = new xmldb_field('deletioninprogress', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'availability');
+
+        // Conditionally launch add field 'deletioninprogress'.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2016072100.01);
+    }
+
     return true;
 }

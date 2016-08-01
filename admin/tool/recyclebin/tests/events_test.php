@@ -144,6 +144,10 @@ class tool_recyclebin_events_testcase extends advanced_testcase {
         // Trigger and capture the event.
         $sink = $this->redirectEvents();
         course_delete_module($instance->cmid);
+
+        // Now, run the course module deletion adhoc task.
+        phpunit_util::run_all_adhoc_tasks();
+
         $events = $sink->get_events();
         $event = reset($events);
 
@@ -172,6 +176,9 @@ class tool_recyclebin_events_testcase extends advanced_testcase {
 
         // Delete the module.
         course_delete_module($instance->cmid);
+
+        // Now, run the course module deletion adhoc task.
+        phpunit_util::run_all_adhoc_tasks();
 
         // Get the item from the recycle bin.
         $rb = new \tool_recyclebin\course_bin($course->id);
@@ -204,6 +211,9 @@ class tool_recyclebin_events_testcase extends advanced_testcase {
         $instance = $generator->create_instance(array('course' => $course->id));
 
         course_delete_module($instance->cmid);
+
+        // Now, run the course module deletion adhoc task.
+        phpunit_util::run_all_adhoc_tasks();
 
         // Get the item from the recycle bin.
         $rb = new \tool_recyclebin\course_bin($course->id);

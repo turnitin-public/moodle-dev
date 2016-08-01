@@ -990,13 +990,15 @@ function course_integrity_check($courseid, $rawmods = null, $sections = null, $f
  * Each item in the array contains he following properties:
  */
 function get_array_of_activities($courseid) {
-//  cm - course module id
-//  mod - name of the module (eg forum)
-//  section - the number of the section (eg week or topic)
-//  name - the name of the instance
-//  visible - is the instance visible or not
-//  groupingid - grouping id
-//  extra - contains extra string to include in any link
+    /* cm - course module id.
+       mod - name of the module (eg forum).
+       section - the number of the section (eg week or topic).
+       name - the name of the instance.
+       visible - is the instance visible or not.
+       groupingid - grouping id.
+       extra - contains extra string to include in any link.
+       deletioninprogress - whether or not the module is scheduled for deletion.
+    */
     global $CFG, $DB;
 
     $course = $DB->get_record('course', array('id'=>$courseid));
@@ -1053,6 +1055,7 @@ function get_array_of_activities($courseid) {
                    $mod[$seq]->completionexpected = $rawmods[$seq]->completionexpected;
                    $mod[$seq]->showdescription  = $rawmods[$seq]->showdescription;
                    $mod[$seq]->availability = $rawmods[$seq]->availability;
+                   $mod[$seq]->deletioninprogress = $rawmods[$seq]->deletioninprogress;
 
                    $modname = $mod[$seq]->mod;
                    $functionname = $modname."_get_coursemodule_info";
@@ -1127,7 +1130,7 @@ function get_array_of_activities($courseid) {
                     foreach (array('idnumber', 'groupmode', 'groupingid',
                             'indent', 'completion', 'extra', 'extraclasses', 'iconurl', 'onclick', 'content',
                             'icon', 'iconcomponent', 'customdata', 'availability', 'completionview',
-                            'completionexpected', 'score', 'showdescription') as $property) {
+                            'completionexpected', 'score', 'showdescription', 'deletioninprogress') as $property) {
                        if (property_exists($mod[$seq], $property) &&
                                empty($mod[$seq]->{$property})) {
                            unset($mod[$seq]->{$property});
@@ -1449,21 +1452,39 @@ function course_create_sections_if_missing($courseorid, $sections) {
     if (!is_array($sections)) {
         $sections = array($sections);
     }
-    $existing = array_keys(get_fast_modinfo($courseorid)->get_section_info_all());
+    $sectioninfo = get_fast_modinfo($courseorid)->get_section_info_all();
+    $existing = array_keys($sectioninfo);
     if (is_object($courseorid)) {
         $courseorid = $courseorid->id;
     }
-    $coursechanged = false;
-    foreach ($sections as $sectionnum) {
-        if (!in_array($sectionnum, $existing)) {
-            $cw = new stdClass();
-            $cw->course   = $courseorid;
-            $cw->section  = $sectionnum;
-            $cw->summary  = '';
-            $cw->summaryformat = FORMAT_HTML;
-            $cw->sequence = '';
-            $id = $DB->insert_record("course_sections", $cw);
-            $coursechanged = true;
+
+    /* Determine the list of sections to add, which will be a subset of the $sections array.
+       A section is missing and can be added if it:
+       a) Doesn't already exist (that section number is available), OR
+       b) Its desired section number is taken, but only by an existing section which has been marked for deletion.
+       Note: sections marked for deletion are always stored at the end of the visible sections.
+    */
+    $sectionstoadd = array_filter($sections, function($section) use ($existing, $sectioninfo) {
+        $exists = in_array($section, $existing);
+        return !$exists || ($exists && $sectioninfo[$section]->deletioninprogress);
+    });
+
+    // If there are sections to add, then the course has changed and the cache must be reset.
+    $coursechanged = !empty($sectionstoadd);
+    foreach ($sectionstoadd as $sectiontoadd) {
+        $conflictswithdeleted = in_array($sectiontoadd, $existing);
+        $cw = new stdClass();
+        $cw->course = $courseorid;
+        // If there's a deleted section in the way, put the new section at the end and move it to the right place below.
+        $cw->section = $conflictswithdeleted ? count($sectioninfo) : $sectiontoadd;
+        $cw->summary = '';
+        $cw->summaryformat = FORMAT_HTML;
+        $cw->sequence = '';
+        $id = $DB->insert_record("course_sections", $cw);
+        // The section was added to the end of the sequence because a deleted section was in the way.
+        // Now, move it to the preferred location.
+        if ($conflictswithdeleted) {
+            move_section_to(get_course($courseorid), count($sectioninfo), $sectiontoadd, true);
         }
     }
     if ($coursechanged) {
@@ -1689,124 +1710,16 @@ function set_coursemodule_name($id, $name) {
  * event to the DB.
  *
  * @param int $cmid the course module id
+ * @param bool $async whether or not to delete the module using an adhoc task.
+ * @throws moodle_exception
  * @since Moodle 2.5
  */
-function course_delete_module($cmid) {
-    global $CFG, $DB;
-
-    require_once($CFG->libdir.'/gradelib.php');
-    require_once($CFG->libdir.'/questionlib.php');
-    require_once($CFG->dirroot.'/blog/lib.php');
-    require_once($CFG->dirroot.'/calendar/lib.php');
-
-    // Get the course module.
-    if (!$cm = $DB->get_record('course_modules', array('id' => $cmid))) {
-        return true;
+function course_delete_module($cmid, $async = true) {
+    try {
+        \core_course\util::course_delete_module($cmid, $async);
+    } catch (\moodle_exception $e) {
+        throw $e;
     }
-
-    // Get the module context.
-    $modcontext = context_module::instance($cm->id);
-
-    // Get the course module name.
-    $modulename = $DB->get_field('modules', 'name', array('id' => $cm->module), MUST_EXIST);
-
-    // Get the file location of the delete_instance function for this module.
-    $modlib = "$CFG->dirroot/mod/$modulename/lib.php";
-
-    // Include the file required to call the delete_instance function for this module.
-    if (file_exists($modlib)) {
-        require_once($modlib);
-    } else {
-        throw new moodle_exception('cannotdeletemodulemissinglib', '', '', null,
-            "Cannot delete this module as the file mod/$modulename/lib.php is missing.");
-    }
-
-    $deleteinstancefunction = $modulename . '_delete_instance';
-
-    // Ensure the delete_instance function exists for this module.
-    if (!function_exists($deleteinstancefunction)) {
-        throw new moodle_exception('cannotdeletemodulemissingfunc', '', '', null,
-            "Cannot delete this module as the function {$modulename}_delete_instance is missing in mod/$modulename/lib.php.");
-    }
-
-    // Allow plugins to use this course module before we completely delete it.
-    if ($pluginsfunction = get_plugins_with_function('pre_course_module_delete')) {
-        foreach ($pluginsfunction as $plugintype => $plugins) {
-            foreach ($plugins as $pluginfunction) {
-                $pluginfunction($cm);
-            }
-        }
-    }
-
-    // Delete activity context questions and question categories.
-    question_delete_activity($cm);
-
-    // Call the delete_instance function, if it returns false throw an exception.
-    if (!$deleteinstancefunction($cm->instance)) {
-        throw new moodle_exception('cannotdeletemoduleinstance', '', '', null,
-            "Cannot delete the module $modulename (instance).");
-    }
-
-    // Remove all module files in case modules forget to do that.
-    $fs = get_file_storage();
-    $fs->delete_area_files($modcontext->id);
-
-    // Delete events from calendar.
-    if ($events = $DB->get_records('event', array('instance' => $cm->instance, 'modulename' => $modulename))) {
-        foreach($events as $event) {
-            $calendarevent = calendar_event::load($event->id);
-            $calendarevent->delete();
-        }
-    }
-
-    // Delete grade items, outcome items and grades attached to modules.
-    if ($grade_items = grade_item::fetch_all(array('itemtype' => 'mod', 'itemmodule' => $modulename,
-                                                   'iteminstance' => $cm->instance, 'courseid' => $cm->course))) {
-        foreach ($grade_items as $grade_item) {
-            $grade_item->delete('moddelete');
-        }
-    }
-
-    // Delete completion and availability data; it is better to do this even if the
-    // features are not turned on, in case they were turned on previously (these will be
-    // very quick on an empty table).
-    $DB->delete_records('course_modules_completion', array('coursemoduleid' => $cm->id));
-    $DB->delete_records('course_completion_criteria', array('moduleinstance' => $cm->id,
-                                                            'course' => $cm->course,
-                                                            'criteriatype' => COMPLETION_CRITERIA_TYPE_ACTIVITY));
-
-    // Delete all tag instances associated with the instance of this module.
-    core_tag_tag::delete_instances('mod_' . $modulename, null, $modcontext->id);
-    core_tag_tag::remove_all_item_tags('core', 'course_modules', $cm->id);
-
-    // Notify the competency subsystem.
-    \core_competency\api::hook_course_module_deleted($cm);
-
-    // Delete the context.
-    context_helper::delete_instance(CONTEXT_MODULE, $cm->id);
-
-    // Delete the module from the course_modules table.
-    $DB->delete_records('course_modules', array('id' => $cm->id));
-
-    // Delete module from that section.
-    if (!delete_mod_from_section($cm->id, $cm->section)) {
-        throw new moodle_exception('cannotdeletemodulefromsection', '', '', null,
-            "Cannot delete the module $modulename (instance) from section.");
-    }
-
-    // Trigger event for course module delete action.
-    $event = \core\event\course_module_deleted::create(array(
-        'courseid' => $cm->course,
-        'context'  => $modcontext,
-        'objectid' => $cm->id,
-        'other'    => array(
-            'modulename' => $modulename,
-            'instanceid'   => $cm->instance,
-        )
-    ));
-    $event->add_record_snapshot('course_modules', $cm);
-    $event->trigger();
-    rebuild_course_cache($cm->course, true);
 }
 
 function delete_mod_from_section($modid, $sectionid) {
@@ -1902,43 +1815,22 @@ function move_section_to($course, $section, $destination, $ignorenumsections = f
  * @param int|stdClass $course
  * @param int|stdClass|section_info $section
  * @param bool $forcedeleteifnotempty if set to false section will not be deleted if it has modules in it.
+ * @param bool $async whether or not to delete the section using an adhoc task.
  * @return bool whether section was deleted
  */
-function course_delete_section($course, $section, $forcedeleteifnotempty = true) {
+function course_delete_section($course, $section, $forcedeleteifnotempty = true, $async = true) {
     global $DB;
 
-    // Prepare variables.
+    // Fetch the section stdClass.
     $courseid = (is_object($course)) ? $course->id : (int)$course;
     $sectionnum = (is_object($section)) ? $section->section : (int)$section;
     $section = $DB->get_record('course_sections', array('course' => $courseid, 'section' => $sectionnum));
-    if (!$section) {
-        // No section exists, can't proceed.
+
+    // No section exists or the section is 0. We can't delete in this case, so don't try.
+    if (!$section || !$section->section) {
         return false;
     }
-    $format = course_get_format($course);
-    $sectionname = $format->get_section_name($section);
-
-    // Delete section.
-    $result = $format->delete_section($section, $forcedeleteifnotempty);
-
-    // Trigger an event for course section deletion.
-    if ($result) {
-        $context = context_course::instance($courseid);
-        $event = \core\event\course_section_deleted::create(
-                array(
-                    'objectid' => $section->id,
-                    'courseid' => $courseid,
-                    'context' => $context,
-                    'other' => array(
-                        'sectionnum' => $section->section,
-                        'sectionname' => $sectionname,
-                    )
-                )
-            );
-        $event->add_record_snapshot('course_sections', $section);
-        $event->trigger();
-    }
-    return $result;
+    return core_course\util::course_delete_section($section, $forcedeleteifnotempty, $async);
 }
 
 /**

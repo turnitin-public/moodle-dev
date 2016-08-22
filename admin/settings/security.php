@@ -11,6 +11,15 @@ if ($hassiteconfig) { // speedup for non-admins, add all caps used on this page
                                                 new lang_string('ipblockersyntax', 'admin'), ''));
     $ADMIN->add('security', $temp);
 
+    // "curl security" settings page.
+    $temp = new admin_settingpage('curlblacklist', new lang_string('curlblacklist', 'admin'));
+    $temp->add(new admin_setting_configcheckbox('curlblacklistenable', new lang_string('curlblacklistenable', 'admin'), new lang_string('curlblacklistenabledesc', 'admin'), 0));
+    $temp->add(new admin_setting_configiplist('curlblacklistblockedip', new lang_string('curlblacklistblockedip', 'admin'),
+        new lang_string('curlblacklistblockedipsyntax', 'admin'), "127.0.0.1"));
+    $temp->add(new admin_setting_configportlist('curlblacklistallowedport', new lang_string('curlblacklistallowedport', 'admin'),
+        new lang_string('curlblacklistallowedportsyntax', 'admin'), "80\n443"));
+    $ADMIN->add('security', $temp);
+
     // "sitepolicies" settingpage
     $temp = new admin_settingpage('sitepolicies', new lang_string('sitepolicies', 'admin'));
     $temp->add(new admin_setting_configcheckbox('protectusernames', new lang_string('protectusernames', 'admin'), new lang_string('configprotectusernames', 'admin'), 1));

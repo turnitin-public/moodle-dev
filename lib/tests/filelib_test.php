@@ -1187,6 +1187,111 @@ EOF;
         $file = array_shift($files);
         $this->assertTrue($file->is_directory());
     }
+
+    /**
+     * Test the \core\curl_blacklist class with no IP blocks in place, only port blocks.
+     */
+    public function test_curl_blacklist_ports_allowed() {
+        $this->resetAfterTest(true);
+
+        // Set up the relevant config for the blacklist and init the blacklist.
+        set_config('curlblacklistblockedip', "");           // Allow access to localhost for testing.
+        set_config('curlblacklistallowedport', "80\n443");  // Default setting, allow http and https.
+        set_config('curlblacklistenable', "1");             // Enable the blacklist feature.
+        $blacklist = new \core\curl_blacklist();
+
+        // Create our array of passing test URLs. These are each of different constructs to test the underlying parsing
+        // mechanism in a series of real world cases.
+        $passingurls = array(
+            'http://localhost/x.png',       // IP=127.0.0.1, Port=80 (port inferred from http)
+            'http://localhost:80/x.png',    // IP=127.0.0.1, Port=80 (specific port overrides http scheme)
+            'https://localhost/x.png',      // IP=127.0.0.1, Port=443 (port inferred from https)
+            'http://localhost:443/x.png',   // IP=127.0.0.1, Port=443 (specific port overrides http scheme)
+            'localhost/x.png',              // IP=127.0.0.1, Port=80 (port inferred from http fallback)
+            'localhost:443/x.png',          // IP=127.0.0.1, Port=443 (port hard specified, despite http fallback)
+            'http://192.168.1.10/x.png',    // IP=192.168.1.10, Port=80 (port inferred from http)
+            'https://192.168.1.10/x.png'    // IP=192.168.1.10, Port=443 (port inferred from https)
+        );
+        $failingurls = array(
+            'http://localhost:8080/x.png',  // IP=127.0.0.1, Port=8080 (specific port overrides http scheme)
+            'https://localhost:8080/x.png', // IP=127.0.0.1, Port=8080 (specific port overrides https scheme)
+            'localhost:8080/x.png',         // IP=127.0.0.1, Port=8080 (port hard specified, despite http fallback)
+            'http://localhost:0/x.png',     // IP=127.0.0.1, Port=0 (specific port overrides http scheme)
+            'https://localhost:0/x.png',    // IP=127.0.0.1, Port=0 (specific port overrides https scheme)
+            'localhost:0/x.png',            // IP=127.0.0.1, Port=0 (port hard specified, despite http fallback)
+            'http://localhost:-10/x.png',   // IP=127.0.0.1, Port=INVALID
+            'https://localhost:-10/x.png',  // IP=127.0.0.1, Port=INVALID
+            'localhost:-10/x.png'           // IP=127.0.0.1, Port=INVALID
+        );
+
+        foreach($passingurls as $url) {
+            $this->assertEquals(false, $blacklist->url_is_blacklisted($url));
+        }
+        foreach($failingurls as $url) {
+            $this->assertEquals(true, $blacklist->url_is_blacklisted($url));
+        }
+
+        // Now, disable port 443 requests and test the previous pass set again, this time split up into expected passes
+        // and failures.
+        set_config('curlblacklistallowedport', "80"); // Disables 443.
+        $passingurls2 = array(
+            'http://localhost/x.png',       // IP=127.0.0.1, Port=80 (port inferred from http)
+            'http://localhost:80/x.png',    // IP=127.0.0.1, Port=80 (specific port overrides http scheme)
+            'localhost/x.png',              // IP=127.0.0.1, Port=80 (port inferred from http fallback)
+            'http://192.168.1.10/x.png'     // IP=192.168.1.10, Port=80 (port inferred from http)
+        );
+        $failingurls2 = array(
+            'https://localhost/x.png',      // IP=127.0.0.1, Port=443 (port inferred from https)
+            'http://localhost:443/x.png',   // IP=127.0.0.1, Port=443 (specific port overrides http scheme)
+            'localhost:443/x.png',          // IP=127.0.0.1, Port=443 (port hard specified, despite http fallback)
+            'https://192.168.1.10/x.png'    // IP=192.168.1.10, Port=443 (port inferred from https)
+        );
+
+        foreach($passingurls2 as $url) {
+            $this->assertEquals(false, $blacklist->url_is_blacklisted($url));
+        }
+        foreach($failingurls2 as $url) {
+            $this->assertEquals(true, $blacklist->url_is_blacklisted($url));
+        }
+
+        // And once again, confirm that the original fail cases still hold true.
+        foreach($failingurls as $url) {
+            $this->assertEquals(true, $blacklist->url_is_blacklisted($url));
+        }
+    }
+
+    public function test_curl_blacklist_ips_blocked() {
+        $this->resetAfterTest(true);
+
+        // Set up the relevant config for the blacklist and init the blacklist.
+        set_config('curlblacklistblockedip', "");           // Allow access to localhost for testing.
+        set_config('curlblacklistallowedport', "80\n443");  // Default setting, allow http and https.
+        set_config('curlblacklistenable', "1");             // Enable the feature.
+        $blacklist = new \core\curl_blacklist();
+
+        $passingurls = array(
+            'http://localhost/x.png',       // IP=127.0.0.1, Port=80 (port inferred from http)
+            'http://localhost:80/x.png',    // IP=127.0.0.1, Port=80 (specific port overrides http scheme)
+            'https://localhost/x.png',      // IP=127.0.0.1, Port=443 (port inferred from https)
+            'http://localhost:443/x.png',   // IP=127.0.0.1, Port=443 (specific port overrides http scheme)
+            'localhost/x.png',              // IP=127.0.0.1, Port=80 (port inferred from http fallback)
+            'localhost:443/x.png',          // IP=127.0.0.1, Port=443 (port hard specified, despite http fallback)
+            'http://192.168.1.10/x.png',    // IP=192.168.1.10, Port=80 (port inferred from http)
+            'https://192.168.1.10/x.png'    // IP=192.168.1.10, Port=443 (port inferred from https)
+        );
+
+        // First, check our base set passes.
+        foreach($passingurls as $url) {
+            $this->assertEquals(false, $blacklist->url_is_blacklisted($url));
+        }
+
+        // Now, disable access to localhost and to an arbitrary local subnet and confirm failures for all entries in
+        // the original test set.
+        set_config('curlblacklistblockedip', "127.0.0.1\n192.168");
+        foreach($passingurls as $url) {
+            $this->assertEquals(true, $blacklist->url_is_blacklisted($url));
+        }
+    }
 }
 
 /**

@@ -1,0 +1,52 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    Chart rendering section of the GradeVis block.
+}}
+<div class="chart-area" id="chart-area-{{uniqid}}">
+    <div class="chart-image" role="decoration" aria-describedby="chart-table-data-{{uniqid}}"></div>
+</div>
+
+{{#js}}
+    require([
+    'jquery',
+    'core/chart_builder',
+    'core/chart_output_chartjs',
+    'block_gradevis/output_chartjs_extended',
+    'core/chart_line',
+    'block_gradevis/chart_line_extended',
+    ], function($, Builder, Output, OutputAdv, ChartLine, ChartLineExt) {
+    var chartdata = {{{chartdata}}},
+    uniqid = "{{uniqid}}",
+    chartArea = $('#chart-area-' + uniqid),
+    chartImage = chartArea.find('.chart-image');
+
+    // We can't use the core builder because our chart type won't be recognised (each chart type should be unique!).
+    //Builder.make(data).then(function(ChartInst) {
+    //});
+
+    //var data = allcharts[0];
+    chartdata.forEach(function(data) {
+        // Create each chart from JSON and output using our overriden output class and the standard (for comparison)
+        var chart = ChartLineExt.prototype.create(ChartLineExt, data);
+        //var output = new Output(chartImage, chart);
+        var output2 = new OutputAdv(chartImage, chart);
+    });
+
+
+    });
+{{/js}}

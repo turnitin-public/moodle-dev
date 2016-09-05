@@ -1015,7 +1015,7 @@ abstract class format_base {
 
         // Delete all modules from the section.
         foreach (preg_split('/,/', $section->sequence, -1, PREG_SPLIT_NO_EMPTY) as $cmid) {
-            course_delete_module($cmid);
+            course_delete_module($cmid, false);
         }
 
         // Delete section and it's format options.

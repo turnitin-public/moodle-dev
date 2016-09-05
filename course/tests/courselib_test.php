@@ -958,16 +958,19 @@ class core_course_courselib_testcase extends advanced_testcase {
 
         // Delete last section.
         $this->assertTrue(course_delete_section($course, 6, true));
+        phpunit_util::run_all_adhoc_tasks();
         $this->assertFalse($DB->record_exists('course_modules', array('id' => $assign6->cmid)));
         $this->assertEquals(5, course_get_format($course)->get_course()->numsections);
 
         // Delete empty section.
         $this->assertTrue(course_delete_section($course, 4, false));
+        phpunit_util::run_all_adhoc_tasks();
         $this->assertEquals(4, course_get_format($course)->get_course()->numsections);
 
         // Delete section in the middle (2).
         $this->assertFalse(course_delete_section($course, 2, false));
         $this->assertTrue(course_delete_section($course, 2, true));
+        phpunit_util::run_all_adhoc_tasks();
         $this->assertFalse($DB->record_exists('course_modules', array('id' => $assign21->cmid)));
         $this->assertFalse($DB->record_exists('course_modules', array('id' => $assign22->cmid)));
         $this->assertEquals(3, course_get_format($course)->get_course()->numsections);
@@ -988,6 +991,7 @@ class core_course_courselib_testcase extends advanced_testcase {
         course_set_marker($course->id, 1);
         $this->assertTrue(course_get_format($course)->is_section_current(1));
         $this->assertTrue(course_delete_section($course, 1, true));
+        phpunit_util::run_all_adhoc_tasks();
         $this->assertFalse(course_get_format($course)->is_section_current(1));
     }
 
@@ -1543,6 +1547,7 @@ class core_course_courselib_testcase extends advanced_testcase {
 
         // Run delete..
         course_delete_module($module->cmid);
+        phpunit_util::run_all_adhoc_tasks();
 
         // Verify the context has been removed.
         $this->assertFalse(context_module::instance($module->cmid, IGNORE_MISSING));
@@ -2026,7 +2031,10 @@ class core_course_courselib_testcase extends advanced_testcase {
         $sections = $DB->get_records('course_sections', array('course' => $course->id));
         $coursecontext = context_course::instance($course->id);
         $section = array_pop($sections);
+
+        // Delete a section.
         course_delete_section($course, $section);
+        phpunit_util::run_all_adhoc_tasks();
         $events = $sink->get_events();
         $event = array_pop($events); // Delete section event.
         $sink->close();
@@ -2453,11 +2461,13 @@ class core_course_courselib_testcase extends advanced_testcase {
         global $USER, $DB;
         $this->resetAfterTest();
 
-        // Create and delete a module.
+        // Create and delete a module. Note: the course_module is fetched after the deletion is scheduled, as the deletion modifies
+        // the record and we need the up to date version for the event comparison.
         $sink = $this->redirectEvents();
         $modinfo = $this->create_specific_module_test('forum');
-        $cm = $DB->get_record('course_modules', array('id' => $modinfo->coursemodule), '*', MUST_EXIST);
         course_delete_module($modinfo->coursemodule);
+        $cm = $DB->get_record('course_modules', array('id' => $modinfo->coursemodule), '*', MUST_EXIST);
+        phpunit_util::run_all_adhoc_tasks(); // Run the deletion tasks.
         $events = $sink->get_events();
         $event = array_pop($events); // delete module event.;
         $sink->close();

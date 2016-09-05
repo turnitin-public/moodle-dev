@@ -820,4 +820,17 @@ class phpunit_util extends testing_util {
             return 'en_AU.UTF-8';
         }
     }
+
+    /**
+     * Executes all adhoc tasks in the queue. Useful for testing asynchronous behaviour.
+     *
+     * @return void
+     */
+    public static function run_all_adhoc_tasks() {
+        $now = time();
+        while (($task = \core\task\manager::get_next_adhoc_task($now)) !== null) {
+            $task->execute();
+            \core\task\manager::adhoc_task_complete($task);
+        }
+    }
 }

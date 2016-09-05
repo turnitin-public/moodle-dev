@@ -624,6 +624,9 @@ class tool_monitor_eventobservers_testcase extends advanced_testcase {
         // Let us delete the user now.
         course_delete_module($book->cmid);
 
+        // Now, run the course module deletion adhoc task.
+        phpunit_util::run_all_adhoc_tasks();
+
         // Verify data after course delete.
         $totalrules = \tool_monitor\rule_manager::get_rules_by_plugin('test');
         $this->assertCount(20, $totalrules);

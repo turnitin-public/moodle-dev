@@ -543,6 +543,23 @@ class core_filelib_testcase extends advanced_testcase {
         $this->assertEquals(CURLE_UNSUPPORTED_PROTOCOL, $curl->errno);
     }
 
+    function test_curl_security_enabled() {
+        $this->resetAfterTest();
+
+        // Normal curl instantiation, but blacklist is not enabled at site level, so the instance var should be false.
+        $curl = new curl();
+        $this->assertEquals(false, $curl->blacklistenabled);
+
+        // Enable the curl blacklist, by setting a value in either the blacklisted hosts or allowed ports admin settings.
+        set_config('curlsecurityblockedhosts', 'localhost');
+        $curl = new curl();
+        $this->assertEquals(true, $curl->blacklistenabled);
+
+        // Constructor override. The blacklist should be disabled, despite host/port rules being enabled at site level.
+        $curl = new curl(['ignoreblacklist' => true]);
+        $this->assertEquals(false, $curl->blacklistenabled);
+    }
+
     /**
      * Testing prepare draft area
      *

@@ -68,7 +68,7 @@ class core_curl_security_testcase extends advanced_testcase {
             ["http://localhost:8080/x.png", "", "", false], // IP=127.0.0.1, Port=8080 (port hard specified).
             ["http://192.168.1.10/x.png", "", "", false],   // IP=192.168.1.10, Port=80 (port inferred from http).
             ["https://192.168.1.10/x.png", "", "", false],  // IP=192.168.1.10, Port=443 (port inferred from https).
-            ["http://sub.example.com/x.png", "", "", false], // IP=::1, Port = 80 (port inferred from http).
+            ["http://sub.example.com/x.png", "", "", false],// IP=::1, Port = 80 (port inferred from http).
             ["http://s-1.d-1.com/x.png", "", "", false],    // IP=::1, Port = 80 (port inferred from http).
 
             // Test set using domain name filters but with all ports allowed (empty).
@@ -256,5 +256,52 @@ class core_curl_security_testcase extends advanced_testcase {
      */
     public function test_curl_security_get_blocked_url_string() {
         $this->assertEquals(get_string('curlsecurityurlblocked', 'admin'), \core\curl_security::get_blocked_url_string());
+    }
+
+    /**
+     * Test for the protected function \core\curl_security::parse_url().
+     *
+     * @param string $url the URL to test.
+     * @param array|bool $expected array of expected [host, port] values on success, or false on failure.
+     * @dataProvider curl_security_parse_url_data_provider
+     *
+     */
+    public function test_curl_security_parse_url($url, $expected) {
+        $this->assertEquals($expected, phpunit_util::invoke_static_method('core\\curl_security', 'parse_url', [$url]));
+    }
+
+    /**
+     * Data provider for test_curl_security_parse_url.
+     *
+     * @return array
+     */
+    function curl_security_parse_url_data_provider() {
+        return [
+            ["http://localhost/x.png", ["localhost", 80]],
+            ["http://localhost:80/x.png", ["localhost", 80]],
+            ["https://localhost/x.png", ["localhost", 443]],
+            ["http://localhost:443/x.png", ["localhost", 443]],
+            ["localhost", ["localhost", 80]],
+            ["localhost/x.png", ["localhost", 80]],
+            ["sub.domain.com/x.png", ["sub.domain.com", 80]],
+            ["localhost:443/x.png", ["localhost", 443]],
+            ["http://127.0.0.1/x.png", ["127.0.0.1", 80]],
+            ["127.0.0.1/x.png", ["127.0.0.1", 80]],
+            ["http://localhost:8080/x.png", ["localhost", 8080]],
+            ["http://192.168.1.10/x.png", ["192.168.1.10", 80]],
+            ["https://192.168.1.10/x.png", ["192.168.1.10", 443]],
+            ["http://sub.example.com/x.png", ["sub.example.com", 80]],
+            ["http://s-1.d-1.com/x.png", ["s-1.d-1.com", 80]],
+            ["localhost:443/x.html#somewhere", ["localhost", 443]],
+            ["http://localhost:0/x.png", false], // Port 0 is not supported.
+            ["ftp://s-1.d-1.com/x.png", false],
+            ["file://s-1.d-1.com/x.png", false],
+            ["ftp:///s-1.d-1.com/x.png", false],
+            ["dict://s-1.d-1.com/x.png", false],
+            ["/somearea/images/x.png", false],
+            ["//somearea/images/x.png", false],
+            [" /somearea/images/x.png", false],
+            [":/somearea/images/x.png", false],
+        ];
     }
 }

@@ -820,4 +820,19 @@ class phpunit_util extends testing_util {
             return 'en_AU.UTF-8';
         }
     }
+
+    /**
+     * Helper function to call a static protected/private method of a class.
+     *
+     * @param $classname the name of the class.
+     * @param $methodname the name of the protected/private method.
+     * @param array $params the array of function params to pass in.
+     * @return mixed the respective return value of the function.
+     */
+    public static function invoke_static_method($classname, $methodname, array $params = array()) {
+        $reflection = new \ReflectionClass($classname);
+        $method = $reflection->getMethod($methodname);
+        $method->setAccessible(true);
+        return $method->invokeArgs(null, $params);
+    }
 }

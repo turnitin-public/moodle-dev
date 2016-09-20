@@ -191,6 +191,8 @@ class core_ip_utils_testcase extends advanced_testcase {
             [" fe80::0-ffff", false],
             ["fe80::0-ffff ", false],
             ["192.0.0.0/24", false],
+            ["fe80:::fe80/128", false],
+            ["fe80:::aaaa-dddd", false],
         ];
     }
 

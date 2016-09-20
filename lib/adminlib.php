@@ -3568,7 +3568,6 @@ class admin_setting_configmixedhostiplist extends admin_setting_configtextarea {
             return true;
         }
         $entries = explode("\n", $data);
-        $result = true;
         $badentries = [];
 
         foreach ($entries as $entry) {
@@ -3585,11 +3584,10 @@ class admin_setting_configmixedhostiplist extends admin_setting_configtextarea {
             }
 
             // Otherwise, the entry is invalid.
-            $result = false;
             $badentries[] = $entry;
         }
 
-        if (!$result) {
+        if ($badentries) {
             return get_string('validatemixedhostiperror', 'admin', join(', ', $badentries));
         }
         return true;
@@ -3612,30 +3610,26 @@ class admin_setting_configportlist extends admin_setting_configtextarea {
      * @return mixed bool true for success or string:error on failure
      */
     public function validate($data) {
-        if (!empty($data)) {
-            $ports = explode("\n", $data);
-        } else {
+        if (empty($data)) {
             return true;
         }
-        $result = true;
+        $ports = explode("\n", $data);
+        $badentries = [];
         foreach ($ports as $port) {
             $port = trim($port);
             if (empty($port)) {
                 return get_string('validateemptylineerror', 'admin');
             }
+
             // Is the string a valid integer number?
-            if (strval(intval($port)) === $port && intval($port) > 0) {
-                $result = true;
-            } else {
-                $result = false;
-                break;
+            if (strval(intval($port)) !== $port || intval($port) <= 0) {
+                $badentries[] = $port;
             }
         }
-        if ($result) {
-            return true;
-        } else {
-            return get_string('validateerror', 'admin');
+        if ($badentries) {
+            return get_string('validateerrorlist', 'admin', $badentries);
         }
+        return true;
     }
 }
 

@@ -56,10 +56,7 @@ final class ip_utils {
         $domaintoplevel   = '([a-zA-Z](([a-zA-Z0-9-]*)[a-zA-Z0-9])?)';
         $address       = '(' . $domaintertiary .  $domaintoplevel . ')';
         $regexp = '#^' . $address . '$#i'; // Case insensitive matching.
-        if (preg_match($regexp, $domainname, $match)) {
-            return true;
-        }
-        return false;
+        return preg_match($regexp, $domainname, $match) == true; // False for error, 0 for no match - we treat the same.
     }
 
     /**
@@ -83,10 +80,7 @@ final class ip_utils {
         $domaintoplevel   = '([a-zA-Z](([a-zA-Z0-9-]*)[a-zA-Z0-9])?)';
         $address       = '(' . $domainwildcard . $domaintertiary .  $domaintoplevel . ')';
         $regexp = '#^' . $address . '$#i'; // Case insensitive matching.
-        if (preg_match($regexp, $domainname, $match)) {
-            return true;
-        }
-        return false;
+        return preg_match($regexp, $domainname, $match) == true; // False for error, 0 for no match - we treat the same.
     }
 
     /**
@@ -96,7 +90,7 @@ final class ip_utils {
      * @return bool true if the address is a valid IPv4 address or range, false otherwise.
      */
     public static function is_ipv4_address($address) {
-        return (filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false);
+        return filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false;
     }
 
     /**
@@ -108,34 +102,15 @@ final class ip_utils {
      * @return bool true if the string is a valid range representation, false otherwise.
      */
     public static function is_ipv4_range($addressrange) {
-        // Address range in CIDR notation.
+        // Check CIDR notation.
         if (preg_match('#^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(\d{1,2})$#', $addressrange, $match)) {
-            // Check the dotted quad numerical limits.
-            if ($match[1] > 255 || $match[1] < 0  || $match[2] > 255 || $match[2] < 0
-                || $match[3] > 255 || $match[3] < 0 || $match[4] > 255 || $match[4] < 0) {
-                return false;
-            }
-
-            // And check the range numerical limit.
-            if ($match[5] > 32) {
-                return false;
-            }
-            return true;
-        }
-
-        // Address range in last-group range notation.
-        if (preg_match('#^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})-(\d{1,3})$#', $addressrange, $match)) {
-            // The address part component must be valid.
             $address = "{$match[1]}.{$match[2]}.{$match[3]}.{$match[4]}";
-            if (!self::is_ipv4_address($address)) {
-                return false;
-            }
-
-            // Check the range portion of the string.
-            if ($match[5] > 255 || $match[5] < $match[4]) {
-                return false;
-            }
-            return true;
+            return self::is_ipv4_address($address) && $match[5] <= 32;
+        }
+        // Check last-group notation.
+        if (preg_match('#^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})-(\d{1,3})$#', $addressrange, $match)) {
+            $address = "{$match[1]}.{$match[2]}.{$match[3]}.{$match[4]}";
+            return self::is_ipv4_address($address) && $match[5] <= 255 && $match[5] >= $match[4];
         }
         return false;
     }
@@ -148,7 +123,7 @@ final class ip_utils {
      * @return bool true if the address has correct syntax, false otherwise.
      */
     public static function is_ipv6_address($address) {
-        return (filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false);
+        return filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
     }
 
     /**
@@ -160,48 +135,20 @@ final class ip_utils {
      * @return bool true if the string is a valid range representation, false otherwise.
      */
     public static function is_ipv6_range($addressrange) {
-        // Check address range in CIDR notation.
+        // Check CIDR notation.
         $ipv6parts = explode('/', $addressrange);
         if (count($ipv6parts) == 2) {
-            // Check the address component.
-            if (!self::is_ipv6_address($ipv6parts[0])) {
-                return false;
-            }
-
-            // Address component is ok, so check the range component of the address, making sure the int cast was correct.
             $range = (int)$ipv6parts[1];
-            if ((string)$range !== $ipv6parts[1] || $range < 0 || $range > 128) {
-                // Either the int conversion was bad, or the range isn't valid, so return.
-                return false;
-            }
-            return true;
+            return self::is_ipv6_address($ipv6parts[0]) && (string)$range === $ipv6parts[1] && $range >= 0 && $range <= 128;
         }
-
-        // Check last-group ranges.
+        // Check last-group notation.
         $ipv6parts = explode('-', $addressrange);
         if (count($ipv6parts) == 2) {
-            // Check the address component.
-            if (!self::is_ipv6_address($ipv6parts[0])) {
-                return false;
-            }
-
-            // Check the range component.
             $addressparts = explode(':', $ipv6parts[0]);
             $rangestart = $addressparts[count($addressparts) - 1];
             $rangeend = $ipv6parts[1];
-
-            // Range limits must be hex and must not exceed 4 characters.
-            if (!ctype_xdigit($rangestart) || !ctype_xdigit($rangeend) || strlen($rangeend) > 4 || strlen($rangestart) > 4) {
-                return false;
-            }
-
-            // Ensure the range is valid.
-            $rangestartdec = hexdec($rangestart);
-            $rangeenddec = hexdec($rangeend);
-            if ($rangeenddec < $rangestartdec) {
-                return false;
-            }
-            return true;
+            return self::is_ipv6_address($ipv6parts[0]) && ctype_xdigit($rangestart) && ctype_xdigit($rangeend)
+                   && strlen($rangeend) <= 4 && strlen($rangestart) <= 4 && hexdec($rangeend) >= hexdec($rangestart);
         }
         return false;
     }

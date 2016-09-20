@@ -24,7 +24,7 @@
  */
 
 namespace core;
-use \core\ip_utils;
+use core\ip_utils;
 
 defined('MOODLE_INTERNAL') || exit();
 
@@ -64,18 +64,15 @@ class curl_security {
      */
     public static function url_is_blacklisted($url) {
         // If no config data is present, then all hosts/ports are allowed.
-        if (!self::is_enabled()) {
+        if (!static::is_enabled()) {
             return false;
         }
 
         // Try to parse the URL to get the 'host' and 'port' components.
-        $bits = self::parse_url($url);
+        $bits = static::parse_url($url);
         if (!empty($bits) && count($bits) == 2) {
             // Check the host and port against the blacklist settings.
-            if (self::host_is_blocked($bits[0]) || self::port_is_blocked($bits[1])) {
-                return true;
-            }
-            return false;
+            return static::host_is_blocked($bits[0]) || static::port_is_blocked($bits[1]);
         }
         return true;
     }
@@ -83,12 +80,12 @@ class curl_security {
     /**
      * Checks whether the given fully qualified domain name is blocked.
      * The method logic is as follows:
-     * 1. Check the 'host' component against the list of domain names and wildcard domain names.
+     * 1. Check the host component against the list of domain names and wildcard domain names.
      *  - This will perform a DNS reverse lookup if required.
-     * 2. Check the 'host component against the list of IPv4/IPv6 addresses and ranges.
+     * 2. Check the host component against the list of IPv4/IPv6 addresses and ranges.
      *  - This will perform a DNS forward lookup if required.
      *
-     * @param string $host the 'host' component of the URL to check against the blacklist.
+     * @param string $host the host component of the URL to check against the blacklist.
      * @return bool true if the host is both valid and blocked, false otherwise.
      */
     public static function host_is_blocked($host) {
@@ -98,7 +95,7 @@ class curl_security {
         }
 
         // Get the blocked hosts by category.
-        $blockedhosts = self::get_blacklisted_hosts_by_category();
+        $blockedhosts = static::get_blacklisted_hosts_by_category();
 
         // Fix for square brackets in the 'host' portion of the URL (only occurs if an IPv6 address is specified).
         $host = str_replace(array('[', ']'), '', $host); // RFC3986, section 3.2.2.
@@ -143,12 +140,8 @@ class curl_security {
         if (empty($port) || (string)$portnum !== (string)$port) {
             return true;
         }
-
-        $allowedports = self::get_whitelisted_ports();
-        if (empty($allowedports)) {
-            return false;
-        }
-        return !in_array($portnum, $allowedports);
+        $allowedports = static::get_whitelisted_ports();
+        return !empty($allowedports) && !in_array($portnum, $allowedports);
     }
 
     /**
@@ -167,7 +160,7 @@ class curl_security {
      * @return bool true if one or more entries exist, false otherwise.
      */
     public static function is_enabled() {
-        return (!empty(self::get_whitelisted_ports()) || !empty(self::get_blacklisted_hosts()));
+        return (!empty(static::get_whitelisted_ports()) || !empty(static::get_blacklisted_hosts()));
     }
 
     /**
@@ -179,7 +172,7 @@ class curl_security {
     protected static function get_blacklisted_hosts_by_category() {
         // For each of the admin setting entries, check and place in the correct section of the config array.
         $config = ['ipv6' => [], 'ipv4' => [], 'domain' => [], 'wildcard' => []];
-        $entries = self::get_blacklisted_hosts();
+        $entries = static::get_blacklisted_hosts();
         foreach ($entries as $entry) {
             if (ip_utils::is_ipv6_address($entry) || ip_utils::is_ipv6_range($entry)) {
                 $config['ipv6'][] = $entry;
@@ -195,7 +188,7 @@ class curl_security {
     }
 
     /**
-     * Helper that return the whitelisted ports, as defined in the 'curlsecurityallowedport' setting.
+     * Helper that returns the whitelisted ports, as defined in the 'curlsecurityallowedport' setting.
      *
      * @return array the array of whitelisted ports.
      */
@@ -207,7 +200,7 @@ class curl_security {
     }
 
     /**
-     * Helper that return the blacklisted hosts, as defined in the 'curlsecurityblockedhosts' setting.
+     * Helper that returns the blacklisted hosts, as defined in the 'curlsecurityblockedhosts' setting.
      *
      * @return array the array of blacklisted host entries.
      */
@@ -226,43 +219,30 @@ class curl_security {
      * @return array|bool list of host and port components on successful parsing; boolean false otherwise.
      */
     protected static function parse_url($url) {
-        // Let's check the URL syntax first.
+        // Make sure the URL is valid.
         $url = clean_param($url, PARAM_URL);
-        if (empty($url)) {
+
+        // If the URL is invalid, or is a relative URL, then don't bother trying to parse it.
+        if (empty($url) || substr($url, 0, 1) == "/") {
             return false;
         }
 
-        // To parse the URL, we first need a protocol. If we don't have one, default to http://.
-        if (strpos($url, "://") === false && substr($url, 0, 1) != "/") {
-            $url = "http://" . $url;
-        }
+        // To properly parse the URL, PHP needs a transport scheme. If we don't have one, default to http://.
+        $url = (strpos($url, "://") === false) ? 'http://' . $url : $url;
 
         // Try to parse the URL. Note, there are some URLs which pass validation (clean_param) but which PHP cannot parse.
-        // E.g. http://localhost:0/text.txt.
         if (($parsedinfo  = parse_url($url)) === false) {
             return false;
         }
 
-        // URL was parsed by php. Now try to isolate the 'host' and 'port' components, making inferences where necessary.
-        $host = $parsedinfo['host'];
-        $port = null; // Port will be empty unless explicitly set in the $url, so we need to check this below.
-
-        // Try to retrieve/infer the port number.
-        if (!empty($parsedinfo['port'])) {
-            $port = $parsedinfo['port'];
-        } else if (!empty($parsedinfo['scheme'])) {
-            // Otherwise, try to infer the port from the transport schemes array.
-            if (isset(self::$transportschemes[$parsedinfo['scheme']])) {
-                $port = self::$transportschemes[$parsedinfo['scheme']];
+        // Note: port will be empty unless explicitly set in the $url, so try to infer it from the supported schemes.
+        $host = (!empty($parsedinfo['host'])) ? $parsedinfo['host'] : false;
+        $port = (!empty($parsedinfo['port'])) ? $parsedinfo['port'] : false;
+        if (!$port) {
+            if (isset(static::$transportschemes[$parsedinfo['scheme']])) {
+                $port = static::$transportschemes[$parsedinfo['scheme']];
             }
         }
-
-        // Return false if the URL could not be properly parsed into the 'host' and 'port' components.
-        if (empty($host) || is_null($port)) {
-            return false;
-        }
-
-        // Parsing was successful, so return the values.
-        return [$host, $port];
+        return ($host && $port) ? [$host, $port] : false;
     }
 }

@@ -372,6 +372,7 @@ function upgrade_stale_php_files_present() {
 
     $someexamplesofremovedfiles = array(
         // Removed in 3.2.
+        '/auth/radius/',
         '/calendar/preferences.php',
         '/lib/alfresco/',
         '/lib/jquery/jquery-1.12.1.min.js',

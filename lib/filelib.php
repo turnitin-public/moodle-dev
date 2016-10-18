@@ -2789,6 +2789,8 @@ class curl {
     private $cookie   = false;
     /** @var bool tracks multiple headers in response - redirect detection */
     private $responsefinished = false;
+    /** @var bool whether or not the blacklist is enabled at site level.*/
+    public $blacklistenabled = false;
 
     /**
      * Curl constructor.
@@ -2799,6 +2801,7 @@ class curl {
      *  cookie: (string) path to cookie file, false if none
      *  cache: (bool) use cache
      *  module_cache: (string) type of cache
+     *  ignoreblacklist: (bool) set true to override site settings and ignore blacklisting rules.
      *
      * @param array $settings
      */
@@ -2862,6 +2865,10 @@ class curl {
 
         if (!isset($this->emulateredirects)) {
             $this->emulateredirects = ini_get('open_basedir');
+        }
+
+        if (\core\curl\curl_security_helper::security_enabled() && empty($settings['ignoreblacklist'])) {
+            $this->blacklistenabled = true;
         }
     }
 
@@ -3265,6 +3272,20 @@ class curl {
     }
 
     /**
+     * Helper function to reset the request state vars.
+     *
+     * @return void.
+     */
+    protected function reset_request_state_vars() {
+        $this->info             = array();
+        $this->error            = '';
+        $this->errno            = 0;
+        $this->response         = array();
+        $this->rawresponse      = array();
+        $this->responsefinished = false;
+    }
+
+    /**
      * Single HTTP Request
      *
      * @param string $url The URL to request
@@ -3272,19 +3293,21 @@ class curl {
      * @return bool
      */
     protected function request($url, $options = array()) {
+        // Reset here so that the data is valid when result returned from cache, or if we return due to a blacklist hit.
+        $this->reset_request_state_vars();
+
+        // If curl security is enabled, check the URL against the blacklist before calling curl_exec.
+        // Note: This will only check the base url. In the case of redirects, the blacklist is also after the curl_exec.
+        if ($this->blacklistenabled && \core\curl\curl_security_helper::url_is_blacklisted($url)) {
+            $this->error = \core\curl\curl_security_helper::get_blocked_url_string();
+            return $this->error;
+        }
+
         // Set the URL as a curl option.
         $this->setopt(array('CURLOPT_URL' => $url));
 
         // Create curl instance.
         $curl = curl_init();
-
-        // Reset here so that the data is valid when result returned from cache.
-        $this->info             = array();
-        $this->error            = '';
-        $this->errno            = 0;
-        $this->response         = array();
-        $this->rawresponse      = array();
-        $this->responsefinished = false;
 
         $this->apply_opt($curl, $options);
         if ($this->cache && $ret = $this->cache->get($this->options)) {
@@ -3296,6 +3319,16 @@ class curl {
         $this->error = curl_error($curl);
         $this->errno = curl_errno($curl);
         // Note: $this->response and $this->rawresponse are filled by $hits->formatHeader callback.
+
+        // In the case of redirects (which curl blindly follows), check the post-redirect URL against the blacklist too.
+        if ($this->blacklistenabled && intval($this->info['redirect_count']) > 0) {
+            if (\core\curl\curl_security_helper::url_is_blacklisted($this->info['url'])) {
+                $this->reset_request_state_vars();
+                $this->error = \core\curl\curl_security_helper::get_blocked_url_string();
+                curl_close($curl);
+                return $this->error;
+            }
+        }
 
         if ($this->emulateredirects and $this->options['CURLOPT_FOLLOWLOCATION'] and $this->info['http_code'] != 200) {
             $redirects = 0;

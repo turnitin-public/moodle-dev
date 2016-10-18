@@ -3585,6 +3585,91 @@ class admin_setting_configiplist extends admin_setting_configtextarea {
     }
 }
 
+/**
+ * Used to validate a textarea used for FQDNs, wildcard domain names and IP addresses and ranges (both IPv4 and IPv6 format).
+ *
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright 2016 Jake Dallimore (jrhdallimore@gmail.com)
+ */
+class admin_setting_configmixedhostiplist extends admin_setting_configtextarea {
+
+    /**
+     * Validate the contents of the textarea as either IP addresses, FQDNs or wildcard domain name (RFC 4592)
+     * Used to validate a new line separated list of entries collected from a textarea control.
+     *
+     * @param string $data A list of FQDNs, DNS wildcard format domains, and IP addresses, separated by new lines.
+     * @return mixed bool true for success or string:error on failure
+     */
+    public function validate($data) {
+        if (empty($data)) {
+            return true;
+        }
+        $entries = explode("\n", $data);
+        $badentries = [];
+
+        foreach ($entries as $entry) {
+            $entry = trim($entry);
+            if (empty($entry)) {
+                return get_string('validateemptylineerror', 'admin');
+            }
+
+            // Validate each string entry against the supported formats.
+            if (\core\ip_utils::is_ipv6_address($entry) || \core\ip_utils::is_ipv6_range($entry)
+                    || \core\ip_utils::is_ipv4_address($entry) || \core\ip_utils::is_ipv4_range($entry)
+                    || \core\ip_utils::is_domain_name($entry) || \core\ip_utils::is_wildcard_domain_name($entry)) {
+                continue;
+            }
+
+            // Otherwise, the entry is invalid.
+            $badentries[] = $entry;
+        }
+
+        if ($badentries) {
+            return get_string('validatemixedhostiperror', 'admin', join(', ', $badentries));
+        }
+        return true;
+    }
+}
+
+/**
+ * Used to validate a textarea used for port numbers.
+ *
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright 2016 Jake Dallimore (jrhdallimore@gmail.com)
+ */
+class admin_setting_configportlist extends admin_setting_configtextarea {
+
+    /**
+     * Validate the contents of the textarea as port numbers.
+     * Used to validate a new line separated list of ports collected from a textarea control.
+     *
+     * @param string $data A list of ports separated by new lines
+     * @return mixed bool true for success or string:error on failure
+     */
+    public function validate($data) {
+        if (empty($data)) {
+            return true;
+        }
+        $ports = explode("\n", $data);
+        $badentries = [];
+        foreach ($ports as $port) {
+            $port = trim($port);
+            if (empty($port)) {
+                return get_string('validateemptylineerror', 'admin');
+            }
+
+            // Is the string a valid integer number?
+            if (strval(intval($port)) !== $port || intval($port) <= 0) {
+                $badentries[] = $port;
+            }
+        }
+        if ($badentries) {
+            return get_string('validateerrorlist', 'admin', $badentries);
+        }
+        return true;
+    }
+}
+
 
 /**
  * An admin setting for selecting one or more users who have a capability

@@ -76,10 +76,19 @@ class user_edit_form extends moodleform {
         useredit_shared_definition($mform, $editoroptions, $filemanageroptions, $user);
 
         // Extra settigs.
-        if (!empty($CFG->disableuserimages)) {
+        if (!empty($CFG->disableuserimages) || user_not_fully_set_up($USER)) {
             $mform->removeElement('deletepicture');
             $mform->removeElement('imagefile');
             $mform->removeElement('imagealt');
+        }
+
+        // After a fresh install, make sure the user is set up before allowing them to upload a picture.
+        if (user_not_fully_set_up($USER)) {
+            $elementref = $mform->createElement('warning', 'imagefilefallback', get_string('newpicture'));
+            $mform->insertElementBefore($elementref, 'moodle_additional_names');
+            $mform->setDefault('imagefilefallback', get_string('newpictureusernotsetup'));
+            $imagefile = $mform->createElement('hidden', 'imagefile');
+            $mform->insertElementBefore($imagefile, 'imagefilefallback');
         }
 
         // Next the customisable profile fields.

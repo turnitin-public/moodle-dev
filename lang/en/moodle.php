@@ -1261,6 +1261,7 @@ line at the top of your web browser window.
 Cheers from the \'{$a->sitename}\' administrator,
 {$a->signoff}';
 $string['newpicture'] = 'New picture';
+$string['newpictureusernotsetup'] = 'Your profile picture can only be set once your user profile has been saved.';
 $string['newpicture_help'] = 'To add a new picture, browse and select an image (in JPG or PNG format) then click "Update profile". The image will be cropped to a square and resized to 100x100 pixels.';
 $string['newsectionname'] = 'New name for section {$a}';
 $string['newsitem'] = 'news item';

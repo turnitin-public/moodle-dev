@@ -33,6 +33,7 @@ $string['activities_help'] = 'Activities, such as forums, quizzes and wikis, ena
 $string['activity'] = 'Activity';
 $string['activityclipboard'] = 'Moving this activity: {$a}';
 $string['activityiscurrentlyhidden'] = 'Sorry, this activity is currently hidden';
+$string['activityisscheduledfordeletion'] = 'Activity deletion in progress...';
 $string['activitymodule'] = 'Activity module';
 $string['activitymodules'] = 'Activity modules';
 $string['activityreport'] = 'Activity report';

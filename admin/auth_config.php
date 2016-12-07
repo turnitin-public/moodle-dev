@@ -74,7 +74,7 @@ echo $OUTPUT->box_end();
 echo "<hr />\n";
 $authplugin->config_form($frm, $err, $user_fields);
 echo $OUTPUT->box_end();
-echo '<p style="text-align: center"><input type="submit" value="' . get_string("savechanges") . "\" /></p>\n";
+echo '<p style="text-align: center"><input type="submit" class="btn btn-primary" value="' . get_string("savechanges") . "\" /></p>\n";
 echo "</div>\n";
 echo "</form>\n";
 

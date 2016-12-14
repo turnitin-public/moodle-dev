@@ -171,7 +171,7 @@ echo '<p><label for="groups"><span id="groupslabel">'.get_string('groups').':</s
 
 $onchange = 'M.core_group.membersCombo.refreshMembers();';
 
-echo '<select name="groups[]" multiple="multiple" id="groups" size="15" class="select" onchange="'.$onchange.'">'."\n";
+echo '<select name="groups[]" multiple="multiple" id="groups" size="15" class="select form-control" onchange="'.$onchange.'">'."\n";
 
 $groups = groups_get_all_groups($courseid);
 $selectedname = '&nbsp;';
@@ -204,18 +204,18 @@ if ($groups) {
 echo '</select>'."\n";
 echo '<p><input type="submit" name="act_updatemembers" id="updatemembers" value="'
         . get_string('showmembersforgroup', 'group') . '" /></p>'."\n";
-echo '<p><input type="submit" '. $showeditgroupsettingsform_disabled . ' name="act_showgroupsettingsform" id="showeditgroupsettingsform" value="'
+echo '<p><input type="submit" '. $showeditgroupsettingsform_disabled . ' name="act_showgroupsettingsform" id="showeditgroupsettingsform" class="btn btn-secondary" value="'
         . get_string('editgroupsettings', 'group') . '" /></p>'."\n";
-echo '<p><input type="submit" '. $deletegroup_disabled . ' name="act_deletegroup" id="deletegroup" value="'
+echo '<p><input type="submit" '. $deletegroup_disabled . ' name="act_deletegroup" id="deletegroup" class="btn btn-secondary" value="'
         . get_string('deleteselectedgroup', 'group') . '" /></p>'."\n";
 
-echo '<p><input type="submit" name="act_showcreateorphangroupform" id="showcreateorphangroupform" value="'
+echo '<p><input type="submit" name="act_showcreateorphangroupform" id="showcreateorphangroupform" class="btn btn-secondary" value="'
         . get_string('creategroup', 'group') . '" /></p>'."\n";
 
-echo '<p><input type="submit" name="act_showautocreategroupsform" id="showautocreategroupsform" value="'
+echo '<p><input type="submit" name="act_showautocreategroupsform" id="showautocreategroupsform" class="btn btn-secondary" value="'
         . get_string('autocreategroups', 'group') . '" /></p>'."\n";
 
-echo '<p><input type="submit" name="act_showimportgroups" id="showimportgroups" value="'
+echo '<p><input type="submit" name="act_showimportgroups" id="showimportgroups" class="btn btn-secondary" value="'
         . get_string('importgroups', 'core_group') . '" /></p>'."\n";
 
 echo html_writer::end_tag('div');
@@ -225,7 +225,7 @@ echo '<p><label for="members"><span id="memberslabel">'.
     get_string('membersofselectedgroup', 'group').
     ' </span><span id="thegroup">'.$selectedname.'</span></label></p>'."\n";
 //NOTE: the SELECT was, multiple="multiple" name="user[]" - not used and breaks onclick.
-echo '<select name="user" id="members" size="15" class="select"'."\n";
+echo '</p><select name="user" id="members" size="15" class="select form-control"'."\n";
 echo ' onclick="window.status=this.options[this.selectedIndex].title;" onmouseout="window.status=\'\';">'."\n";
 
 $member_names = array();
@@ -249,10 +249,10 @@ if (!$atleastonemember) {
     echo '<option>&nbsp;</option>';
 }
 
-echo '</select>'."\n";
+echo '</select></p>'."\n";
 
 echo '<p><input type="submit" ' . $showaddmembersform_disabled . ' name="act_showaddmembersform" '
-        . 'id="showaddmembersform" value="' . get_string('adduserstogroup', 'group'). '" /></p>'."\n";
+        . 'id="showaddmembersform" class="btn btn-secondary" value="' . get_string('adduserstogroup', 'group'). '" /></p>'."\n";
 echo html_writer::end_tag('div');
 echo html_writer::end_tag('div');
 

@@ -1288,9 +1288,14 @@ class core_renderer extends renderer_base {
      * @return string The lang menu HTML or empty string
      */
     public function lang_menu() {
-        global $CFG;
+        global $CFG, $PAGE;
 
         if (empty($CFG->langmenu)) {
+            return '';
+        }
+
+        // Don't show the lang menu if the theme doesn't support it on the page.
+        if (isset($PAGE->layout_options['langmenu']) && !$PAGE->layout_options['langmenu']) {
             return '';
         }
 

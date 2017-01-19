@@ -2092,6 +2092,7 @@ class MoodleQuickForm extends HTML_QuickForm_DHTMLRulesTableless {
                 $this->clientvalidation = true;
             }
         }
+        $this->clientvalidation = true;
     }
 
     /**
@@ -2106,8 +2107,13 @@ class MoodleQuickForm extends HTML_QuickForm_DHTMLRulesTableless {
     function getValidationScript()
     {
         global $PAGE;
+        echo "<br><br><br>In validation code generation";
 
         if (empty($this->_rules) || $this->clientvalidation === false) {
+            echo "...breaking";
+            if ($this->clientvalidation === false) {
+                echo " because no client validation found";
+            }
             return '';
         }
 
@@ -2272,44 +2278,88 @@ require(["core/event", "jquery"], function(Event, $) {
                 if (key_exists('id', $elem->_attributes)) {
                     $js .= '
     function validate_' . $this->_formName . '_' . $escapedElementName . '(element, escapedName) {
+      ';
+    if ($elem->_type == 'group' && count($elem->_elements) > 0) {
+        // Element is a group element which doesn't exist in the dom necessarily, so use it's first element.
+        $js .= 'console.log(\'is a group element\')';
+    } else {
+        $js .= '
+      console.log(\'element is\' + element);
       if (undefined == element) {
          //required element was not found, then let form be submitted without client side validation
          return true;
-      }
+      }';
+    }
+    $js .= '
       var value = \'\';
       var errFlag = new Array();
       var _qfGroups = {};
-      var _qfMsg = \'\';
-      var frm = element.parentNode;
-      if ((undefined != element.name) && (frm != undefined)) {
-          while (frm && frm.nodeName.toUpperCase() != "FORM") {
-            frm = frm.parentNode;
-          }
+      var _qfMsg = \'\';';
+
+    //done below.
+    //$js .= '
+      //var frm = element.parentNode;
+      //';
+
+    echo "<br>Element type is: ".$elem->_type."<br>";
+      //print_r($elem->_elements);
+    if ($elem->_type == 'group' && count($elem->_elements) > 0) {
+      // Groups should pass in the reference to the first child element.
+      $js .= '
+        if(element[0]) {
+          frm = element[0].parentNode;
+        }';
+    } else {
+      $js .= 'var frm = element.parentNode;';
+    }
+
+      $js .= '
+      console.log(\'frm is:\' + frm);
+      if ((undefined != element.name) && (frm != undefined) || element[0].name != undefined){//|| true) {
+      console.log(\'gets in here\');
+      // element has children which are valid nodes.
+      while (frm && frm.nodeName.toUpperCase() != "FORM") {
+        frm = frm.parentNode;
+      }
+        
         ' . join("\n", $jsArr) . '
           return qf_errorHandler(element, _qfMsg, escapedName);
       } else {
+        console.log(\'no name! instant validation success.\');
         //element name should be defined else error msg will not be displayed.
         return true;
       }
     }
 
-    document.getElementById(\'' . $elem->_attributes['id'] . '\').addEventListener(\'blur\', function(ev) {
-        ' . $valFunc . '
-    });
-    document.getElementById(\'' . $elem->_attributes['id'] . '\').addEventListener(\'change\', function(ev) {
-        ' . $valFunc . '
-    });
+    var elem = document.getElementById(\'' . $elem->_attributes['id'] . '\');
+    if (elem) {
+        elem.addEventListener(\'blur\', function(ev) {
+            ' . $valFunc . '
+        });
+        elem.addEventListener(\'change\', function(ev) {
+            ' . $valFunc . '
+        });
+    }
 ';
                 }
             }
+            if ($elem->_type == 'group' && count($elem->_elements) > 0) {
+                $elementName = $elementName . '[' . $elem->_elements[0]->_attributes['name'] . ']';
+            }
             $validateJS .= '
+            console.log(\'element name is: '.$elementName.'\');
+            console.log(frm.elements);
+      //ret = validate_' . $this->_formName . '_' . $escapedElementName.'(frm.elements[\''.$elementName.'\'], \''.$escapedElementName.'\') && ret;
       ret = validate_' . $this->_formName . '_' . $escapedElementName.'(frm.elements[\''.$elementName.'\'], \''.$escapedElementName.'\') && ret;
+      if(ret) console.log(\'client validation passing\');
+      //ret = false; // hack to force client side validation errors.
       if (!ret && !first_focus) {
+      console.log(\'forced failure hack..\');
         first_focus = true;
         Y.use(\'moodle-core-event\', function() {
             Y.Global.fire(M.core.globalEvents.FORM_ERROR, {formid: \'' . $this->_attributes['id'] . '\',
                                                            elementid: \'id_error_' . $escapedElementName . '\'});
-            document.getElementById(\'id_error_' . $escapedElementName . '\').focus();
+            //document.getElementById(\'id_error_ ' . $escapedElementName . '\').focus();
         });
       }
 ';
@@ -2328,8 +2378,11 @@ require(["core/event", "jquery"], function(Event, $) {
 
     function validate_' . $this->_formName . '() {
       if (skipClientValidation) {
+         console.log(\'skipping client validation\');
          return true;
       }
+       console.log(\'doing client validation\');
+
       var ret = true;
 
       var frm = document.getElementById(\''. $this->_attributes['id'] .'\')
@@ -2350,6 +2403,8 @@ require(["core/event", "jquery"], function(Event, $) {
         }
         if (!myValidator()) {
             ev.preventDefault();
+        } else {
+            console.log(\'is valid\');
         }
     });
 

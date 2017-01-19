@@ -4221,6 +4221,15 @@ EOD;
                     }
                 }
 
+                // Try to escape the name, like before.
+                $elementcontext['escapedname'] = preg_replace_callback(
+                    '/[_\[\]-]/',
+                    create_function('$matches', 'return sprintf("_%2x",ord($matches[0]));'),
+                    $elementcontext['name']);
+                //echo $elementcontext['escapedname'] . "<br>";
+                //print_object($elementcontext);
+
+
                 $context = array(
                     'element' => $elementcontext,
                     'label' => $label,

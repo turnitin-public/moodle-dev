@@ -365,12 +365,18 @@ class feedback_item_multichoice extends feedback_item_base {
 
         // Process 'required' rule.
         if ($item->required) {
-            $elementname = $element->getName();
+            // Make the group required the proper way, via the forms api.
+            //$element = $form->add_form_group_element($item, 'group_'.$inputname, $name, $objs, $separator, $class);
+            //example:  $mform->addGroupRule('events', get_string('required'), 'required', null, 0, 'client');
+            $form->get_form()->addGroupRule('group_'.$inputname, get_string('required'), 'required', null, 0, 'client');
+
+
+            /*$elementname = $element->getName();
             $form->add_validation_rule(function($values, $files) use ($elementname, $item) {
                 $inputname = $item->typ . '_' . $item->id;
                 return empty($values[$inputname]) || !array_filter($values[$inputname]) ?
                     array($elementname => get_string('required')) : true;
-            });
+            });*/
         }
     }
 

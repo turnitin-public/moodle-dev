@@ -570,4 +570,8 @@ class mod_feedback_complete_form extends moodleform {
             $PAGE->requires->js_call_amd('mod_feedback/edit', 'setup');
         }
     }
+
+    public function get_form() {
+        return $this->_form;
+    }
 }

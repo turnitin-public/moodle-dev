@@ -52,7 +52,8 @@ class core_calendar_export_form extends moodleform {
         $export[] = $mform->createElement('radio', 'exportevents', '', get_string('eventspersonal', 'calendar'), 'user');
 
         $mform->addGroup($export, 'events', get_string('eventstoexport', 'calendar'), '<br/>');
-        $mform->addGroupRule('events', get_string('required'), 'required');
+        //$mform->addGroup($export, 'events', get_string('eventstoexport', 'calendar'), '<br/>', false);
+        $mform->addGroupRule('events', get_string('required'), 'required', null, 0, 'client');
         $mform->setDefault('events', 'all');
 
         $range = array();
@@ -80,7 +81,8 @@ class core_calendar_export_form extends moodleform {
         }
 
         $mform->addGroup($range, 'period', get_string('timeperiod', 'calendar'), '<br/>');
-        $mform->addGroupRule('period', get_string('required'), 'required');
+        //$mform->addGroupRule('period', get_string('required'), 'required');
+        $mform->addGroupRule('period', get_string('required'), 'required', null, 0, 'client');
         $mform->setDefault('period', 'recentupcoming');
 
         $buttons = array();

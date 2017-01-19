@@ -20,7 +20,9 @@
         {{$ element }}
             <!-- Element goes here -->
         {{/ element }}
-        <div class="form-control-feedback" id="id_error_{{element.name}}" {{^error}} style="display: none;"{{/error}}>
+    <div>Name is: {{element.name}}</div>
+    <div>Escaped name is: {{element.escapedname}}</div>
+        <div class="form-control-feedback" id="id_error_{{element.escapedname}}" {{^error}} style="display: none;"{{/error}}>
             {{{error}}}
         </div>
     </div>

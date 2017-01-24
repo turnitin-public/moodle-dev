@@ -454,22 +454,15 @@ class comment {
                 if ($this->displaytotalcount) {
                     $countstring = '('.$this->count().')';
                 }
-                $collapsedimage= 't/collapsed';
-                if (right_to_left()) {
-                    $collapsedimage= 't/collapsed_rtl';
-                } else {
-                    $collapsedimage= 't/collapsed';
-                }
-                $html .= html_writer::start_tag('a', array(
-                    'class' => 'comment-link',
+                $html .= html_writer::link(
+                    '#',
+                    html_writer::tag('span', $this->linktext.' '.$countstring, array('id' => 'comment-link-text-'.$this->cid)),
+                    ['class' => 'comment-link collapsed',
                     'id' => 'comment-link-'.$this->cid,
                     'href' => '#',
                     'role' => 'button',
-                    'aria-expanded' => 'false')
+                    'aria-expanded' => 'false']
                 );
-                $html .= html_writer::empty_tag('img', array('id' => 'comment-img-'.$this->cid, 'src' => $OUTPUT->pix_url($collapsedimage), 'alt' => $this->linktext, 'title' => $this->linktext));
-                $html .= html_writer::tag('span', $this->linktext.' '.$countstring, array('id' => 'comment-link-text-'.$this->cid));
-                $html .= html_writer::end_tag('a');
             }
 
             $html .= html_writer::start_tag('div', array('id' => 'comment-ctrl-'.$this->cid, 'class' => 'comment-ctrl'));

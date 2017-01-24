@@ -234,10 +234,6 @@ M.core_comment = {
                             var result = scope.render(ret.list);
                         }
                         container.set('innerHTML', result.html);
-                        var img = Y.one('#comment-img-'+scope.client_id);
-                        if (img) {
-                            img.set('src', M.util.image_url('t/expanded', 'core'));
-                        }
                         args.scope.register_pagination();
                         args.scope.register_delete_buttons();
                     }
@@ -344,7 +340,6 @@ M.core_comment = {
                 var commenttoggler = Y.one('#comment-link-' + this.client_id);
                 var container = Y.one('#comment-ctrl-'+this.client_id);
                 var ta = Y.one('#dlg-content-'+this.client_id);
-                var img = Y.one('#comment-img-'+this.client_id);
                 var d = container.getStyle('display');
                 if (d=='none'||d=='') {
                     // show
@@ -355,20 +350,20 @@ M.core_comment = {
                         this.register_pagination();
                     }
                     container.setStyle('display', 'block');
-                    if (img) {
-                        img.set('src', M.util.image_url('t/expanded', 'core'));
-                    }
+                    commenttoggler.removeClass('collapsed');
+                    commenttoggler.addClass('collapsible');
                     commenttoggler.setAttribute('aria-expanded', 'true');
                 } else {
                     // hide
                     container.setStyle('display', 'none');
+                    commenttoggler.removeClass('collapsible');
+                    commenttoggler.addClass('collapsed');
                     var collapsedimage = 't/collapsed'; // ltr mode
                     if ( Y.one(document.body).hasClass('dir-rtl') ) {
                         collapsedimage = 't/collapsed_rtl';
                     } else {
                         collapsedimage = 't/collapsed';
                     }
-                    img.set('src', M.util.image_url(collapsedimage, 'core'));
                     if (ta) {
                         ta.set('value','');
                     }

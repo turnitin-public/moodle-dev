@@ -933,6 +933,16 @@ class grade_report_grader extends grade_report {
                 $unknown = array();
             } else {
                 $usergrades = $this->allgrades[$userid];
+
+                // User may not have grades for all grade items.
+                // If missing, insert a dummy so we can still call get_hiding_affected() without errors.
+                foreach (array_diff_key($allgradeitems, $usergrades) as $itemid => $gradeitem) {
+                    $usergrades[$itemid] = new grade_grade();
+                    $usergrades[$itemid]->itemid = $itemid;
+                    $usergrades[$itemid]->userid = $userid;
+                    $usergrades[$itemid]->grade_item = $gradeitem;
+                }
+
                 $hidingaffected = grade_grade::get_hiding_affected($usergrades, $allgradeitems);
                 $altered = $hidingaffected['altered'];
                 $unknown = $hidingaffected['unknown'];

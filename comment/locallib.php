@@ -208,6 +208,7 @@ class comment_manager {
      * @return bool
      */
     public function delete_comments($list) {
+        // TODO: Refactor to one query? DB call inside a foreach = ugly.
         global $DB;
         $ids = explode('-', $list);
         foreach ($ids as $id) {

@@ -44,7 +44,6 @@ class core_comment_external extends external_api {
      * @since Moodle 2.9
      */
     public static function get_comments_parameters() {
-
         return new external_function_parameters(
             array(
                 'contextlevel' => new external_value(PARAM_ALPHA, 'contextlevel system, course, user...'),
@@ -130,17 +129,17 @@ class core_comment_external extends external_api {
                 'comments' => new external_multiple_structure(
                     new external_single_structure(
                         array(
-                            'id'             => new external_value(PARAM_INT,  'Comment ID'),
-                            'content'        => new external_value(PARAM_RAW,  'The content text formated'),
-                            'format'         => new external_format_value('content'),
-                            'timecreated'    => new external_value(PARAM_INT,  'Time created (timestamp)'),
-                            'strftimeformat' => new external_value(PARAM_NOTAGS, 'Time format'),
-                            'profileurl'     => new external_value(PARAM_URL,  'URL profile'),
-                            'fullname'       => new external_value(PARAM_NOTAGS, 'fullname'),
-                            'time'           => new external_value(PARAM_NOTAGS, 'Time in human format'),
-                            'avatar'         => new external_value(PARAM_RAW,  'HTML user picture'),
-                            'userid'         => new external_value(PARAM_INT,  'User ID'),
-                            'delete'         => new external_value(PARAM_BOOL, 'Permission to delete=true/false', VALUE_OPTIONAL)
+                            'id'                => new external_value(PARAM_INT,  'Comment ID'),
+                            'content'           => new external_value(PARAM_RAW,  'The content text formated'),
+                            'format'            => new external_format_value('content'),
+                            'timecreated'       => new external_value(PARAM_INT,  'Time created (timestamp)'),
+                            'strftimeformat'    => new external_value(PARAM_NOTAGS, 'Time format'),
+                            'profileurl'        => new external_value(PARAM_URL,  'URL profile'),
+                            'fullname'          => new external_value(PARAM_NOTAGS, 'fullname'),
+                            'time'              => new external_value(PARAM_NOTAGS, 'Time in human format'),
+                            'profileimageurl'   => new external_value(PARAM_URL,  'User profile image URL'),
+                            'userid'            => new external_value(PARAM_INT,  'User ID'),
+                            'delete'            => new external_value(PARAM_BOOL, 'Permission to delete=true/false', VALUE_OPTIONAL)
                         ), 'comment'
                     ), 'List of comments'
                 ),
@@ -148,4 +147,157 @@ class core_comment_external extends external_api {
             )
         );
     }
+
+    /**
+     * Returns description of method parameters
+     *
+     * @return external_function_parameters
+     */
+    public static function delete_comments_parameters() {
+        return new external_function_parameters(
+            array(
+                'commentids' => new external_multiple_structure(new external_value(PARAM_INT, 'comment ID')),
+            )
+        );
+    }
+
+    /**
+     * Delete a group of comments, as specified by an array of comment ids.
+     * If one or more of the comments cannot be deleted by the current user, then none of the comments will be deleted.
+     *
+     * @throws moodle_exception
+     * @param array $commentids the array of comment ids.
+     * @return bool true on successful deletion, false otherwise.
+     */
+    public static function delete_comments($commentids) {
+        global $CFG, $DB;
+        require_once($CFG->dirroot."/comment/locallib.php");
+
+        $params = self::validate_parameters(self::delete_comments_parameters(), array('commentids' => $commentids));
+
+        // TODO: Add this get_comment call to lib.php or the comment manager.
+        list($sql, $sqlparams) = $DB->get_in_or_equal($params['commentids']);
+        $comments = $DB->get_records_select('comments', 'id '.$sql, $sqlparams, '', '*');
+
+        // Ensure the user can delete each of the specified comments. Exception will be thrown if not allowed.
+        foreach ($comments as $cid => $comment) {
+            exec('echo "TEST" >> /tmp/test.txt');
+            // TODO why we need to instantiate a comment to check this? Seem like a manager job to me.
+            $context = context::instance_by_id($comment->contextid, MUST_EXIST);
+            self::validate_context($context);
+            $args = new stdClass;
+            $args->context   = $context;
+            $args->component = $comment->component;
+            $args->itemid    = $comment->itemid;
+            $args->area      = $comment->commentarea;
+            $cmt = new comment($args);
+            if ($cmt->can_delete($cid)) {
+                continue;
+            }
+        }
+
+        // User is allowed to delete all comments. Make it so.
+        $commentmanager = new comment_manager();
+        return $commentmanager->delete_comments(implode('-', $params['commentids']));
+    }
+
+    /**
+     * Returns description of method result value
+     *
+     * @return null
+     */
+    public static function delete_comments_returns() {
+        return new external_value(PARAM_BOOL, 'True if the deletion was successful');
+    }
+
+    /**
+     * Returns description of method parameters
+     *
+     * @return external_function_parameters
+     */
+    public static function create_comment_parameters() {
+        return new external_function_parameters(
+            array(
+                'comment' =>  new external_single_structure(
+                    array(
+                        'contextlevel' => new external_value(PARAM_ALPHA, 'contextlevel system, course, user...'),
+                        'instanceid'   => new external_value(PARAM_INT, 'the Instance id of item associated with the context level'),
+                        'component'    => new external_value(PARAM_COMPONENT, 'component'),
+                        'itemid'       => new external_value(PARAM_INT, 'associated id'),
+                        'area'         => new external_value(PARAM_AREA, 'string comment area', VALUE_DEFAULT, ''),
+                        'content'      => new external_value(PARAM_RAW, 'raw comment text', VALUE_DEFAULT, 0)
+                    ), 'comment'
+                )
+            )
+        );
+    }
+
+    /**
+     * Creates a comment.
+     *
+     * @throws moodle_exception
+     * @param array $comment contains the fields needed to create a comment.
+     * @return stdClass the new comment.
+     */
+    public static function create_comment($comment) {
+        $params = self::validate_parameters(self::create_comment_parameters(), ['comment' => $comment]);
+        $context = self::get_context_from_params($params['comment']);
+        self::validate_context($context);
+        $parsedcomment = $params['comment'];
+
+        // Create the comment object.
+        $args = new stdClass;
+        $args->context   = $context;
+        $args->component = $parsedcomment['component'];
+        $args->itemid    = $parsedcomment['itemid'];
+        $args->area      = $parsedcomment['area'];
+
+        // TODO: Remove these: AFAICT, they're just rubbish left over from comment_ajax.php - never persisted. So why have them?
+        //$args->client_id = $comment['client_id'];
+        //$args->course    = $comment['course'];
+        //$args->cm        = $comment['cm'];
+
+        // TODO: I hate how the comment class also has 'manager' responsibilities.
+        // TODO: Why not leave this type of stuff to the mgr/util to handle and leave comment as just a persistible?
+        $manager = new comment($args);
+        if ($manager->can_post()) {
+            $result = $manager->add($parsedcomment['content']);
+            if (!empty($result) && is_object($result)) {
+                // TODO: The caller (if it's Moodle application) should know it's own client_id so we might be able to remove this.
+                //$result->client_id = $comment->client_id;
+
+                // TODO: Do we really want to return a count as well as the record? It would make skipping to the new page easier.
+                // I think Delete is useful though, we might be able to create and not delete (not sure why, but possible).
+                $result->count = $manager->count();
+                $result->delete = $manager->can_delete($result->id);
+
+                return $result;
+            }
+        }
+    }
+
+    /**
+    * Returns the newly created comment.
+    *
+    * @return null
+    */
+    public static function create_comment_returns() {
+        return new external_single_structure(
+            array(
+                'id'                => new external_value(PARAM_INT,  'Comment ID'),
+                'content'           => new external_value(PARAM_RAW,  'The content text formated'),
+                'format'            => new external_format_value('content'),
+                'timecreated'       => new external_value(PARAM_INT,  'Time created (timestamp)'),
+                'strftimeformat'    => new external_value(PARAM_NOTAGS, 'Time format'),
+                'profileurl'        => new external_value(PARAM_URL,  'URL profile'),
+                'fullname'          => new external_value(PARAM_NOTAGS, 'fullname'),
+                'time'              => new external_value(PARAM_NOTAGS, 'Time in human format'),
+                'profileimageurl'   => new external_value(PARAM_URL,  'URL user picture'),
+                'userid'            => new external_value(PARAM_INT,  'User ID'),
+                'count'             => new external_value(PARAM_INT,  'Count comments in this context area'),
+                'delete'            => new external_value(PARAM_BOOL, 'Permission to delete=true/false', VALUE_OPTIONAL)
+            ), 'comment'
+        );
+    }
+
 }

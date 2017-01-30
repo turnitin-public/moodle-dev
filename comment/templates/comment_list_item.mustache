@@ -1,0 +1,79 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template core_comment/comment_list_item
+
+    Displays a comments widget
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * none
+
+    Context variables required for this template:
+    * none
+
+    Example context (json):
+    {
+        "widgetid": 5894097884e37,
+        "id": 10,
+        "content": "<div class=\"no-overflow\"><div class=\"text_to_html\">Test comment<\/div><\/div>",
+        "format": 1,
+        "timecreated": 1486258208,
+        "strftimeformat": "%a, %d %b %Y, %I:%M %p",
+        "profileurl": "http://localhost/master/user/view.php?id=2&course=1",
+        "fullname": "Admin User",
+        "time": "Sun, 5 Feb 2017, 9:30 AM",
+        "profileimageurl": "http://localhost/master/theme/image.php/boost/core/1486161611/u/f1",
+        "userid": 2,
+        "delete": true
+    }
+
+}}
+
+<li id="comment-{{id}}-{{widgetid}}">
+    <div class="comment-message container p-l-0 p-r-0 m-l-0 m-r-0">
+        <span class="row">
+            <span class="col-sm-12 p-l-0 p-r-0">
+                    <span style="float:left">
+                        <a href="{{profileurl}}">
+                            <img src="{{profileimageurl}}" alt="" title="" class="userpicture defaultuserpic" width="30px" height="30px">
+                        </a>
+                    </span>
+                    <span class="user" style="float:left;">
+                        <a href="">{{fullname}}</a> - {{time}}
+                    </span>
+                {{#delete}}
+                    <div class="comment-delete">
+                    <a href="#" id="comment-delete-{{widgetid}}-{{id}}" title="Delete this comment">
+                        {{#pix}} t/delete, core, Delete the comment {{/pix}}
+                    </a>
+                </div>
+                {{/delete}}
+            </span>
+        </span>
+        <span class="row">
+            <span class="col-sm-12 p-l-0 p-r-0">
+                <br>
+                <div class="no-overflow">{{{content}}}</div>
+            </span>
+        </span>
+
+        </div>
+    </div>
+</li>

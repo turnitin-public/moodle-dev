@@ -412,7 +412,27 @@ class comment {
         $options->notoggle    = $this->notoggle;
         $options->autostart   = $this->autostart;
 
-        $page->requires->js_init_call('M.core_comment.init', array($options), true);
+        // The comments widget needs to call the core_comment_get_comments webservice to fetch comments.
+        // This service requires the following:
+        //'contextlevel' => new external_value(PARAM_ALPHA, 'contextlevel system, course, user...'),
+        //'instanceid'   => new external_value(PARAM_INT, 'the Instance id of item associated with the context level'),
+        //'component'    => new external_value(PARAM_COMPONENT, 'component'),
+        //'itemid'       => new external_value(PARAM_INT, 'associated id'),
+        //'area'         => new external_value(PARAM_AREA, 'string comment area', VALUE_DEFAULT, ''),
+        //'page'         => new external_value(PARAM_INT, 'page number (0 based)', VALUE_DEFAULT, 0),
+
+        // So, in addition to the above, we need to provide the contextlevel string ('user', 'module', etc)
+        // and the instance id of the item to which the context relates. Eg if 'user', then the userid.
+        $levels = context_helper::get_all_levels();
+        $context = context::instance_by_id($this->contextid);
+
+        $contextlevelbits = explode('_', $levels[$context->contextlevel]);
+        $options->contextlevel = $contextlevelbits[1];
+        $options->instanceid = $context->instanceid;
+
+        //$page->requires->js_init_call('M.core_comment.init', array($options), true);
+
+        $page->requires->js_call_amd('core_comment/comment', 'init', [$options]);
 
         return true;
     }
@@ -426,12 +446,47 @@ class comment {
         global $PAGE, $OUTPUT;
         static $template_printed;
 
+        //TODO: Testing config changes here:
+
+        // Set notoggle = true:
+        //$this->set_notoggle(true);
+
+
         $this->initialise_javascript($PAGE);
 
         if (!empty(self::$nonjs)) {
             // return non js comments interface
             return $this->print_comments(self::$comment_page, $return, true);
         }
+        echo "OUTPUTTING COMMENTS<br>";
+        if($return) {
+            echo "return mode";
+        }
+
+
+
+        // Create the context and render the template.
+        if ($this->can_view()) {
+            $context = [
+                'widgetid' => $this->cid,
+                'count' => $this->count(),
+                'notoggle' => $this->notoggle,
+                'comments' => []
+            ];
+
+            // If 'notoggle' is true, load the comments by deafult.
+            if ($this->notoggle) {
+                $context['comments'] = $this->get_comments(0);
+            }
+            //print_object($this->get_comments(0));
+
+            $html = $OUTPUT->render_from_template('core_comment/comments_widget', $context);
+        }
+        if ($return) {
+            return $html;
+        }
+        echo $html;
+
 
         $html = '';
 
@@ -583,7 +638,14 @@ class comment {
             $c->fullname = fullname($u);
             $c->time = userdate($c->timecreated, $c->strftimeformat);
             $c->content = format_text($c->content, $c->format, $formatoptions);
-            $c->avatar = $OUTPUT->user_picture($u, array('size'=>18));
+
+            //$c->avatar = $OUTPUT->user_picture($u, array('size'=>18));
+            global $PAGE;
+            $userpicture = new user_picture($u);
+            $userpicture->size = 1;
+            $c->profileimageurl = $userpicture->get_url($PAGE)->out(false);
+
+            //print_object($u);
             $c->userid = $u->id;
 
             $candelete = $this->can_delete($c->id);
@@ -712,12 +774,21 @@ class comment {
         $cmt_id = $DB->insert_record('comments', $newcmt);
         if (!empty($cmt_id)) {
             $newcmt->id = $cmt_id;
-            $newcmt->strftimeformat = get_string('strftimerecent', 'langconfig');
+            // Not sure why stable was not using the full variant here, but I prefer it.
+            //$newcmt->strftimeformat = get_string('strftimerecent', 'langconfig');
+            $newcmt->strftimeformat = get_string('strftimerecentfull', 'langconfig');
+
             $newcmt->fullname = fullname($USER);
             $url = new moodle_url('/user/view.php', array('id' => $USER->id, 'course' => $this->courseid));
             $newcmt->profileurl = $url->out();
             $newcmt->content = format_text($newcmt->content, $newcmt->format, array('overflowdiv'=>true));
-            $newcmt->avatar = $OUTPUT->user_picture($USER, array('size'=>16));
+
+            //TODO: Refactor to use the URL like in get.
+            //$newcmt->profileimageurl = $OUTPUT->user_picture($USER, array('size'=>16));
+            global $PAGE;
+            $userpicture = new user_picture($USER);
+            $userpicture->size = 1;
+            $newcmt->profileimageurl = $userpicture->get_url($PAGE)->out(false);
 
             $commentlist = array($newcmt);
 
@@ -841,6 +912,7 @@ class comment {
     public function print_comments($page = 0, $return = true, $nonjs = true) {
         global $DB, $CFG, $PAGE;
 
+
         if (!$this->can_view()) {
             return '';
         }
@@ -861,6 +933,7 @@ class comment {
         }
         // Reverse the comments array to display them in the correct direction
         foreach (array_reverse($comments) as $cmt) {
+            echo "in here 123";
             $html .= html_writer::tag('li', $this->print_comment($cmt, $nonjs), array('id' => 'comment-'.$cmt->id.'-'.$this->cid));
         }
         if ($nonjs) {
@@ -903,7 +976,7 @@ class comment {
      *          timecreated => int comment's timecreated
      *          profileurl  => string link to user profile
      *          fullname    => comment author's full name
-     *          avatar      => string user's avatar
+     *          profileimageurl => string URL for user's profile image.
      *          delete      => boolean does user have permission to delete comment?
      * }
      * @param bool $nonjs
@@ -913,6 +986,7 @@ class comment {
         global $OUTPUT;
         $patterns = array();
         $replacements = array();
+        echo "PRINTING SINGLE COMMENT";
 
         if (!empty($cmt->delete) && empty($nonjs)) {
             $strdelete = get_string('deletecommentbyon', 'moodle', (object)['user' => $cmt->fullname, 'time' => $cmt->time]);
@@ -929,7 +1003,7 @@ class comment {
         $patterns[] = '___name___';
         $patterns[] = '___content___';
         $patterns[] = '___time___';
-        $replacements[] = $cmt->avatar;
+        $replacements[] = $cmt->profileimageurl;
         $replacements[] = html_writer::link($cmt->profileurl, $cmt->fullname);
         $replacements[] = $cmt->content;
         $replacements[] = $cmt->time;

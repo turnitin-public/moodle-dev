@@ -2951,6 +2951,10 @@ table.mod_index {
   right: 0;
   margin: .3em;
 }
+.comment-delete img {
+  height: 12px;
+  width: 12px;
+}
 .comment-report-selectall {
   display: none;
 }
@@ -2959,6 +2963,18 @@ table.mod_index {
 }
 .jsenabled .comment-link {
   display: block;
+  padding-left: 1.5rem;
+}
+.jsenabled .comment-link.collapsed {
+  background: url([[pix:t/collapsed]]) left center no-repeat;
+}
+/*rtl:raw:
+.jsenabled .comment-link.collapsed {
+    background: url([[pix:t/collapsed_rtl]]) right center no-repeat;
+}
+*/
+.jsenabled .comment-link.collapsible {
+  background: url([[pix:t/expanded]]) left center no-repeat;
 }
 .jsenabled .showcommentsnonjs {
   display: none;

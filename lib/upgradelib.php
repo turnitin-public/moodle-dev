@@ -1671,6 +1671,12 @@ function upgrade_core($version, $verbose) {
         cache_helper::purge_all(true);
         purge_all_caches();
 
+        // Disable any curl security settings during the upgrade, remembering the existing values so we can reset afterwards.
+        $blockedhosts = isset($CFG->curlsecurityblockedhosts) ? $CFG->curlsecurityblockedhosts : '';
+        $allowedport = isset($CFG->curlsecurityallowedport) ? $CFG->curlsecurityallowedport : '';
+        $CFG->curlsecurityblockedhosts = '';
+        $CFG->curlsecurityallowedport = '';
+
         // Upgrade current language pack if we can
         upgrade_language_pack();
 
@@ -1718,6 +1724,10 @@ function upgrade_core($version, $verbose) {
         $syscontext = context_system::instance();
         $syscontext->mark_dirty();
 
+        // Re-establish any curl security settings which were disabled during the upgrade.
+        $CFG->curlsecurityblockedhosts = $blockedhosts;
+        $CFG->curlsecurityallowedport = $allowedport;
+
         print_upgrade_part_end('moodle', false, $verbose);
     } catch (Exception $ex) {
         upgrade_handle_exception($ex);
@@ -1743,6 +1753,12 @@ function upgrade_noncore($verbose) {
         cache_helper::purge_all(true);
         purge_all_caches();
 
+        // Disable any curl security settings during the upgrade, remembering the existing values so we can reset afterwards.
+        $blockedhosts = isset($CFG->curlsecurityblockedhosts) ? $CFG->curlsecurityblockedhosts : '';
+        $allowedport = isset($CFG->curlsecurityallowedport) ? $CFG->curlsecurityallowedport : '';
+        $CFG->curlsecurityblockedhosts = '';
+        $CFG->curlsecurityallowedport = '';
+
         $plugintypes = core_component::get_plugin_types();
         foreach ($plugintypes as $type=>$location) {
             upgrade_plugins($type, 'print_upgrade_part_start', 'print_upgrade_part_end', $verbose);
@@ -1755,6 +1771,10 @@ function upgrade_noncore($verbose) {
         cache_helper::update_definitions();
         // Mark the site as upgraded.
         set_config('allversionshash', core_component::get_all_versions_hash());
+
+        // Re-establish any curl security settings which were disabled during the upgrade.
+        $CFG->curlsecurityblockedhosts = $blockedhosts;
+        $CFG->curlsecurityallowedport = $allowedport;
 
         // Purge caches again, just to be sure we arn't holding onto old stuff now.
         cache_helper::purge_all(true);

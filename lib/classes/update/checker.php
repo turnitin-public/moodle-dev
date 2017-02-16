@@ -235,7 +235,7 @@ class checker {
         global $CFG;
         require_once($CFG->libdir.'/filelib.php');
 
-        $curl = new \curl(array('proxy' => true));
+        $curl = new \curl(array('proxy' => true, 'ignoresecurity' => true));
         $response = $curl->post($this->prepare_request_url(), $this->prepare_request_params(), $this->prepare_request_options());
         $curlerrno = $curl->get_errno();
         if (!empty($curlerrno)) {

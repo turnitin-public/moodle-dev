@@ -2864,6 +2864,19 @@ function xmldb_main_upgrade($oldversion) {
 
     // Automatically generated Moodle v3.3.0 release upgrade line.
     // Put any upgrade step following this.
+    if ($oldversion < 2017060800.01) {
+        // Define field override to be added to course_modules_completion.
+        $table = new xmldb_table('course_modules_completion');
+        $field = new xmldb_field('overrideby', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'viewed');
+
+        // Conditionally launch add field override.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2017060800.01);
+    }
 
     return true;
 }

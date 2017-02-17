@@ -533,9 +533,10 @@ class completion_info {
      *   result. For manual events, COMPLETION_COMPLETE or COMPLETION_INCOMPLETE
      *   must be used; these directly set the specified state.
      * @param int $userid User ID to be updated. Default 0 = current user
+     * @param bool $override Whether manually overriding the existing completion state.
      * @return void
      */
-    public function update_state($cm, $possibleresult=COMPLETION_UNKNOWN, $userid=0) {
+    public function update_state($cm, $possibleresult=COMPLETION_UNKNOWN, $userid=0, $override = false) {
         global $USER;
 
         // Do nothing if completion is not enabled for that activity
@@ -554,8 +555,9 @@ class completion_info {
             return;
         }
 
-        if ($cm->completion == COMPLETION_TRACKING_MANUAL) {
-            // For manual tracking we set the result directly
+        if ($cm->completion == COMPLETION_TRACKING_MANUAL || $override) {
+            // For manual tracking, or if overriding the completion state manually,
+            // we set the result directly.
             switch($possibleresult) {
                 case COMPLETION_COMPLETE:
                 case COMPLETION_INCOMPLETE:
@@ -566,14 +568,22 @@ class completion_info {
             }
 
         } else {
-            // Automatic tracking; get new state
-            $newstate = $this->internal_get_state($cm, $userid, $current);
+            // Automatic tracking.
+            if ($current->overrideby) {
+                // If the current completion state has been set by override, do nothing
+                // as we don't want it to be changed automatically.
+                return;
+            } else {
+                // Get new state.
+                $newstate = $this->internal_get_state($cm, $userid, $current);
+            }
         }
 
         // If changed, update
         if ($newstate != $current->completionstate) {
             $current->completionstate = $newstate;
             $current->timemodified    = time();
+            $current->overrideby      = $override ? $USER->id : null;
             $this->internal_set_data($cm, $current);
         }
     }
@@ -941,6 +951,7 @@ class completion_info {
                     $data['userid'] = $userid;
                     $data['completionstate'] = 0;
                     $data['viewed'] = 0;
+                    $data['overrideby'] = null;
                     $data['timemodified'] = 0;
                 }
                 $cacheddata[$othercm->id] = $data;
@@ -963,6 +974,7 @@ class completion_info {
                 $data['userid'] = $userid;
                 $data['completionstate'] = 0;
                 $data['viewed'] = 0;
+                $data['overrideby'] = null;
                 $data['timemodified'] = 0;
             }
 
@@ -1030,7 +1042,9 @@ class completion_info {
             'context' => $cmcontext,
             'relateduserid' => $data->userid,
             'other' => array(
-                'relateduserid' => $data->userid
+                'relateduserid' => $data->userid,
+                'overrideby' => $data->overrideby,
+                'completionstate' => $data->completionstate
             )
         ));
         $event->add_record_snapshot('course_modules_completion', $data);

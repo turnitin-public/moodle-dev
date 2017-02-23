@@ -2793,7 +2793,7 @@ class core_moodlelib_testcase extends advanced_testcase {
         $user1 = $this->getDataGenerator()->create_user(array('maildisplay' => 1));
         $user2 = $this->getDataGenerator()->create_user(array('maildisplay' => 1));
         $user3 = $this->getDataGenerator()->create_user(array('maildisplay' => 0));
-        set_config('allowedemaildomains', 'example.com');
+        set_config('allowedemaildomains', "example.com\r\nmoodle.org");
 
         $subject = 'subject';
         $messagetext = 'message text';
@@ -3370,13 +3370,12 @@ class core_moodlelib_testcase extends advanced_testcase {
      * @dataProvider data_can_send_from_real_email_address
      */
     public function test_can_send_from_real_email_address($email, $display, $samecourse, $result) {
-        global $DB;
         $this->resetAfterTest();
 
         $fromuser = $this->getDataGenerator()->create_user();
         $touser = $this->getDataGenerator()->create_user();
         $course = $this->getDataGenerator()->create_course();
-        $alloweddomains = ['example.com'];
+        set_config('allowedemaildomains', "example.com\r\ntest.com");
 
         $fromuser->email = $email;
         $fromuser->maildisplay = $display;
@@ -3386,7 +3385,7 @@ class core_moodlelib_testcase extends advanced_testcase {
         } else {
             $this->getDataGenerator()->enrol_user($fromuser->id, $course->id, 'student');
         }
-        $this->assertEquals($result, can_send_from_real_email_address($fromuser, $touser, $alloweddomains));
+        $this->assertEquals($result, can_send_from_real_email_address($fromuser, $touser));
     }
 
     /**

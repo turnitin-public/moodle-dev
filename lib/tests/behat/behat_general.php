@@ -1520,7 +1520,7 @@ class behat_general extends behat_base {
         $posixexists = function_exists('posix_isatty');
 
         // Make sure this step is only used with interactive terminal (if detected).
-        if ($posixexists && !@posix_isatty(STDOUT)) {
+        if (false && $posixexists && !@posix_isatty(STDOUT)) {
             $session = $this->getSession();
             throw new ExpectationException('Break point should only be used with interative terminal.', $session);
         }

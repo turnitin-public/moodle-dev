@@ -124,6 +124,7 @@ Feature: In an assignment, students start a new attempt based on their previous 
     And I should see "The grade changes were saved"
     And I press "Continue"
     And I click on "Student 1" "checkbox"
+    And I pause
     And I set the following fields to these values:
       | operation | Allow another attempt |
     And I click on "Go" "button" confirming the dialogue

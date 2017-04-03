@@ -568,15 +568,7 @@ class completion_info {
             }
 
         } else {
-            // Automatic tracking.
-            if ($current->overrideby) {
-                // If the current completion state has been set by override, do nothing
-                // as we don't want it to be changed automatically.
-                return;
-            } else {
-                // Get new state.
-                $newstate = $this->internal_get_state($cm, $userid, $current);
-            }
+            $newstate = $this->internal_get_state($cm, $userid, $current);
         }
 
         // If changed, update

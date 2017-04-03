@@ -568,15 +568,7 @@ class completion_info {
             }
 
         } else {
-            // Automatic tracking.
-            if ($current->overrideby) {
-                // If the current completion state has been set by override, do nothing
-                // as we don't want it to be changed automatically.
-                return;
-            } else {
-                // Get new state.
-                $newstate = $this->internal_get_state($cm, $userid, $current);
-            }
+            $newstate = $this->internal_get_state($cm, $userid, $current);
         }
 
         // If changed, update
@@ -693,8 +685,9 @@ class completion_info {
         // Get current completion state
         $data = $this->get_data($cm, false, $userid);
 
-        // If we already viewed it, don't do anything
-        if ($data->viewed == COMPLETION_VIEWED) {
+        // If we already viewed it, don't do anything unless the completion status is overridden.
+        // If the completion status is overridden, then we need to allow this 'view' to trigger automatic completion again.
+        if ($data->viewed == COMPLETION_VIEWED && empty($data->overrideby)) {
             return;
         }
 

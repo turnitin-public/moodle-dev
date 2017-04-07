@@ -72,10 +72,10 @@ $string['completion-alt-manual-y'] = 'Completed: {$a}. Select to mark as not com
 $string['completion-alt-manual-y-override'] = 'Completed: {$a->modname} (override by {$a->overrideuser}). Select to mark as not complete.';
 $string['completion-fail'] = 'Completed (did not achieve pass grade)';
 $string['completion-n'] = 'Not completed';
-$string['completion-n-override'] = 'Not completed (overrride by {$a})';
+$string['completion-n-override'] = 'Not completed (override by {$a})';
 $string['completion-pass'] = 'Completed (achieved pass grade)';
 $string['completion-y'] = 'Completed';
-$string['completion-y-override'] = 'Completed (overrride by {$a})';
+$string['completion-y-override'] = 'Completed (override by {$a})';
 $string['completion_automatic'] = 'Show activity as complete when conditions are met';
 $string['completion_help'] = 'If enabled, activity completion is tracked, either manually or automatically, based on certain conditions. Multiple conditions may be set if desired. If so, the activity will only be considered complete when ALL conditions are met.
 

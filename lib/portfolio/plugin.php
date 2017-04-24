@@ -637,6 +637,9 @@ abstract class portfolio_plugin_base {
      * @return array|string|int|boolean value of the field
      */
     public final function get($field) {
+        if ($field === 'file') {
+            return $this->get_file();
+        }
         if (property_exists($this, $field)) {
             return $this->{$field};
         }
@@ -654,6 +657,10 @@ abstract class portfolio_plugin_base {
      * @return bool
      */
     public final function set($field, $value) {
+        if ($field === 'file') {
+            $this->set_file($value);
+            return true;
+        }
         if (property_exists($this, $field)) {
             $this->{$field} =& $value;
             $this->dirty = true;
@@ -776,7 +783,7 @@ abstract class portfolio_plugin_push_base extends portfolio_plugin_base {
  */
 abstract class portfolio_plugin_pull_base extends portfolio_plugin_base {
 
-    /** @var stdclass single file */
+    /** @var int $file the id of a single file */
     protected $file;
 
     /**
@@ -827,4 +834,29 @@ abstract class portfolio_plugin_pull_base extends portfolio_plugin_base {
         $this->get('exporter')->log_transfer();
     }
 
+    /**
+     * Sets the $file instance var to the id of the supplied \stored_file.
+
+     * This helper allows the $this->get('file') call to return a \stored_file, but means that we only ever record an id reference
+     * in the $file instance var.
+     *
+     * @param \stored_file $file The stored_file instance.
+     */
+    protected function set_file($file) {
+        $this->file = is_a($file, \stored_file::class) ? $file->get_id() : null;
+    }
+
+    /**
+     * Gets the \stored_file object from the file id in the $file instance var.
+     *
+     * @return stored_file|null the \stored_file object if it exists, null otherwise.
+     */
+    protected function get_file() {
+        if (!$this->file) {
+            return null;
+        }
+        // The get_file_by_id call can return false, so normalise to null.
+        $file = get_file_storage()->get_file_by_id($this->file);
+        return is_a($file, \stored_file::class) ? $file : null;
+    }
 }

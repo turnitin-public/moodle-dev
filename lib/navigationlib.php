@@ -2253,7 +2253,7 @@ class global_navigation extends navigation_node {
         $usersnode = null;
         if (!$issitecourse) {
             // Not the current user so add it to the participants node for the current course.
-            $usersnode = $coursenode->get('participants', navigation_node::TYPE_CONTAINER);
+            $usersnode = $coursenode->get($course->id . '_participants', navigation_node::TYPE_CONTAINER);
             $userviewurl = new moodle_url('/user/view.php', $baseargs);
         } else if ($USER->id != $user->id) {
             // This is the site so add a users node to the root branch.
@@ -2654,7 +2654,7 @@ class global_navigation extends navigation_node {
             return $this->add_front_page_course_essentials($coursenode, $course);
         }
 
-        if ($coursenode == false || !($coursenode instanceof navigation_node) || $coursenode->get('participants', navigation_node::TYPE_CONTAINER)) {
+        if ($coursenode == false || !($coursenode instanceof navigation_node) || $coursenode->get($course->id . '_participants', navigation_node::TYPE_CONTAINER)) {
             return true;
         }
 
@@ -2662,7 +2662,7 @@ class global_navigation extends navigation_node {
 
         //Participants
         if ($navoptions->participants) {
-            $participants = $coursenode->add(get_string('participants'), new moodle_url('/user/index.php?id='.$course->id), self::TYPE_CONTAINER, get_string('participants'), 'participants');
+            $participants = $coursenode->add(get_string('participants'), new moodle_url('/user/index.php?id='.$course->id), self::TYPE_CONTAINER, get_string('participants'), $course->id . '_participants');
 
             if ($navoptions->blogs) {
                 $blogsurls = new moodle_url('/blog/index.php');
@@ -2678,7 +2678,7 @@ class global_navigation extends navigation_node {
                 $participants->add(get_string('notes', 'notes'), new moodle_url('/notes/index.php', array('filtertype' => 'course', 'filterselect' => $course->id)), self::TYPE_SETTING, null, 'currentcoursenotes');
             }
         } else if (count($this->extendforuser) > 0 || $this->page->course->id == $course->id) {
-            $participants = $coursenode->add(get_string('participants'), null, self::TYPE_CONTAINER, get_string('participants'), 'participants');
+            $participants = $coursenode->add(get_string('participants'), null, self::TYPE_CONTAINER, get_string('participants'), $course->id . '_participants');
         }
 
         // Badges.
@@ -2732,7 +2732,7 @@ class global_navigation extends navigation_node {
 
         // Participants.
         if ($navoptions->participants) {
-            $coursenode->add(get_string('participants'), new moodle_url('/user/index.php?id='.$course->id), self::TYPE_CUSTOM, get_string('participants'), 'participants');
+            $coursenode->add(get_string('participants'), new moodle_url('/user/index.php?id='.$course->id), self::TYPE_CUSTOM, get_string('participants'), $course->id . '_participants');
         }
 
         // Blogs.

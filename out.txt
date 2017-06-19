@@ -1,0 +1,232 @@
+Server Time: Tue, 29 Aug 2017 13:55:23 +0800
+
+
+Execute scheduled task: Award badges (core\task\badges_cron_task)
+... started 13:55:23. Current memory use 17.6MB.
+Started reviewing available badges.
+Badges were issued 0 time(s).
+Sending scheduled badge notifications.
+... used 2 dbqueries
+... used 0.005620002746582 seconds
+Scheduled task complete: Award badges (core\task\badges_cron_task)
+Execute scheduled task: Background processing for SCORM (mod_scorm\task\cron_task)
+... started 13:55:23. Current memory use 19.5MB.
+... used 0 dbqueries
+... used 0.0036048889160156 seconds
+Scheduled task complete: Background processing for SCORM (mod_scorm\task\cron_task)
+Execute scheduled task: Cleanup old sessions (core\task\session_cleanup_task)
+... started 13:55:23. Current memory use 20.1MB.
+... used 7 dbqueries
+... used 0.0048952102661133 seconds
+Scheduled task complete: Cleanup old sessions (core\task\session_cleanup_task)
+Execute scheduled task: Send new user passwords (core\task\send_new_user_passwords_task)
+... started 13:55:23. Current memory use 20.4MB.
+... used 2 dbqueries
+... used 0.0013110637664795 seconds
+Scheduled task complete: Send new user passwords (core\task\send_new_user_passwords_task)
+Execute scheduled task: Send failed login notifications (core\task\send_failed_login_notifications_task)
+... started 13:55:23. Current memory use 20.4MB.
+... used 0 dbqueries
+... used 1.9073486328125E-5 seconds
+Scheduled task complete: Send failed login notifications (core\task\send_failed_login_notifications_task)
+Execute scheduled task: Legacy cron processing for plugins (core\task\legacy_plugin_cron_task)
+... started 13:55:23. Current memory use 20.4MB.
+Running auth crons if required...
+Running enrol crons if required...
+Starting activity modules
+Processing module function assign_cron ...
+... used 5 dbqueries
+... used 0.028307199478149 seconds
+done.
+Processing module function quiz_cron ...
+
+  Looking for quiz overdue quiz attempts...
+  Considered 0 attempts in 0 quizzes.
+Starting quiz reports
+Finished quiz reports
+... used 2 dbqueries
+... used 0.016324996948242 seconds
+done.
+Processing module function workshop_cron ...
+ processing workshop subplugins ...
+Starting workshop allocation methods
+Processing cron function for workshopallocation_scheduled...
+... started 13:55:24. Current memory use 28.3MB.
+... no workshops awaiting scheduled allocation. done. (1 dbqueries, 0 seconds)
+Finished workshop allocation methods
+... used 7 dbqueries
+... used 0.0078659057617188 seconds
+done.
+Finished activity modules
+Starting blocks
+Processing cron function for recent_activity....done.
+Finished blocks
+Starting admin reports
+Finished admin reports
+Starting course reports
+Finished course reports
+Starting gradebook plugins
+Finished gradebook plugins
+Starting repository plugins
+Processing cron function for repository_dropbox...
+... started 13:55:24. Current memory use 30.3MB.
+done. (1 dbqueries, 0 seconds)
+Processing cron function for repository_filesystem...
+... started 13:55:24. Current memory use 30.3MB.
+done. (3 dbqueries, 0 seconds)
+Finished repository plugins
+... used 27 dbqueries
+... used 0.082736968994141 seconds
+Scheduled task complete: Legacy cron processing for plugins (core\task\legacy_plugin_cron_task)
+Execute scheduled task: Background processing for gradebook (core\task\grade_cron_task)
+... started 13:55:24. Current memory use 30.3MB.
+... used 2 dbqueries
+... used 0.001582145690918 seconds
+Scheduled task complete: Background processing for gradebook (core\task\grade_cron_task)
+Execute scheduled task: Background processing for events (core\task\events_cron_task)
+... started 13:55:24. Current memory use 30.3MB.
+... used 2 dbqueries
+... used 0.00063896179199219 seconds
+Scheduled task complete: Background processing for events (core\task\events_cron_task)
+Execute scheduled task: Calculate regular completion data (core\task\completion_regular_task)
+... started 13:55:24. Current memory use 30.3MB.
+Running completion_criteria_date->cron()
+Running completion_criteria_activity->cron()
+Running completion_criteria_duration->cron()
+Running completion_criteria_grade->cron()
+Running completion_criteria_course->cron()
+Aggregating completions
+... used 6 dbqueries
+... used 0.011754035949707 seconds
+Scheduled task complete: Calculate regular completion data (core\task\completion_regular_task)
+Execute scheduled task: Background processing for portfolio plugins (core\task\portfolio_cron_task)
+... started 13:55:24. Current memory use 30.6MB.
+... used 0 dbqueries
+... used 1.2874603271484E-5 seconds
+Scheduled task complete: Background processing for portfolio plugins (core\task\portfolio_cron_task)
+Execute scheduled task: Background processing for legacy cron in plagiarism plugins (core\task\plagiarism_cron_task)
+... started 13:55:24. Current memory use 30.6MB.
+... used 0 dbqueries
+... used 1.6927719116211E-5 seconds
+Scheduled task complete: Background processing for legacy cron in plagiarism plugins (core\task\plagiarism_cron_task)
+Execute scheduled task: Send calendar notifications (core\task\calendar_cron_task)
+... started 13:55:24. Current memory use 30.6MB.
+... used 1 dbqueries
+... used 0.0022451877593994 seconds
+Scheduled task complete: Send calendar notifications (core\task\calendar_cron_task)
+Execute scheduled task: Sync external blogs (core\task\blog_cron_task)
+... started 13:55:24. Current memory use 31MB.
+... used 2 dbqueries
+... used 0.0024368762969971 seconds
+Scheduled task complete: Sync external blogs (core\task\blog_cron_task)
+Execute scheduled task: Background processing for question engine (core\task\question_cron_task)
+... started 13:55:24. Current memory use 31.2MB.
+
+  Cleaning up old question previews...done.
+
+  Cleaning up old question statistics cache records...done.
+... used 9 dbqueries
+... used 0.0059690475463867 seconds
+Scheduled task complete: Background processing for question engine (core\task\question_cron_task)
+Execute scheduled task: Forum mailings and maintenance jobs (mod_forum\task\cron_task)
+... started 13:55:24. Current memory use 31.3MB.
+Starting digest processing...
+Cleaned old digest records
+... used 7 dbqueries
+... used 0.016446113586426 seconds
+Scheduled task complete: Forum mailings and maintenance jobs (mod_forum\task\cron_task)
+Execute scheduled task: Incoming email pickup (tool_messageinbound\task\pickup_task)
+... started 13:55:24. Current memory use 33.6MB.
+Inbound Message not fully configured - exiting early.
+... used 0 dbqueries
+... used 0.00076198577880859 seconds
+Scheduled task complete: Incoming email pickup (tool_messageinbound\task\pickup_task)
+Execute scheduled task: Cleanup event monitor events (tool_monitor\task\clean_events)
+... started 13:55:24. Current memory use 33.7MB.
+... used 0 dbqueries
+... used 6.1988830566406E-5 seconds
+Scheduled task complete: Cleanup event monitor events (tool_monitor\task\clean_events)
+Execute adhoc task: core\task\refresh_mod_calendar_events_task
+... started 13:55:24. Current memory use 33.7MB.
+Refreshing events for assign
+Refreshing events for assignment
+Refreshing events for book
+Refreshing events for chat
+Refreshing events for choice
+Refreshing events for data
+Refreshing events for feedback
+Refreshing events for folder
+Refreshing events for forum
+Refreshing events for glossary
+Refreshing events for imscp
+Refreshing events for label
+Refreshing events for lesson
+Refreshing events for lti
+Refreshing events for page
+Refreshing events for quiz
+Refreshing events for resource
+Refreshing events for scorm
+Refreshing events for survey
+Refreshing events for url
+Refreshing events for wiki
+Refreshing events for workshop
+... used 123 dbqueries
+... used 0.067624092102051 seconds
+Adhoc task complete: core\task\refresh_mod_calendar_events_task
+Execute adhoc task: core\task\refresh_mod_calendar_events_task
+... started 13:55:24. Current memory use 35MB.
+Refreshing events for assign
+Refreshing events for assignment
+Refreshing events for book
+Refreshing events for chat
+Refreshing events for choice
+Refreshing events for data
+Refreshing events for feedback
+Refreshing events for folder
+Refreshing events for forum
+Refreshing events for glossary
+Refreshing events for imscp
+Refreshing events for label
+Refreshing events for lesson
+Refreshing events for lti
+Refreshing events for page
+Refreshing events for quiz
+Refreshing events for resource
+Refreshing events for scorm
+Refreshing events for survey
+Refreshing events for url
+Refreshing events for wiki
+Refreshing events for workshop
+... used 89 dbqueries
+... used 0.037568092346191 seconds
+Adhoc task complete: core\task\refresh_mod_calendar_events_task
+Execute adhoc task: core\task\refresh_mod_calendar_events_task
+... started 13:55:24. Current memory use 35.1MB.
+Refreshing events for assign
+Refreshing events for assignment
+Refreshing events for book
+Refreshing events for chat
+Refreshing events for choice
+Refreshing events for data
+Refreshing events for feedback
+Refreshing events for folder
+Refreshing events for forum
+Refreshing events for glossary
+Refreshing events for imscp
+Refreshing events for label
+Refreshing events for lesson
+Refreshing events for lti
+Refreshing events for page
+Refreshing events for quiz
+Refreshing events for resource
+Refreshing events for scorm
+Refreshing events for survey
+Refreshing events for url
+Refreshing events for wiki
+Refreshing events for workshop
+... used 89 dbqueries
+... used 0.035882949829102 seconds
+Adhoc task complete: core\task\refresh_mod_calendar_events_task
+Cron script completed correctly
+Cron completed at 13:55:24. Memory used 35.2MB.
+Execution took 0.451456 seconds

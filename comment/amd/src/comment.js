@@ -1,15 +1,27 @@
-// Standard license block omitted.
-/*
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * @module     core_comment/comment
+ * @class      comments_widget_events
  * @package    core_comment
  * @copyright  2017 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-/**
- * @module core_comment/comment
- */
-define(['jquery', 'core/str', 'core/config', 'core/modal_factory', 'core/modal_events', 'core/ajax', 'core/templates'],
-    function($, str, Cfg, ModalFactory, ModalEvents, ajax, templates) {
+define(['jquery', 'core/str', 'core/config', 'core/modal_factory', 'core/modal_events', 'core/custom_interaction_events', 'core/ajax', 'core/templates', 'core_comment/comment_widget_events'],
+    function($, Str, Cfg, ModalFactory, ModalEvents, CustomEvents, ajax, templates, CommentEvents) {
 
     return /** @alias module:core/comment */ {
         /**
@@ -33,7 +45,7 @@ define(['jquery', 'core/str', 'core/config', 'core/modal_factory', 'core/modal_e
             }
 
             // Create the 'delete comment' confirmation modal.
-            str.get_string('confirmdeletecomments', 'admin')
+            Str.get_string('confirmdeletecomments', 'admin')
                 .done(function(string) {
                     ModalFactory.create({
                         type: ModalFactory.types.CONFIRM,
@@ -92,7 +104,7 @@ define(['jquery', 'core/str', 'core/config', 'core/modal_factory', 'core/modal_e
                 /** Constructor */
                 init: function(args) {
                     // Get the static strings we'll need for this widget. Dynamic strings need to be fetched on the fly.
-                    str.get_strings([
+                    Str.get_strings([
                         {
                             key:        'addcomment',
                             component:  'moodle'
@@ -105,17 +117,13 @@ define(['jquery', 'core/str', 'core/config', 'core/modal_factory', 'core/modal_e
                             key:        'commentsrequirelogin',
                             component:  'moodle'
                         }
-                    ]).done(function(strings) {
+                    ]).then(function(strings) {
                         // Save the strings.
-                        //TODO: can we automate this string assignment?
                         this.strings['addcomment'] = strings[0];
                         this.strings['deletecomment'] = strings[1];
                         this.strings['commentsrequirelogin'] = strings[2];
-                        console.log('strings fetched are:');
-                        console.log(this.strings);
 
                         // Attach the toggle callback to the handle (if present).
-                        console.log(args);
                         this.client_id = args.client_id;
                         this.itemid = args.itemid;
                         this.commentarea = args.commentarea;
@@ -124,84 +132,110 @@ define(['jquery', 'core/str', 'core/config', 'core/modal_factory', 'core/modal_e
                         this.contextid = args.contextid;
                         this.contextlevel = args.contextlevel;
                         this.instanceid = args.instanceid;
-                        this.autostart = (args.autostart);
-                        this.page = args.page;
+                        this.autostart = args.autostart;
+                        this.page = (args.page) ? args.page : 0; // Default to page 0.
                         this.notoggle = args.notoggle;
+                        this.commentsperpage = args.commentsperpage;
 
-                        // Expand comments by default?
                         if (this.autostart) {
-                            this.view(args.page);
+                            // Templates have been rendered with the autostart flag, so show the widget.
+                            // TODO: Need to separate out autostart (expanded) away from the toggler.
+                            this.toggleExpanded();
                         }
 
-                        // TODO - make sure that register actions can be placed here - I moved it to stop if being called so much
-                        // TODO : from the view method.
-                        this.register_toggler();
-                        this.register_actions();
+                        this.registerEvents(); // Wire up the UI controls.
                         this.toggle_textarea(false);
-                    }.bind(this));
+                        return;
+                    }.bind(this)).catch(Notification.exception);
                 },
-                view: function(pagenum) {
-                    console.log('viewing comments for page ' + pagenum + '!');
+                toggleExpanded: function() {
+                    console.log('viewing comments for page ' + this.page + '.');
 
                     var commenttoggler = $('#comment-link-' + this.client_id);
                     var container = $('#comment-ctrl-' + this.client_id);
                     var ta = $('#dlg-content-' + this.client_id);
-                    var img = $('#comment-img-' + this.client_id);
-                    var display = container.css('display');
-                    if (display == 'none' || display == '') {
-                        console.log('showing comments');
-                        // Show.
+                    if (!container.is(":visible")) {
+                        // Update the icon.
+                        templates.renderPix('t/switch_minus', 'core').then(function(result) {
+                            $('#comment-toggle-' + this.client_id).html(result);
+                            return;
+                        }.bind(this)).catch(Notification.exception);
+
+                        console.log('not visible, expanding for '+this.client_id);
+                        // TODO: Looks like another autostart thing to check. What did autostart do in stable? and vs notoggle?
+                        // TODO Surely notoggle would imply autostart, otherwise how can you see the comments?
                         if (!this.autostart) {
-                            this.load(page);
-                        } else {
-                            this.register_delete_buttons();
-                            this.register_pagination();
+                            window.console.log('autostart not found');
+                            this.load();
                         }
-                        container.show(300);
-                        // TODO: use background image instead - see local commit on another issue.
-                        /*if (img) {
-                            img.set('src', M.util.image_url('t/expanded', 'core'));
-                        }*/
+
+                        container.show(200);
+
+                        // Accessibility updates.
                         if (commenttoggler) {
                             commenttoggler.attr('aria-expanded', true);
                             commenttoggler.removeClass('collapsed');
                             commenttoggler.addClass('collapsible');
                         }
                     } else {
-                        // Hide.
+                        // Update the icon.
+                        templates.renderPix('t/switch_plus', 'core').then(function(result) {
+                            $('#comment-toggle-' + this.client_id).html(result);
+                        }.bind(this)).catch(Notification.exception);
+                        console.log('hiding it');
                         container.hide(200);
-                        // TODO RTL hacks here = yucky! Do this in CSS!!
-                        //var collapsedimage = 't/collapsed'; // ltr mode
-                        /*if ($(document.body).hasClass('dir-rtl')) {
-                            collapsedimage = 't/collapsed_rtl';
-                        } else {
-                            collapsedimage = 't/collapsed';
-                        }
-                        img.attr('src', M.util.image_url(collapsedimage, 'core'));
-                        */
-                        if (ta) {
-                            ta.val('');
-                        }
-                        if (commenttoggler) {
-                            commenttoggler.attr('aria-expanded', false);
-                            commenttoggler.removeClass('collapsible');
-                            commenttoggler.addClass('collapsed');
-                        }
-                    }
-                    if (ta) {
-                        ta.on('focus', function() {
-                            console.log('textarea focus callback');
-                            this.toggle_textarea(true);
-                        }.bind(this));
-                        ta.on('blur', function() {
-                            this.toggle_textarea(false);
-                        }.bind(this));
-                    }
 
-                    return false;
+                        // Reset the text area.
+                        ta.val('');
+
+                        // Accessibility updates.
+                        commenttoggler.attr('aria-expanded', false);
+                        commenttoggler.removeClass('collapsible');
+                        commenttoggler.addClass('collapsed');
+                    }
+                    return;
                 },
+                /** Takes in the return data from the web service and returns a promise */
+                getCommentListTemplate: function(data) {
+                    var listContext = {
+                        'widgetid': this.client_id,
+                        'comments': data.comments,
+                    }
+                    return templates.render('core_comment/comments_list', listContext);
+                },
+                /**
+                 * Takes in the return data from the create web service and returns a promise which, when resolved, will contain
+                 * the template data.
+                 */
+                getCommentListItemTemplate: function(data) {
+                    return templates.render('core_comment/comment_list_item', data);
+                },
+                /**
+                 * Takes in the total number of comments (from ws return data) and returns a promise which, when resolved,
+                 * will contain the template data.
+                 */
+                getPagingTemplate: function(totalComments) {
+                    // Work out how many pages we have based on the current number of comments.
+                    var numPages = Math.ceil((totalComments / this.commentsperpage));
+                    var pages = [];
+                    for (var i = 0; i < numPages; i++) {
+                        pages.push(
+                            {
+                                page: i,
+                                name: (i + 1) // Page 0 shown as '1', 1 as '2', etc.
+                            }
+                        );
+                    }
+                    var pagingContext = {
+                        'pagenumbers': pages
+                    };
+                    return templates.render('core_comment/comments_paging', pagingContext);
+                },
+                /**
+                 * Reloads the widget for the current page of comments.
+                 */
                 load: function() {
-                    /*
+                    /* REFERENCE:
                     'contextlevel' => new external_value(PARAM_ALPHA, 'contextlevel system, course, user...'),
                     'instanceid'   => new external_value(PARAM_INT, 'the Instance id of item associated with the context level'),
                     'component'    => new external_value(PARAM_COMPONENT, 'component'),
@@ -209,7 +243,8 @@ define(['jquery', 'core/str', 'core/config', 'core/modal_factory', 'core/modal_e
                     'area'         => new external_value(PARAM_AREA, 'string comment area', VALUE_DEFAULT, ''),
                     'page'         => new external_value(PARAM_INT, 'page number (0 based)', VALUE_DEFAULT, 0),
                     */
-                    console.log('loading comments now');
+                    console.log('loading comments for page ' + this.page + ' now');
+
                     // Get the comments via the 'core_comment_get_comments' web service.
                     var promises = ajax.call([{
                         methodname: 'core_comment_get_comments',
@@ -219,44 +254,26 @@ define(['jquery', 'core/str', 'core/config', 'core/modal_factory', 'core/modal_e
                             component: this.component,
                             itemid: this.itemid,
                             area: this.commentarea,
-                            page: this.page
+                            page: this.page,
+                            returncount: true // If true, data will contain a field, 'commentcount'.
                         }
                     }], true);
 
-                    $.when.apply($, promises)
-                    .done(function(data) {
-                        //TODO: How do we load/update the pagination section now that we're using the web service and not the ajax.php?
-                        console.log('service call complete');
-
-                        // Get the template and render in the DOM.
-                        var context = {
-                            'widgetid': this.client_id,
-                            'dummytest': "dog",
-                            'comments': data.comments
-                        }
-                        templates.render('core_comment/comments_list', context)
-                            .done(function(source, javascript) {
-                                console.log('done fetching template');
-
-                                // Add the template html to the DOM.
-                                var container = $('#comment-list-' + this.client_id);
-                                container.html(source);
-
-                                //  TODO: Is this the right place for these fns to be located? Called on every load? hmmmm.
-                                this.register_pagination();
-                                this.register_delete_buttons();
-
-                                // Reload the link count in case it has changed.
-                                // TODO: as above - need the total comment count.
-                                //this.update_toggler_string(count);
-
-                                //templates.runTemplateJS(javascript); // Don't have any JS in the template. It's all here.
-                            }.bind(this))
-                            .fail(function(ex) {
-                                // TODO core/notify exception for this.
-                            });
-                    }.bind(this));
+                    // TODO: The below code should fire an event for 'COMMENTS_LOADED' so we can update the widget count.
+                    // TODO: Really, we should wait for both the template load promises to resolve, and process the results together.
+                    promises[0].then(function(data) {
+                        this.getCommentListTemplate(data).then(function (result) {
+                            // Add the comment list to the DOM and get the paging template.
+                            $('#comment-list-' + this.client_id).html(result);
+                            return this.getPagingTemplate(data.recordcount);
+                        }.bind(this)).then(function (result) {
+                            // Add the paging html to the DOM.
+                            $('#comment-pagination-' + this.client_id).html(result);
+                            return;
+                        }.bind(this)).catch(Notification.exception);
+                    }.bind(this)).catch(Notification.exception);
                 },
+                // TODO What does this fn do? Do we NEED it?
                 toggle_textarea: function(focus) {
                     console.log('toggling text area');
 
@@ -276,7 +293,7 @@ define(['jquery', 'core/str', 'core/config', 'core/modal_factory', 'core/modal_e
                     } else {
                         console.log('no focus');
                         if (textarea.val() == '') {
-                            console.log('val is empty');
+                            console.log('text area is empty');
                             textarea.val(this.strings['addcomment']);
                             textarea.css('color','grey');
                             textarea.attr('rows', 2);
@@ -284,11 +301,11 @@ define(['jquery', 'core/str', 'core/config', 'core/modal_factory', 'core/modal_e
                     }
                 },
                 /** Creates a new comment */
-                create_comment: function() {
+                createComment: function() {
                     console.log('creating a new comment');
                     var textarea = $('#dlg-content-' + this.client_id);
                     var content = textarea.val();
-                    if(!content || content == this.strings['addcomment']) {
+                    if (!content || content == this.strings['addcomment']) {
                         return;
                     }
 
@@ -306,41 +323,34 @@ define(['jquery', 'core/str', 'core/config', 'core/modal_factory', 'core/modal_e
                         }
                     }], true);
 
-                    $.when.apply($, promises)
-                        .done(function(data) {
-                            console.log('new comment created');
-                            var container = $('#comment-list-' + this.client_id);
+                    promises[0].then(function(data) {
+                        // Create a new comment_list_item and add to the DOM.
+                        data.widgetid = this.client_id;
+                        data.delete = true;
+                        this.getCommentListItemTemplate(data).then(function(result) {
+                            var newcomment = $(result);
+                            newcomment.hide(); //TODO: Maybe a widget global animation setting?
 
-                            // Populate and render the 'core_comment/comment_list_item' template.
-                            data.widgetid = this.client_id;
-                            templates.render('core_comment/comment_list_item', data)
-                                .done(function(source, javascript) {
-                                    var container = $('#comment-list-' + this.client_id);
-                                    var newcomment = $(source);
-                                    newcomment.hide();
-                                    container.append(newcomment);
-                                    newcomment.show(100);
-                                    // TODO: Why remap all events? Can't we just add the event handler for the new comment?
-                                    this.register_delete_buttons(); // Re-map all events for the delete buttons.
+                            // TODO: This show is not strictly required, as we refresh the view anyway, but it makes it look nice.
+                            $('#comment-list-' + this.client_id).prepend(newcomment);
+                            newcomment.show('fast');
 
-                                    // Update the comment count link text.
-                                    this.update_toggler_string(data.count);
+                            // TODO: should probably fire  COMMENT_CREATED event here and let the listeners update their stuff.
+                             // Instead of chaining to the .then below.
+                            this.updateTogglerCount(data.count);
+                            textarea.val('');
+                            this.toggle_textarea(false);
+                            this.page = 0;
+                            this.load();
 
-                                    textarea.val('');
-                                    this.toggle_textarea(false);
 
-                                    //templates.runTemplateJS(javascript); // Don't have any JS in the template. It's all here.
-                                }.bind(this))
-                                .fail(function(ex) {
-                                    // Deal with this exception (I recommend core/notify exception function for this).
-                                });
-                        }.bind(this))
-                        .fail(function(e) {
-                            // TODO: Core notification when comment creation fails.
-                        });
+                            $('#dlg-content-' + this.client_id).focus();
+                            return;
+                        }.bind(this)).catch(Notification.exception);
+                    }.bind(this)).fail(Notification.exception);
                 },
                 /** Delete a single comment */
-                delete_comment: function(commentid) {
+                deleteComment: function(commentid) {
                     console.log('deleting comment '+commentid);
                     // Make a web service call to core_comment_delete_comments
                     var promises = ajax.call([{
@@ -348,110 +358,113 @@ define(['jquery', 'core/str', 'core/config', 'core/modal_factory', 'core/modal_e
                         args: {commentids: [commentid]}
                     }], true);
 
-                    $.when.apply($, promises)
-                    .done(function(data) {
-                        var htmlid = 'comment-' + commentid + '-' + this.client_id;
-                        var element = $('#' + htmlid);
+                    promises[0].then(function(data) {
+                        var element = $('#comment-' + commentid + '-' + this.client_id);
                         element.hide('fast', function() {
                             element.remove();
                         });
 
-                        // Update the comment count link text.
-                        //TODO: Need to think about how to get the count after deletion. Another service call?
-                        //this.update_toggler_string(data.count);
-                    }.bind(this));
+
+                        // TODO: Need to think about how to get the count after deletion. Another service call.
+                        // TODO: Pagination might also need updating.
+                        //this.updateTogglerCount(data.count);
+                        this.load();
+                        return;
+                    }.bind(this)).catch(Notification.exception);
                 },
                 /** Update the string used to toggle the comment list. */
-                update_toggler_string: function (count) {
-                    str.get_string('commentscount', 'moodle', count)
-                        .done(function(string) {
-                            var linkText = $('#comment-link-text-' + this.client_id);
-                            if (linkText) {
-                                linkText.html(string);
-                            }
-                        }.bind(this));
+                updateTogglerCount: function (count) {
+                    $('#comment-count-' + this.client_id).html(count);
                 },
-                /** Adds handlers for the textarea actions 'Add comment' and 'Cancel'. */
-                register_actions: function() {
-                    console.log('registration of comment actions');
-                    // Add new comment.
-                    var action_btn = $('#comment-action-post-' + this.client_id);
-                    if (action_btn) {
-                        action_btn.on('click', function(e) {
-                            console.log('new comment callback');
+                /** Adds CustomEvent handlers for various interactive UI components.*/
+                registerEvents: function() {
+                    // Widget toggle control, only if required.
+                    if (!this.notoggle) {
+                        //TODO hiding the toggle should be handled elsewhere, somewhere in display/view IMO.
+                        //if (this.notoggle) {
+                        //   handle.hide();
+                        //}
+
+                        CustomEvents.define($('#comment-link-' + this.client_id), [CustomEvents.events.activate]);
+                        $('#comment-link-' + this.client_id).on(CustomEvents.events.activate, function(e, data) {
+                            // Stop event bubbling.
+                            data.originalEvent.preventDefault();
                             e.preventDefault();
-                            this.create_comment();
-                            return false;
+
+                            this.toggleExpanded(); // TODO maybe use the current page number here? What does stable do?
                         }.bind(this));
                     }
+
+                    // New comment text area focus events.
+                    $('#dlg-content-' + this.client_id).on('focus', function(e) {
+                        e.preventDefault();
+                        this.toggle_textarea(true);
+                    }.bind(this));
+                    $('#dlg-content-' + this.client_id).on('blur', function(e) {
+                        e.preventDefault();
+                        this.toggle_textarea(false);
+                    }.bind(this));
+
+                    // Comment creation button/link.
+                    CustomEvents.define($('#comment-action-post-' + this.client_id), [CustomEvents.events.activate]);
+                    $('#comment-action-post-' + this.client_id).on(CustomEvents.events.activate, function(e, data) {
+                        // Stop event bubbling.
+                        data.originalEvent.preventDefault();
+                        e.preventDefault();
+
+                        // Create a comment.
+                        this.createComment();
+                    }.bind(this));
+
                     // Cancel comment box (a comment configuration option - not always present in DOM).
+                    //TODO Work out the use case for cancel and audit this code.
                     var cancel = $('#comment-action-cancel-' + this.client_id);
                     if (cancel) {
                         cancel.on('click', function(e) {
                             e.preventDefault();
-                            this.view(0);
+                            this.toggleExpanded();
                             return false;
                         }.bind(this));
                     }
-                },
-                /** Adds handlers to the delete icons for each comment. */
-                register_delete_buttons: function() {
-                    console.log('registering delete handlers');
-                    $('div.comment-delete a').each(function(id, elem) {
 
-                        elem = $(elem);
-                        var theid = elem.attr('id');
-                        var parseid = new RegExp("comment-delete-" + this.client_id + "-(\\d+)", "i");
-                        var commentid = theid.match(parseid);
-                        if (!commentid || !commentid[1]) {
-                            return;
-                        }
+                    // Pagination controls.
+                    CustomEvents.define($('[id^=comment-pagination-' + this.client_id + ']'), [CustomEvents.events.activate]);
 
-                        // TODO: Restructure this code so that we're not reassigning all events every time we add a comment.
-                        // Strip all existing event listeners from the deletion link.
-                        elem.off('click');
-                        elem.off('keypress');
+                    // Filter so the callback is only called for <a> type children having the '.comment-page' class.
+                    // The <a> element can then be accessed in the callback via e.currentTarget.
+                    $('[id^=comment-pagination-' + this.client_id + ']').on(CustomEvents.events.activate, "a.comment-page",
+                        function(e, data) {
+                        // Stop event bubbling.
+                        data.originalEvent.preventDefault();
+                        e.preventDefault();
 
-                        var deletehandler = function(e) {
-                            console.log('in delete handler');
-                            e.preventDefault();
-                            this.delete_comment(commentid[1]);
-                        };
-                        elem.on('click', deletehandler.bind(this));
-                        elem.on('keypress', function(e) {
-                            if ($.inArray(e.which, [32])) { // Enter key binding.
-                                deletehandler.bind(this);
-                            }
-                        });
+                        // Get the desired page from the clicked element.
+                        var id = $(e.currentTarget).attr('id');
+                        var re = new RegExp("comment-page-(\\d+)", "i");
+                        var result = id.match(re);
+
+                        // Set the current page and refresh the view.
+                        this.page = result[1];
+                        this.load();
                     }.bind(this));
-                },
-                /** Handlers for the page buttons. */
-                register_pagination: function() {
-                    // TODO: Test pagination events are working!!!!!!
-                    $('#comment-pagination-' + this.client_id + ' a').each(function(id, elem) {
-                        elem.on('click', function(e) {
 
-                            e.preventDefault();
-                            var id = elem.get('id');
-                            var re = new RegExp("comment-page-" + this.client_id + "-(\\d+)", "i");
-                            var result = id.match(re);
-                            console.log('loading page '+result[1]);
-                            this.load(result[1]);
-                        }.bind(this));
-                    });
-                },
-                register_toggler: function(notoggle) {
-                    var handle = $('#comment-link-' + this.client_id);
-                    if (handle) {
-                        if (notoggle) {
-                            handle.hide();
-                        }
-                        handle.on('click', function(e) {
-                            e.preventDefault();
-                            this.view(0);
-                            //return false;
-                        }.bind(this));
-                    }
+                    // Deletion controls.
+                    CustomEvents.define($('[id^=comment-list-' + this.client_id + ']'), [CustomEvents.events.activate]);
+                    $('[id^=comment-list-' + this.client_id + ']').on(CustomEvents.events.activate, "a.comment-delete",
+                        function(e, data) {
+                        // Stop event bubbling.
+                        data.originalEvent.preventDefault();
+                        e.preventDefault();
+
+                        // Get the trigger element.
+                        var triggerElement = $(e.currentTarget);
+
+                        // Get the comment id from the trigger and delete it.
+                        var id = triggerElement.attr('id');
+                        var re = new RegExp("comment-delete-" + this.client_id + "-(\\d+)", "i");
+                        var result = id.match(re);
+                        this.deleteComment(result[1]);
+                    }.bind(this));
                 }
             };
 

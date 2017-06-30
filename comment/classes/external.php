@@ -52,6 +52,7 @@ class core_comment_external extends external_api {
                 'itemid'       => new external_value(PARAM_INT, 'associated id'),
                 'area'         => new external_value(PARAM_AREA, 'string comment area', VALUE_DEFAULT, ''),
                 'page'         => new external_value(PARAM_INT, 'page number (0 based)', VALUE_DEFAULT, 0),
+                'returncount'  => new external_value(PARAM_INT, 'return record count for area', VALUE_DEFAULT, 0),
             )
         );
     }
@@ -68,7 +69,7 @@ class core_comment_external extends external_api {
      * @return array of comments and warnings
      * @since Moodle 2.9
      */
-    public static function get_comments($contextlevel, $instanceid, $component, $itemid, $area = '', $page = 0) {
+    public static function get_comments($contextlevel, $instanceid, $component, $itemid, $area = '', $page = 0, $returncount = 0) {
 
         $warnings = array();
         $arrayparams = array(
@@ -77,7 +78,8 @@ class core_comment_external extends external_api {
             'component'    => $component,
             'itemid'       => $itemid,
             'area'         => $area,
-            'page'         => $page
+            'page'         => $page,
+            'returncount'  => $returncount
         );
         $params = self::validate_parameters(self::get_comments_parameters(), $arrayparams);
 
@@ -93,6 +95,9 @@ class core_comment_external extends external_api {
         $args->component = $params['component'];
 
         $commentobject = new comment($args);
+        if ($returncount) {
+            $commentcount = $commentobject->count();
+        }
         $comments = $commentobject->get_comments($params['page']);
 
         // False means no permissions to see comments.
@@ -112,8 +117,11 @@ class core_comment_external extends external_api {
 
         $results = array(
             'comments' => $comments,
-            'warnings' => $warnings
         );
+        if ($returncount) {
+            $results['recordcount'] = $commentcount;
+        }
+        $results['warnings'] = $warnings;
         return $results;
     }
 
@@ -143,6 +151,7 @@ class core_comment_external extends external_api {
                         ), 'comment'
                     ), 'List of comments'
                 ),
+                'recordcount' => new external_value(PARAM_INT,  'Total number of comments for this comment area',  VALUE_OPTIONAL),
                 'warnings' => new external_warnings()
             )
         );

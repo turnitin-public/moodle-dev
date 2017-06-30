@@ -33,6 +33,10 @@
         "widgetid": 5894097884e37,
         "count": 42,
         "notoggle": false,
+        "user": {
+            "profileurl": "http://localhost/master/user/view.php?id=3&course=1",
+            "profileimageurl": "http://localhost/master/theme/image.php/boost/core/1486161614/u/f1",
+        },
         "comments": [
             {
                 "id": 10,
@@ -47,32 +51,69 @@
                 "userid": 2,
                 "delete": true
             }
-        ]
+        ],
+        "pagenumbers": [
+            {
+                page: 0
+                name: 1
+            },
+            {
+                page: 1
+                name: 2
+            }
+         ]
     }
 }}
 
 <div class="mdl-left">
     {{^notoggle}}
-    <a class="comment-link collapsed" id="comment-link-{{widgetid}}" href="#" role="button" aria-expanded="false">
-        <!--img id="comment-img-{{widgetid}}" src="http://localhost/master/theme/image.php/boost/core/1486161611/t/collapsed" alt="" title=""-->
-        {{#pix}}t/collapsed, core, Open{{/pix}}
-        <span id="comment-link-text-{{widgetid}}">{{#str}}comments, moodle{{/str}} ({{count}})</span>
-    </a>
+        <div class="comment-toggle container-fluid p-l-0 p-r-0">
+            <div class="row-fluid">
+                <div class="col-xs-12 span12 p-l-0 p-r-0">
+                    <a class="comment-link collapsed" id="comment-link-{{widgetid}}" href="#" role="button" aria-expanded="false">
+                        <div class="d-inline">
+                            <div class="d-inline comment-toggle" id="comment-toggle-{{widgetid}}">
+                            {{#pix}}t/switch_plus, core, {{#str}}comments, moodle{{/str}} {{/pix}}
+                            </div>
+                        </div>
+                        <span class="d-inline" id="comment-link-text-{{widgetid}}">
+                            {{#str}}comments, moodle{{/str}} (<span class="comment-count" id ="comment-count-{{widgetid}}">{{count}}</span>)
+                        </span>
+                    </a>
+                </div>
+            </div>
+        </div>
     {{/notoggle}}
-    <div id="comment-ctrl-{{widgetid}}" class="comment-ctrl" {{^notoggle}}{{/notoggle}}style="display: none;">
-        <ul id="comment-list-{{widgetid}}" class="comment-list">
-            {{#comments}}
-                {{> comment/comments_list}}
-            {{/comments}}
-        </ul>
-        <div id="comment-pagination-{{widgetid}}" class="comment-pagination"></div>
+    <div id="comment-ctrl-{{widgetid}}" class="comment-ctrl m-t-1" style="display: none;">
         <div class="comment-area">
-            <div class="db">
-                <textarea name="content" rows="2" id="dlg-content-{{widgetid}}" cols="20" style="color: grey;">{{#str}}addcomment, moodle{{/str}}</textarea>
+            <div class="comment-create-container container-fluid p-l-0 p-r-0">
+                <div class="row-fluid">
+                    <div class="col-xs-12 span12 p-l-0 p-r-0" style="position:relative;">
+                        {{#user}}
+                        <div class="comment-poster-userpicture">
+                            <a href="{{profileurl}}">
+                                <img src="{{profileimageurl}}" alt="" title="" class="userpicture defaultuserpic">
+                            </a>
+                        </div>
+                        {{/user}}
+                        <div class="row-fluid">
+                            <div class="col-xs-12 span12 m-b-1 p-l-3 p-r-0">
+                                <textarea name="content" rows="2" id="dlg-content-{{widgetid}}" class="fullwidth" style="color: grey;">{{#str}}addcomment, moodle{{/str}}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="fd" id="comment-action-{{widgetid}}">
                 <a id="comment-action-post-{{widgetid}}" href="#">{{#str}}savecomment, moodle{{/str}}</a>
             </div>
+            <hr>
+        </div>
+        <ul class="comment-list p-l-0" id="comment-list-{{widgetid}}">
+            {{> comment/comments_list}}
+        </ul>
+        <div class="comment-pagination p-l-3 p-r-2" id="comment-pagination-{{widgetid}}">
+            {{> comment/comments_paging}}
         </div>
         <div class="clearer"></div>
     </div>

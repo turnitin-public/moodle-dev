@@ -17,7 +17,7 @@
 {{!
     @template core_comment/comment_list_item
 
-    Displays a comments widget
+    Displays the html for a single comment in the comments widget.
 
     Classes required for JS:
     * none
@@ -46,34 +46,51 @@
 
 }}
 
+{{!
+Note: Because we need to support BS2 and can't rely on the nice nesting features (auto padding-handling) of BS4,
+we'll manage our column paddings manually. Otherwise, we could just use row and col classes with BS4.
+}}
 <li id="comment-{{id}}-{{widgetid}}">
-    <div class="comment-message container p-l-0 p-r-0 m-l-0 m-r-0">
-        <span class="row">
-            <span class="col-sm-12 p-l-0 p-r-0">
-                    <span style="float:left">
-                        <a href="{{profileurl}}">
-                            <img src="{{profileimageurl}}" alt="" title="" class="userpicture defaultuserpic" width="30px" height="30px">
-                        </a>
-                    </span>
-                    <span class="user" style="float:left;">
-                        <a href="">{{fullname}}</a> - {{time}}
-                    </span>
-                {{#delete}}
-                    <div class="comment-delete">
-                    <a href="#" id="comment-delete-{{widgetid}}-{{id}}" title="Delete this comment">
-                        {{#pix}} t/delete, core, Delete the comment {{/pix}}
+    <div class="comment-container container-fluid m-b-1 p-l-0 p-r-0">
+        <div class="row-fluid">
+            <div class="col-xs-12 span12 p-l-0 p-r-0" style="position:relative;">
+                <div class="comment-userpicture">
+                    <a href="{{profileurl}}">
+                        <img src="{{profileimageurl}}" alt="" title="" class="userpicture defaultuserpic">
                     </a>
                 </div>
+                <div class="row-fluid">
+                    <div class="col-xs-12 span12 m-b-1 p-l-3 p-r-2">
+                        <div class="comment-header text-left">
+                            <span class="d-inline-block align-middle"><a href="{{profileurl}}">{{fullname}}</a></span>
+                            <span class="comment-time d-inline-block align-middle">{{time}}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="row-fluid">
+                    <div class="col-xs-12 span12 m-b-0 p-l-3 p-r-1">
+                        <div class="comment-text">
+                            {{{content}}}
+                        </div>
+                    </div>
+                </div>
+                <!--div class="row-fluid">
+                    <div class="col-xs-12 span12 p-l-3 p-r-1">
+                        <div class="comment-footer pull-right">
+                            <!--Edit | Reply | Other>
+                        </div>
+                    </div>
+                </div-->
+                {{#delete}}
+                <div class="comment-options">
+                    <!--div class="comment-delete"-->
+                        <a href="#" class="comment-delete" id="comment-delete-{{widgetid}}-{{id}}" title="{{#str}}deletecommentbyon, moodle, { "user": "{{fullname}}", "time": "{{time}}" }{{/str}}">
+                            {{#pix}} t/delete, core, {{#str}}deletecommentbyon, moodle, {"user": "{{fullname}}", "time": "{{time}}" }{{/str}} {{/pix}}
+                        </a>
+                    <!--/div-->
+                </div>
                 {{/delete}}
-            </span>
-        </span>
-        <span class="row">
-            <span class="col-sm-12 p-l-0 p-r-0">
-                <br>
-                <div class="no-overflow">{{{content}}}</div>
-            </span>
-        </span>
-
+            </div>
         </div>
     </div>
 </li>

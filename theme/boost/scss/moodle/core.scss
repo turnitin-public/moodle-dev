@@ -466,11 +466,43 @@ table.mod_index {
 }
 
 // Comments
+
+// New styles added during refactor:
+.comment-time {
+    color: #818a91;
+    font-size: 90%;
+}
+
+.comment-userpicture,
+.comment-poster-userpicture {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    .userpicture {
+        width: 2rem;
+        height: 2rem;
+    }
+}
+
+.comment-options {
+    position: absolute;
+    top: 0;
+    right: 0;
+    .icon {
+        margin: 0;
+    }
+}
+.comment-toggle {
+    min-width: 200px;
+}
+// ================================
 .comment-ctrl {
-    font-size: 12px;
+    font-size: 0.9rem;
     display: none;
     margin: 0;
     padding: 0;
+    max-width: 850px;
 }
 
 .comment-ctrl h5 {
@@ -479,7 +511,6 @@ table.mod_index {
 }
 
 .comment-area {
-    max-width: 400px;
     padding: 5px;
 }
 
@@ -507,20 +538,21 @@ table.mod_index {
 }
 
 .comment-list {
-    font-size: 11px;
-    overflow: auto;
-    list-style: none;
-    padding: 0;
     margin: 0;
+    list-style: none;
+    li {
+        padding: 0 5px;
+        position: relative;
+        min-width: 300px;
+    }
 }
 
-.comment-list li {
-    margin: 2px;
-    list-style: none;
-    margin-bottom: 5px;
-    clear: both;
-    padding: .3em;
-    position: relative;
+.block_comments {
+    .comment-list {
+        li {
+            min-width: 0;
+        }
+    }
 }
 
 .comment-list li.first {
@@ -539,26 +571,19 @@ table.mod_index {
     border: 1px solid #ccc;
 }
 
-.comment-message .picture {
+.comment-container .picture {
     width: 20px;
     float: left;
 }
 
-.comment-message .text {
+.comment-container .text {
     margin: 0;
     padding: 0;
 }
 
-.comment-message .text p {
+.comment-container .text p {
     padding: 0;
     margin: 0 18px 0 0;
-}
-
-.comment-delete {
-    position: absolute;
-    top: 0;
-    right: 0;
-    margin: .3em;
 }
 
 .comment-report-selectall {

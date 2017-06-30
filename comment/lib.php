@@ -400,6 +400,7 @@ class comment {
      *                          initialised for.
      */
     public function initialise_javascript(moodle_page $page) {
+        global $CFG;
 
         $options = new stdClass;
         $options->client_id   = $this->cid;
@@ -430,6 +431,9 @@ class comment {
         $options->contextlevel = $contextlevelbits[1];
         $options->instanceid = $context->instanceid;
 
+        // Pass in the commentsperpage to let the widget handle pagination updates.
+        $options->commentsperpage = (!empty($CFG->commentsperpage)) ? $CFG->commentsperpage : 15;
+
         //$page->requires->js_init_call('M.core_comment.init', array($options), true);
 
         $page->requires->js_call_amd('core_comment/comment', 'init', [$options]);
@@ -443,7 +447,7 @@ class comment {
      * @return string|void
      */
     public function output($return = true) {
-        global $PAGE, $OUTPUT;
+        global $PAGE, $OUTPUT, $CFG, $USER;
         static $template_printed;
 
         //TODO: Testing config changes here:
@@ -458,30 +462,46 @@ class comment {
             // return non js comments interface
             return $this->print_comments(self::$comment_page, $return, true);
         }
-        echo "OUTPUTTING COMMENTS<br>";
-        if($return) {
-            echo "return mode";
-        }
+        //echo "OUTPUTTING COMMENTS<br>";
+        //if ($return) {
+        //    echo "return mode";
+        //}
 
 
 
         // Create the context and render the template.
         if ($this->can_view()) {
+
+            $userimage = new \user_picture($USER);
+            $userimageurl = $userimage->get_url($PAGE)->out(false);
+            $profileurl = new moodle_url('/user/profile.php', ['id' => $USER->id]);
             $context = [
                 'widgetid' => $this->cid,
                 'count' => $this->count(),
                 'notoggle' => $this->notoggle,
-                'comments' => []
+                'user' => (object) ['profileurl' => $profileurl, 'profileimageurl' => $userimageurl],
+                'comments' => [],   // Only passed in if we're loading the comments (autostart).
+                'pagenumbers' => [] // Only passed in if we're loading the comments (autostart).
             ];
 
-            // If 'notoggle' is true, load the comments by deafult.
-            if ($this->notoggle) {
+            //TODO: toggle shouldn't have anything to do with autostarting...
+            // except if someone has autostart disabled and toggling disabled....
+
+            // Autostart. If set, load the comments for the first page and set page numbers.
+            if ($this->autostart) {
                 $context['comments'] = $this->get_comments(0);
+
+                $perpage = (!empty($CFG->commentsperpage)) ? $CFG->commentsperpage : 15;
+                $numpages = $this->count() / $perpage;
+                for ($i = 0; $i < $numpages; $i++) {
+                    $val = (object) ['page' => $i, 'name' => $i+1];
+                    $context['pagenumbers'][] = $val;
+                }
             }
-            //print_object($this->get_comments(0));
 
             $html = $OUTPUT->render_from_template('core_comment/comments_widget', $context);
         }
+
         if ($return) {
             return $html;
         }

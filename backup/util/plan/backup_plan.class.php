@@ -119,6 +119,17 @@ class backup_plan extends base_plan implements loggable {
         $this->controller->set_status(backup::STATUS_EXECUTING);
         parent::execute();
         $this->controller->set_status(backup::STATUS_FINISHED_OK);
+        // Trigger a course_backup_created event.
+        $otherarray = array('format' => $this->controller->get_format(),
+                            'mode' => $this->controller->get_mode(),
+                            'interactive' => $this->controller->get_interactive(),
+        );
+        $event = \core\event\course_backup_created::create(array(
+            'objectid' => $this->get_courseid(),
+            'context' => context_course::instance($this->get_courseid()),
+            'other' => $otherarray
+        ));
+        $event->trigger();
     }
 }
 

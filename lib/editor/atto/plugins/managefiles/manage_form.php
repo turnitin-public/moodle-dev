@@ -87,6 +87,12 @@ class atto_managefiles_manage_form extends moodleform {
             $mform->setType('deletefile[' . $hash . ']', PARAM_INT);
         }
 
+        // Let the user know that any drafts not referenced in the text will be removed automatically.
+        if ($options['removeorphaneddrafts']) {
+            $mform->addElement('static', '', '',
+                html_writer::tag('div', get_string('unusedfilesremovalnotice', 'atto_managefiles')));
+        }
+
         $mform->addElement('submit', 'delete', get_string('deleteselected', 'atto_managefiles'));
 
         $PAGE->requires->yui_module('moodle-atto_managefiles-usedfiles', 'M.atto_managefiles.usedfiles.init',

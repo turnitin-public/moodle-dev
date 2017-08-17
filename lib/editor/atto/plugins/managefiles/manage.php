@@ -35,6 +35,7 @@ $return_types = optional_param('return_types', null, PARAM_INT);
 $areamaxbytes = optional_param('areamaxbytes', FILE_AREA_MAX_BYTES_UNLIMITED, PARAM_INT);
 $contextid = optional_param('context', SYSCONTEXTID, PARAM_INT);
 $elementid = optional_param('elementid', '', PARAM_TEXT);
+$removeorphaneddrafts = optional_param('removeorphaneddrafts', 0, PARAM_INT);
 
 $context = context::instance_by_id($contextid);
 if ($context->contextlevel == CONTEXT_MODULE) {
@@ -76,6 +77,7 @@ $options = array(
     'areamaxbytes' => $areamaxbytes,
     'return_types' => $return_types,
     'context' => $context,
+    'removeorphaneddrafts' => $removeorphaneddrafts
 );
 
 $usercontext = context_user::instance($USER->id);

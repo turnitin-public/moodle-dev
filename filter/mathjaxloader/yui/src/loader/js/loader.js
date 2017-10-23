@@ -77,6 +77,7 @@ M.filter_mathjaxloader = M.filter_mathjaxloader || {
             if (typeof window.MathJax !== "undefined") {
                 window.MathJax.Hub.Queue(function() {
                     window.MathJax.Localization.setLocale(lang);
+                    M.util.js_complete('filter_mathjaxloader');
                 });
                 window.MathJax.Hub.Configured();
                 this._configured = true;

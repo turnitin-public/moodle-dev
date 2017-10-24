@@ -127,8 +127,14 @@ class converter {
         if ($status === conversion::STATUS_PENDING || $status === conversion::STATUS_FAILED) {
             // The current status is either pending or failed.
             // Attempt to pick up a new converter and convert the document.
-            $from = \core_filetypes::get_file_extension($file->get_mimetype());
-            $converters = $this->get_document_converter_classes($from, $format);
+            $extensions = \core_filetypes::get_file_extensions($file->get_mimetype());
+            $converters = [];
+            foreach ($extensions as $extension) {
+                // If there's a converter supporting conversion from $extension to $format, then keep it.
+                $converters = array_merge($converters, $this->get_document_converter_classes($extension, $format));
+            }
+            $converters = array_values(array_unique($converters));
+
             $currentconverter = $this->get_next_converter($converters, $conversion->get('converter'));
 
             if (!$currentconverter) {
@@ -184,7 +190,7 @@ class converter {
      *
      * @param   string $from The source target file (file extension)
      * @param   string $to The desired target file format (file extension)
-     * @return  string The class for document conversion
+     * @return  Array An array of string class names for document conversion
      */
     protected function get_document_converter_classes($from, $to) {
         $classes = [];

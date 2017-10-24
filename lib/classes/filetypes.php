@@ -323,6 +323,23 @@ abstract class core_filetypes {
     }
 
     /**
+     * Given a mimetype, return ALL valid file extensions for it.
+     *
+     * @param string $mimetype the mimetype
+     * @return Array the array of extensions, or an empty array if none were found.
+     */
+    public static function get_file_extensions($mimetype) {
+        $types = self::get_types();
+        $extensions = [];
+        foreach ($types as $extension => $info) {
+            if ($info['type'] == $mimetype) {
+                $extensions[] = $extension;
+            }
+        }
+        return $extensions;
+    }
+
+    /**
      * Gets all the current types.
      *
      * @return array Associative array from extension to array of data about type

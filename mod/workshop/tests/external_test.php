@@ -1047,6 +1047,7 @@ class mod_workshop_external_testcase extends externallib_advanced_testcase {
         // Create a couple of submissions with files.
         $workshopgenerator = $this->getDataGenerator()->get_plugin_generator('mod_workshop');
         $submissionid = $workshopgenerator->create_submission($this->workshop->id, $this->student->id);
+        $DB->set_field('workshop', 'phase', workshop::PHASE_CLOSED, array('id' => $this->workshop->id));
         // Create teacher feedback for submission.
         $record = new stdclass();
         $record->id = $submissionid;
@@ -1057,16 +1058,30 @@ class mod_workshop_external_testcase extends externallib_advanced_testcase {
         $record->published = 1;
         $DB->update_record('workshop_submissions', $record);
 
-        // Remove teacher caps.
-        assign_capability('mod/workshop:viewallsubmissions', CAP_PROHIBIT, $this->teacher->id, $this->context->id);
-        // Empty all the caches that may be affected  by this change.
-        accesslib_clear_all_caches_for_unit_testing();
-        course_modinfo::clear_instance_cache();
-
         $this->setUser($this->teacher);
         $result = mod_workshop_external::get_submission($submissionid);
         $result = external_api::clean_returnvalue(mod_workshop_external::get_submission_returns(), $result);
         $this->assertEquals($submissionid, $result['submission']['id']);
+        $this->assertEquals($record->feedbackauthor, $result['submission']['feedbackauthor']);
+        $this->assertEquals($record->gradeover, $result['submission']['gradeover']);
+        $this->assertEquals($record->gradeoverby, $result['submission']['gradeoverby']);
+
+        // Go to phase where feedback and grades are not yet available.
+        $DB->set_field('workshop', 'phase', workshop::PHASE_SUBMISSION, array('id' => $this->workshop->id));
+        $result = mod_workshop_external::get_submission($submissionid);
+        $result = external_api::clean_returnvalue(mod_workshop_external::get_submission_returns(), $result);
+        $this->assertArrayNotHasKey('feedbackauthor', $result['submission']);
+        $this->assertArrayNotHasKey('gradeover', $result['submission']);
+        $this->assertArrayNotHasKey('gradeoverby', $result['submission']);
+
+        // Remove teacher caps to view and go to valid phase.
+        $DB->set_field('workshop', 'phase', workshop::PHASE_EVALUATION, array('id' => $this->workshop->id));
+        unassign_capability('mod/workshop:viewallsubmissions', $this->teacherrole->id);
+        // Empty all the caches that may be affected  by this change.
+        accesslib_clear_all_caches_for_unit_testing();
+
+        $this->setExpectedException('moodle_exception');
+        mod_workshop_external::get_submission($submissionid);
     }
 
     /**

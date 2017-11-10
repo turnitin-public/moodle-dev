@@ -8049,7 +8049,7 @@ function admin_apply_default_settings($node=NULL, $unconditional=true) {
  * Store changed settings, this function updates the errors variable in $ADMIN
  *
  * @param object $formdata from form
- * @return int number of changed settings
+ * @return int number of changed settings, or 0 if any setting failed validation and could not be saved.
  */
 function admin_write_settings($formdata) {
     global $CFG, $SITE, $DB;
@@ -8099,7 +8099,7 @@ function admin_write_settings($formdata) {
 
     // now reload all settings - some of them might depend on the changed
     admin_get_root(true);
-    return $count;
+    return !empty($adminroot->errors) ? 0 : $count;
 }
 
 /**

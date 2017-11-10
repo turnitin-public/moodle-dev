@@ -8100,7 +8100,7 @@ function admin_write_settings($formdata) {
 
     // now reload all settings - some of them might depend on the changed
     admin_get_root(true);
-    return $count;
+    return $count && empty($adminroot->errors);
 }
 
 /**

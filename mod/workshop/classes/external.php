@@ -746,10 +746,10 @@ class mod_workshop_external extends external_api {
             $submission->authorid = 0;
         }
 
-        $isworkshopclosed = $workshop->phase == workshop::PHASE_CLOSED;
         $canviewsubmissiondetail = $ownsubmission || $canviewallsubmissions;
-        // If the workshop is not closed or the user can't see the submission detail: remove grading or feedback information.
-        if (!$isworkshopclosed || !$canviewsubmissiondetail) {
+        // If the workshop is not in a valid phase or the user can't see the submission detail:
+        // remove grading or feedback information.
+        if ($workshop->phase < workshop::PHASE_ASSESSMENT || !$canviewsubmissiondetail) {
             $properties = submission_exporter::properties_definition();
             foreach ($properties as $attribute => $settings) {
                 if (!empty($settings['optional'])) {

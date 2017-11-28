@@ -426,8 +426,9 @@ define(['exports', './util'], function (exports, _util) {
             } else if (trigger !== Trigger.MANUAL) {
               var eventIn = trigger === Trigger.HOVER ? _this3.constructor.Event.MOUSEENTER : _this3.constructor.Event.FOCUSIN;
               var eventOut = trigger === Trigger.HOVER ? _this3.constructor.Event.MOUSELEAVE : _this3.constructor.Event.FOCUSOUT;
-
               $(_this3.element).on(eventIn, _this3.config.selector, $.proxy(_this3._enter, _this3)).on(eventOut, _this3.config.selector, $.proxy(_this3._leave, _this3));
+              // Prevent any click bubbling in case we have the tooltip inside a label element for a form.
+              $(_this3.element).on(_this3.constructor.Event.CLICK, _this3.config.selector, $.proxy(function(e) {e.preventDefault();}, _this3));
             }
           });
 

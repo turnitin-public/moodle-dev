@@ -46,7 +46,7 @@ class mod_choice_privacy_provider_testcase extends advanced_testcase {
     protected $course;
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     protected function setUp() {
         $this->resetAfterTest();

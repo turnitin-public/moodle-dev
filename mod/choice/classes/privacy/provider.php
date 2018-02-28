@@ -26,11 +26,9 @@ namespace mod_choice\privacy;
 
 use context_module;
 use core_privacy\metadata\item_collection;
-use core_privacy\metadata\provider as core_provider;
 use core_privacy\request\approved_contextlist;
 use core_privacy\request\contextlist;
 use core_privacy\request\deletion_criteria;
-use core_privacy\request\plugin\provider as plugin_provider;
 use core_privacy\request\writer;
 
 defined('MOODLE_INTERNAL') || die();
@@ -41,9 +39,15 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright  2018 Jun Pataleta
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class provider implements core_provider, plugin_provider {
+class provider implements
+    // This plugin stores personal data.
+    \core_privacy\metadata\provider,
+
+    // This plugin is a core_user_data_provider.
+    \core_privacy\request\plugin\provider
+{
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public static function get_metadata(item_collection $items) : item_collection {
         $items->add_database_table(
@@ -61,7 +65,7 @@ class provider implements core_provider, plugin_provider {
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public static function get_contexts_for_userid(int $userid) : contextlist {
         // Fetch all choice answers.
@@ -86,7 +90,7 @@ class provider implements core_provider, plugin_provider {
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public static function export_user_data(approved_contextlist $contextlist) {
         global $DB;
@@ -158,7 +162,7 @@ class provider implements core_provider, plugin_provider {
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public static function delete_for_context(deletion_criteria $criteria) {
         global $DB;
@@ -172,7 +176,7 @@ class provider implements core_provider, plugin_provider {
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public static function delete_user_data(approved_contextlist $contextlist) {
         global $DB;

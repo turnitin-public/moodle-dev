@@ -35,7 +35,7 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright  2018 Jun Pataleta
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class mod_choice_privacy_provider_testcase extends advanced_testcase {
+class mod_choice_privacy_provider_testcase extends \core_privacy\phpunit\provider_testcase {
     /** @var stdClass The student object. */
     protected $student;
 
@@ -118,6 +118,19 @@ class mod_choice_privacy_provider_testcase extends advanced_testcase {
     }
 
     /**
+     * Test for provider::export_user_data().
+     */
+    public function test_export_for_context() {
+        $cm = get_coursemodule_from_instance('choice', $this->choice->id);
+        $cmcontext = context_module::instance($cm->id);
+
+        // Export all of the data for the context.
+        $this->export_context_data_for_user($this->student->id, $cmcontext, 'mod_choice');
+        $writer = \core_privacy\request\writer::with_context($cmcontext);
+        $this->assertTrue($writer->has_any_data());
+    }
+
+    /**
      * Test for provider::delete_for_context().
      */
     public function test_delete_for_context() {
@@ -195,7 +208,7 @@ class mod_choice_privacy_provider_testcase extends advanced_testcase {
 
         $context1 = context_module::instance($cm1->id);
         $context2 = context_module::instance($cm2->id);
-        $contextlist = new \core_privacy\request\approved_contextlist($this->student, [$context1->id, $context2->id]);
+        $contextlist = new \core_privacy\request\approved_contextlist($this->student, 'choice', [$context1->id, $context2->id]);
         provider::delete_user_data($contextlist);
 
         // After deletion, the choice answers for the first student should have been deleted.

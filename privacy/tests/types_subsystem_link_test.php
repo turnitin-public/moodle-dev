@@ -45,7 +45,7 @@ class core_privacy_metadata_types_subsystem_link extends advanced_testcase {
      * @param   string  $summary Summary
      */
     public function test_invalid_configs($name, $summary) {
-        $record = new subsystem_link($name, $summary);
+        $record = new subsystem_link($name, [], $summary);
         $this->assertDebuggingCalled();
     }
 
@@ -61,7 +61,7 @@ class core_privacy_metadata_types_subsystem_link extends advanced_testcase {
         $this->resetAfterTest();
 
         $CFG->debug = DEBUG_NORMAL;
-        $record = new subsystem_link($name, $summary);
+        $record = new subsystem_link($name, [], $summary);
         $this->assertDebuggingNotCalled();
     }
 
@@ -73,7 +73,7 @@ class core_privacy_metadata_types_subsystem_link extends advanced_testcase {
      * @param   string  $summary Summary
      */
     public function test_valid_configs($name, $summary) {
-        $record = new subsystem_link($name, $summary);
+        $record = new subsystem_link($name, [], $summary);
         $this->assertDebuggingNotCalled();
     }
 

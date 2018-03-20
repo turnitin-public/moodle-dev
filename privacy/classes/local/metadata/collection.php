@@ -86,12 +86,13 @@ class collection {
     /**
      * Function to link a subsystem to the component.
      *
-     * @param   string  $name the name of the subsystem to link.
-     * @param   string  $summary A description of what is stored within this subsystem.
+     * @param   string $name the name of the subsystem to link.
+     * @param   string $summary A description of what is stored within this subsystem.
+     * @param   array $privacyfields An optional associative array of fieldname to description.
      * @return  $this
      */
-    public function link_subsystem($name, $summary = '') {
-        $this->add_type(new types\subsystem_link($name, $summary));
+    public function link_subsystem($name, $summary = '', array $privacyfields = []) {
+        $this->add_type(new types\subsystem_link($name, $privacyfields, $summary));
 
         return $this;
     }

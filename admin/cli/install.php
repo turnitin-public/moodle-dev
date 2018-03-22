@@ -809,6 +809,9 @@ if (!$options['skip-database']) {
     // to immediately start browsing the site.
     require_once($CFG->libdir.'/upgradelib.php');
     upgrade_themes();
+
+    // Let the privacy subsystem refresh component metadata and inform any listeners.
+    \core_privacy\manager::schedule_metadata_updates();
 } else {
     echo get_string('cliskipdatabase', 'install')."\n";
 }

@@ -180,6 +180,9 @@ set_config('branch', $branch);
 // unconditionally upgrade
 upgrade_noncore(true);
 
+// Let the privacy subsystem refresh component metadata and inform any listeners.
+\core_privacy\manager::schedule_metadata_updates();
+
 // log in as admin - we need doanything permission when applying defaults
 \core\session\manager::set_user(get_admin());
 

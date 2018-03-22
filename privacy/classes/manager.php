@@ -269,6 +269,15 @@ class manager {
     }
 
     /**
+     * Creates the task which will update the metadata for all components.
+     */
+    public static function schedule_metadata_updates() {
+        $task = new \core_privacy\local\metadata\task\refresh_metadata_task();
+        $task->set_component('core');
+        \core\task\manager::queue_adhoc_task($task);
+    }
+
+    /**
      * Check whether the specified component is a core provider.
      *
      * @param string $component the frankenstyle component name.

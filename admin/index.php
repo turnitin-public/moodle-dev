@@ -692,6 +692,9 @@ if (!$cache and moodle_needs_upgrading()) {
 
     // install/upgrade all plugins and other parts
     upgrade_noncore(true);
+
+    // Let the privacy subsystem refresh component metadata and inform any listeners.
+    \core_privacy\manager::schedule_metadata_updates();
 }
 
 // If this is the first install, indicate that this site is fully configured

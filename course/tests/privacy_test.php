@@ -130,6 +130,48 @@ class core_course_privacy_testcase extends \core_privacy\tests\provider_testcase
         $this->assertObjectHasAttribute('summary', $writerdata);
     }
 
+    public function test_export_context_data_performance_test() {
+        $this->resetAfterTest();
+
+        $start = microtime(true);
+        $courses = [];
+        $mods = [];
+        $modcontexts = [];
+        // Create 200 courses with 200 mods, each course having 1 mod.
+        for ($i = 0; $i < 200; $i++) {
+            $courses[$i] = $this->getDataGenerator()->create_course(['fullname' => 'Course '.$i, 'shortname' => 'C'.$i]);
+            $mods[$i] = $this->getDataGenerator()->create_module('assign', ['course' => $courses[$i]->id, 'name' => 'assign test '.$i]);
+            $ctx = context_module::instance($mods[$i]->cmid);
+            $modcontexts[] = $ctx->id;
+        }
+        $middle= microtime(true);
+
+        $total = $middle - $start;
+        echo "Time so far: $total\n";
+
+        // Now, let's assume during user info export, only the coursemodule contexts are returned in the contextlist_collection.
+        $user = $this->getDataGenerator()->create_user();
+        $collection = new \core_privacy\local\request\contextlist_collection($user->id);
+        $approvedlist = new \core_privacy\local\request\approved_contextlist($user, 'mod_assign', $modcontexts);
+        $collection->add_contextlist($approvedlist);
+
+        \core_course\privacy\provider::export_context_data($collection);
+        foreach ($courses as $course) {
+            $context = context_course::instance($course->id);
+            $writer = \core_privacy\local\request\writer::with_context($context);
+            $this->assertTrue($writer->has_any_data());
+            $writerdata = $writer->get_data();
+            $this->assertObjectHasAttribute('fullname', $writerdata);
+            $this->assertObjectHasAttribute('shortname', $writerdata);
+            $this->assertObjectHasAttribute('idnumber', $writerdata);
+            $this->assertObjectHasAttribute('summary', $writerdata);
+        }
+
+        $end = microtime(true);
+        $total = $end - $middle;
+        echo "Time to end: $total\n";
+    }
+
     /**
      * Test deleting all user data for one context.
      */

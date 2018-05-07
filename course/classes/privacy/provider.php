@@ -26,6 +26,7 @@ namespace core_course\privacy;
 
 defined('MOODLE_INTERNAL') || die();
 
+use core\plugininfo\enrol;
 use \core_privacy\local\metadata\collection;
 use \core_privacy\local\request\contextlist;
 use \core_privacy\local\request\approved_contextlist;
@@ -107,19 +108,15 @@ class provider implements
      *
      * @param  \core_privacy\local\request\contextlist_collection $contextcollection The collection of approved context lists.
      */
-    public static function export_complete_context_data(\core_privacy\local\request\contextlist_collection $completelist) {
+    public static function export_context_data(\core_privacy\local\request\contextlist_collection $completelist) {
         global $DB;
 
         $coursecontextids = $DB->get_records('context', ['contextlevel' => CONTEXT_COURSE], '', 'id, instanceid');
-
         $courseids = [];
         foreach ($completelist as $component) {
             foreach ($component->get_contexts() as $context) {
-                if ($context->contextlevel == CONTEXT_USER
-                        || $context->contextlevel == CONTEXT_SYSTEM
-                        || $context->contextlevel == CONTEXT_COURSECAT) {
-                    // Move onto the next context as these will not contain course contexts.
-                    continue;
+                if (in_array($context->contextlevel, [CONTEXT_USER, CONTEXT_SYSTEM, CONTEXT_COURSECAT])) {
+                    continue; // Move onto the next context as these will not contain course contexts.
                 }
                 foreach ($coursecontextids as $contextid => $record) {
                     if (stripos($context->path, '/' . $contextid . '/') !== false) {

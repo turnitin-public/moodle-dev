@@ -41,5 +41,5 @@ interface context_aware_provider extends \core_privacy\local\request\core_data_p
      *
      * @param  \core_privacy\local\request\contextlist_collection $contextcollection The collection of approved context lists.
      */
-    public static function export_complete_context_data(\core_privacy\local\request\contextlist_collection $contextcollection);
+    public static function export_context_data(\core_privacy\local\request\contextlist_collection $contextcollection);
 }

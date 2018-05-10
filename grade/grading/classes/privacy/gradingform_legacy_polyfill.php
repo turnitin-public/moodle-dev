@@ -45,7 +45,7 @@ trait gradingform_legacy_polyfill {
      *
      * @return \stdClass The data to export.
      */
-    public static function get_gradingform_export_data(\context $context, $definition, $userid) {
+    public static function get_gradingform_export_data(\context $context, $definition, int $userid) {
         return static::_get_gradingform_export_data($context, $definition, $userid);
     }
 
@@ -63,7 +63,7 @@ trait gradingform_legacy_polyfill {
      *
      * @param approved_contextlist $contextlist The approved contexts and user information to delete information for.
      */
-    public static function delete_gradingform_for_userid(approved_contextlist $contextlist) {
-        static::delete_gradingform_for_userid($contextlist);
+    public static function delete_gradingform_for_userid(int $userid, \context $context) {
+        static::_delete_gradingform_for_userid($userid, $context);
     }
 }

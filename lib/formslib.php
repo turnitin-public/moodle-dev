@@ -3058,6 +3058,8 @@ class MoodleQuickForm_Renderer extends HTML_QuickForm_Renderer_Tableless{
         }
 
         if (!$fromtemplate) {
+            // Bootstrapbase-specific fixes for some of the grouped elements.
+            $this->fix_element_text($element);
             parent::renderElement($element, $required, $error);
         } else {
             if (in_array($element->getName(), $this->_stopFieldsetElements) && $this->_fieldsetsOpen > 0) {
@@ -3065,6 +3067,40 @@ class MoodleQuickForm_Renderer extends HTML_QuickForm_Renderer_Tableless{
                 $this->_fieldsetsOpen--;
             }
             $this->_html .= $html;
+        }
+    }
+
+    /**
+     * Backwards compatibility function which fixes text and label data for grouped elements in bs2 based themes.
+     *
+     * @TODO deprecate this when clean (and bs2 based) theme support ends.
+     */
+    protected function fix_element_text(\HTML_QuickForm_element $element) {
+        global $PAGE;
+
+        // Text and label issues only arise in bootstrap base and only for grouped elements supporting text (radio and
+        // checkbox elements).
+        if (!$this->_inGroup || !method_exists($element, 'getText')) {
+            return;
+        }
+
+        $theme = $PAGE->theme;
+        $bsbtheme = false;
+        if ($theme->name === 'clean') {
+            $bsbtheme = true;
+        } else {
+            foreach ($theme->parents as $basetheme) {
+                if ($basetheme === 'bootstrapbase') {
+                    $bsbtheme = true;
+                }
+            }
+        }
+
+        if ($bsbtheme) {
+            // On clean, grouped elements supporting text ( don't support both label and text. Only text is used.
+            // This provides a way to support both, allowing inline elements to set helpbuttons (or other text) and
+            // also have labels. It also supports setting only the label or the text value.
+            $element->setText($element->getLabel() . $element->getText());
         }
     }
 

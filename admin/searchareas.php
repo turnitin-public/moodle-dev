@@ -29,6 +29,8 @@ admin_externalpage_setup('searchareas');
 $areaid = optional_param('areaid', null, PARAM_ALPHAEXT);
 $action = optional_param('action', null, PARAM_ALPHA);
 
+$indexingenabled = \core_search\manager::is_indexing_enabled();
+
 try {
     $searchmanager = \core_search\manager::instance();
 } catch (core_search\engine_exception $searchmanagererror) {
@@ -46,32 +48,35 @@ if ($action) {
     }
 
     if ($action !== 'enable' && $action !== 'disable') {
-        // All actions but enable/disable need the search engine to be ready.
-        if (!empty($searchmanagererror)) {
-            throw $searchmanagererror;
-        }
+        if ($indexingenabled) {
 
-        // Show confirm prompt for all these actions as they may be inadvisable, or may cause
-        // an interruption in search functionality, on production systems.
-        if (!optional_param('confirm', 0, PARAM_INT)) {
-            // Display confirmation prompt.
-            $a = null;
-            if ($areaid) {
-                $a = html_writer::tag('strong', $area->get_visible_name());
+            // All actions but enable/disable need the search engine to be ready.
+            if (!empty($searchmanagererror)) {
+                throw $searchmanagererror;
             }
 
-            $actionparams = ['sesskey' => sesskey(), 'action' => $action, 'confirm' => 1];
-            if ($areaid) {
-                $actionparams['areaid'] = $areaid;
-            }
-            $actionurl = new moodle_url('/admin/searchareas.php', $actionparams);
-            $cancelurl = new moodle_url('/admin/searchareas.php');
-            echo $OUTPUT->header();
-            echo $OUTPUT->confirm(get_string('confirm_' . $action, 'search', $a),
+            // Show confirm prompt for all these actions as they may be inadvisable, or may cause
+            // an interruption in search functionality, on production systems.
+            if (!optional_param('confirm', 0, PARAM_INT)) {
+                // Display confirmation prompt.
+                $a = null;
+                if ($areaid) {
+                    $a = html_writer::tag('strong', $area->get_visible_name());
+                }
+
+                $actionparams = ['sesskey' => sesskey(), 'action' => $action, 'confirm' => 1];
+                if ($areaid) {
+                    $actionparams['areaid'] = $areaid;
+                }
+                $actionurl = new moodle_url('/admin/searchareas.php', $actionparams);
+                $cancelurl = new moodle_url('/admin/searchareas.php');
+                echo $OUTPUT->header();
+                echo $OUTPUT->confirm(get_string('confirm_' . $action, 'search', $a),
                     new single_button($actionurl, get_string('continue'), 'post', true),
                     new single_button($cancelurl, get_string('cancel'), 'get'));
-            echo $OUTPUT->footer();
-            exit;
+                echo $OUTPUT->footer();
+                exit;
+            }
         }
     }
 
@@ -127,6 +132,9 @@ if (!empty($searchmanagererror)) {
     echo $OUTPUT->notification($errorstr, \core\output\notification::NOTIFY_ERROR);
 } else {
     echo $OUTPUT->notification(get_string('indexinginfo', 'admin'), \core\output\notification::NOTIFY_INFO);
+}
+if (!$indexingenabled) {
+    \core\notification::warning('some new message here');
 }
 
 $table = new html_table();
@@ -193,7 +201,7 @@ foreach ($searchareas as $area) {
 
 // Cross-search area tasks.
 $options = array();
-if (!empty($searchmanagererror)) {
+if (!empty($searchmanagererror) || !$indexingenabled) {
     $options['disabled'] = true;
 }
 echo $OUTPUT->box_start('search-areas-actions');

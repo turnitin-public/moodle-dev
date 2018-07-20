@@ -2286,10 +2286,10 @@ require(["core/event", "jquery"], function(Event, $) {
             }
 
             if (_qfMsg != \'\') {
-                var errorSpan = document.getElementById(\'id_error_\' + escapedName);
+                var errorSpan = document.getElementById(\'id_error_\' + element.name);
                 if (!errorSpan) {
                     errorSpan = document.createElement("span");
-                    errorSpan.id = \'id_error_\' + escapedName;
+                    errorSpan.id = \'id_error_\' + element.name;
                     errorSpan.className = "error";
                     element.parentNode.insertBefore(errorSpan, element.parentNode.firstChild);
                     document.getElementById(errorSpan.id).setAttribute(\'TabIndex\', \'0\');
@@ -2307,17 +2307,17 @@ require(["core/event", "jquery"], function(Event, $) {
                     div.className += " error";
                     linebreak = document.createElement("br");
                     linebreak.className = "error";
-                    linebreak.id = \'id_error_break_\' + escapedName;
+                    linebreak.id = \'id_error_break_\' + element.name;
                     errorSpan.parentNode.insertBefore(linebreak, errorSpan.nextSibling);
                 }
 
                 return false;
             } else {
-                var errorSpan = document.getElementById(\'id_error_\' + escapedName);
+                var errorSpan = document.getElementById(\'id_error_\' + element.name);
                 if (errorSpan) {
                     errorSpan.parentNode.removeChild(errorSpan);
                 }
-                var linebreak = document.getElementById(\'id_error_break_\' + escapedName);
+                var linebreak = document.getElementById(\'id_error_break_\' + element.name);
                 if (linebreak) {
                     linebreak.parentNode.removeChild(linebreak);
                 }
@@ -2390,8 +2390,8 @@ require(["core/event", "jquery"], function(Event, $) {
         first_focus = true;
         Y.use(\'moodle-core-event\', function() {
             Y.Global.fire(M.core.globalEvents.FORM_ERROR, {formid: \'' . $this->_attributes['id'] . '\',
-                                                           elementid: \'id_error_' . $escapedElementName . '\'});
-            document.getElementById(\'id_error_' . $escapedElementName . '\').focus();
+                                                           elementid: \'id_error_' . $elementName . '\'});
+            document.getElementById(\'id_error_' . $elementName . '\').focus();
         });
       }
 ';

@@ -1,25 +1,31 @@
 <?php
-/* vim: set expandtab tabstop=4 shiftwidth=4: */
-// +----------------------------------------------------------------------+
-// | PHP version 4.0                                                      |
-// +----------------------------------------------------------------------+
-// | Copyright (c) 1997, 1998, 1999, 2000, 2001 The PHP Group             |
-// +----------------------------------------------------------------------+
-// | This source file is subject to version 2.0 of the PHP license,       |
-// | that is bundled with this package in the file LICENSE, and is        |
-// | available at through the world-wide-web at                           |
-// | http://www.php.net/license/2_02.txt.                                 |
-// | If you did not receive a copy of the PHP license and are unable to   |
-// | obtain it through the world-wide-web, please send a note to          |
-// | license@php.net so we can mail you a copy immediately.               |
-// +----------------------------------------------------------------------+
-// | Authors: Adam Daniel <adaniel1@eesus.jnj.com>                        |
-// |          Bertrand Mansion <bmansion@mamasam.com>                     |
-// +----------------------------------------------------------------------+
-//
-// $Id$
+/* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
 
-require_once('HTML/QuickForm/checkbox.php');
+/**
+ * HTML class for an advanced checkbox type field
+ * 
+ * PHP versions 4 and 5
+ *
+ * LICENSE: This source file is subject to version 3.01 of the PHP license
+ * that is available through the world-wide-web at the following URI:
+ * http://www.php.net/license/3_01.txt If you did not receive a copy of
+ * the PHP License and are unable to obtain it through the web, please
+ * send a note to license@php.net so we can mail you a copy immediately.
+ *
+ * @category    HTML
+ * @package     HTML_QuickForm
+ * @author      Jason Rust <jrust@php.net>
+ * @author      Alexey Borzov <avb@php.net>
+ * @copyright   2001-2011 The PHP Group
+ * @license     http://www.php.net/license/3_01.txt PHP License 3.01
+ * @version     CVS: $Id$
+ * @link        http://pear.php.net/package/HTML_QuickForm
+ */
+
+/**
+ * HTML class for a checkbox type field
+ */
+require_once 'HTML/QuickForm/checkbox.php';
 
 /**
  * HTML class for an advanced checkbox type field
@@ -27,18 +33,21 @@ require_once('HTML/QuickForm/checkbox.php');
  * Basically this fixes a problem that HTML has had
  * where checkboxes can only pass a single value (the
  * value of the checkbox when checked).  A value for when
- * the checkbox is not checked cannot be passed, and
+ * the checkbox is not checked cannot be passed, and 
  * furthermore the checkbox variable doesn't even exist if
  * the checkbox was submitted unchecked.
  *
  * It works by prepending a hidden field with the same name and
  * another "unchecked" value to the checbox. If the checkbox is
  * checked, PHP overwrites the value of the hidden field with
- * its value.
- *
- * @author       Jason Rust <jrust@php.net>
- * @since        2.0
- * @access       public
+ * its value. 
+ * 
+ * @category    HTML
+ * @package     HTML_QuickForm
+ * @author      Jason Rust <jrust@php.net>
+ * @author      Alexey Borzov <avb@php.net>
+ * @version     Release: @package_version@
+ * @since       2.0
  */
 class HTML_QuickForm_advcheckbox extends HTML_QuickForm_checkbox
 {
@@ -65,33 +74,24 @@ class HTML_QuickForm_advcheckbox extends HTML_QuickForm_checkbox
 
     /**
      * Class constructor
-     *
+     * 
      * @param     string    $elementName    (optional)Input field name attribute
-     * @param     string    $elementLabel   (optional)Input field label
+     * @param     string    $elementLabel   (optional)Input field label 
      * @param     string    $text           (optional)Text to put after the checkbox
-     * @param     mixed     $attributes     (optional)Either a typical HTML attribute string
+     * @param     mixed     $attributes     (optional)Either a typical HTML attribute string 
      *                                      or an associative array
-     * @param     mixed     $values         (optional)Values to pass if checked or not checked
+     * @param     mixed     $values         (optional)Values to pass if checked or not checked 
      *
      * @since     1.0
      * @access    public
      * @return    void
      */
-    public function __construct($elementName=null, $elementLabel=null, $text=null, $attributes=null, $values=null) {
-        parent::__construct($elementName, $elementLabel, $text, $attributes);
+    function HTML_QuickForm_advcheckbox($elementName=null, $elementLabel=null, $text=null, $attributes=null, $values=null)
+    {
+        $this->HTML_QuickForm_checkbox($elementName, $elementLabel, $text, $attributes);
         $this->setValues($values);
     } //end constructor
-
-    /**
-     * Old syntax of class constructor. Deprecated in PHP7.
-     *
-     * @deprecated since Moodle 3.1
-     */
-    public function HTML_QuickForm_advcheckbox($elementName=null, $elementLabel=null, $text=null, $attributes=null, $values=null) {
-        debugging('Use of class name as constructor is deprecated', DEBUG_DEVELOPER);
-        self::__construct($elementName, $elementLabel, $text, $attributes, $values);
-    }
-
+    
     // }}}
     // {{{ getPrivateName()
 
@@ -148,7 +148,7 @@ class HTML_QuickForm_advcheckbox extends HTML_QuickForm_checkbox
             // give it default checkbox behavior
             $this->_values = array('', 1);
         } elseif (is_scalar($values)) {
-            // if it's string, then assume the value to
+            // if it's string, then assume the value to 
             // be passed is for when the element is checked
             $this->_values = array('', $values);
         } else {
@@ -163,7 +163,7 @@ class HTML_QuickForm_advcheckbox extends HTML_QuickForm_checkbox
 
    /**
     * Sets the element's value
-    *
+    * 
     * @param    mixed   Element's value
     * @access   public
     */
@@ -197,7 +197,7 @@ class HTML_QuickForm_advcheckbox extends HTML_QuickForm_checkbox
     /**
      * Returns the checkbox element in HTML
      * and the additional hidden element in HTML
-     *
+     * 
      * @access    public
      * @return    string
      */
@@ -207,14 +207,14 @@ class HTML_QuickForm_advcheckbox extends HTML_QuickForm_checkbox
             return parent::toHtml();
         } else {
             return '<input' . $this->_getAttrString(array(
-                        'type'  => 'hidden',
-                        'name'  => $this->getName(),
+                        'type'  => 'hidden', 
+                        'name'  => $this->getName(), 
                         'value' => $this->_values[0]
                    )) . ' />' . parent::toHtml();
-
+            
         }
     } //end func toHtml
-
+    
     // }}}
     // {{{ getFrozenHtml()
 
@@ -236,7 +236,7 @@ class HTML_QuickForm_advcheckbox extends HTML_QuickForm_checkbox
      *
      * @param     string    $event  Name of event
      * @param     mixed     $arg    event arguments
-     * @param     object    $caller calling object
+     * @param     object    &$caller calling object
      * @since     1.0
      * @access    public
      * @return    void

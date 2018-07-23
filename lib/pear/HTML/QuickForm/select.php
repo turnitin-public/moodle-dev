@@ -1,34 +1,43 @@
 <?php
-/* vim: set expandtab tabstop=4 shiftwidth=4: */
-// +----------------------------------------------------------------------+
-// | PHP version 4.0                                                      |
-// +----------------------------------------------------------------------+
-// | Copyright (c) 1997-2003 The PHP Group                                |
-// +----------------------------------------------------------------------+
-// | This source file is subject to version 2.0 of the PHP license,       |
-// | that is bundled with this package in the file LICENSE, and is        |
-// | available at through the world-wide-web at                           |
-// | http://www.php.net/license/2_02.txt.                                 |
-// | If you did not receive a copy of the PHP license and are unable to   |
-// | obtain it through the world-wide-web, please send a note to          |
-// | license@php.net so we can mail you a copy immediately.               |
-// +----------------------------------------------------------------------+
-// | Authors: Adam Daniel <adaniel1@eesus.jnj.com>                        |
-// |          Bertrand Mansion <bmansion@mamasam.com>                     |
-// +----------------------------------------------------------------------+
-//
-// $Id$
+/* vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4: */
 
-require_once('HTML/QuickForm/element.php');
+/**
+ * Class to dynamically create an HTML SELECT
+ * 
+ * PHP versions 4 and 5
+ *
+ * LICENSE: This source file is subject to version 3.01 of the PHP license
+ * that is available through the world-wide-web at the following URI:
+ * http://www.php.net/license/3_01.txt If you did not receive a copy of
+ * the PHP License and are unable to obtain it through the web, please
+ * send a note to license@php.net so we can mail you a copy immediately.
+ *
+ * @category    HTML
+ * @package     HTML_QuickForm
+ * @author      Adam Daniel <adaniel1@eesus.jnj.com>
+ * @author      Bertrand Mansion <bmansion@mamasam.com>
+ * @author      Alexey Borzov <avb@php.net>
+ * @copyright   2001-2011 The PHP Group
+ * @license     http://www.php.net/license/3_01.txt PHP License 3.01
+ * @version     CVS: $Id$
+ * @link        http://pear.php.net/package/HTML_QuickForm
+ */
+
+/**
+ * Base class for form elements
+ */ 
+require_once 'HTML/QuickForm/element.php';
 
 /**
  * Class to dynamically create an HTML SELECT
  *
- * @author       Adam Daniel <adaniel1@eesus.jnj.com>
- * @author       Bertrand Mansion <bmansion@mamasam.com>
- * @version      1.0
- * @since        PHP4.04pl1
- * @access       public
+ * @category    HTML
+ * @package     HTML_QuickForm
+ * @author      Adam Daniel <adaniel1@eesus.jnj.com>
+ * @author      Bertrand Mansion <bmansion@mamasam.com>
+ * @author      Alexey Borzov <avb@php.net>
+ * @version     Release: @package_version@
+ * @since       1.0
  */
 class HTML_QuickForm_select extends HTML_QuickForm_element {
     
@@ -66,24 +75,15 @@ class HTML_QuickForm_select extends HTML_QuickForm_element {
      * @access    public
      * @return    void
      */
-    public function __construct($elementName=null, $elementLabel=null, $options=null, $attributes=null) {
-        parent::__construct($elementName, $elementLabel, $attributes);
+    function HTML_QuickForm_select($elementName=null, $elementLabel=null, $options=null, $attributes=null)
+    {
+        HTML_QuickForm_element::HTML_QuickForm_element($elementName, $elementLabel, $attributes);
         $this->_persistantFreeze = true;
         $this->_type = 'select';
         if (isset($options)) {
             $this->load($options);
         }
     } //end constructor
-
-    /**
-     * Old syntax of class constructor. Deprecated in PHP7.
-     *
-     * @deprecated since Moodle 3.1
-     */
-    public function HTML_QuickForm_select($elementName=null, $elementLabel=null, $options=null, $attributes=null) {
-        debugging('Use of class name as constructor is deprecated', DEBUG_DEVELOPER);
-        self::__construct($elementName, $elementLabel, $attributes);
-    }
     
     // }}}
     // {{{ apiVersion()
@@ -302,7 +302,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element {
     function addOption($text, $value, $attributes=null)
     {
         if (null === $attributes) {
-            $attributes = array('value' => $value);
+            $attributes = array('value' => (string)$value);
         } else {
             $attributes = $this->_parseAttributes($attributes);
             if (isset($attributes['selected'])) {
@@ -314,7 +314,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element {
                     $this->_values[] = $value;
                 }
             }
-            $this->_updateAttrArray($attributes, array('value' => $value));
+            $this->_updateAttrArray($attributes, array('value' => (string)$value));
         }
         $this->_options[] = array('text' => $text, 'attr' => $attributes);
     } // end func addOption
@@ -335,7 +335,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element {
     function loadArray($arr, $values=null)
     {
         if (!is_array($arr)) {
-            return self::raiseError('Argument 1 of HTML_Select::loadArray is not a valid array');
+            return PEAR::raiseError('Argument 1 of HTML_Select::loadArray is not a valid array');
         }
         if (isset($values)) {
             $this->setSelected($values);
@@ -367,7 +367,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element {
     function loadDbResult(&$result, $textCol=null, $valueCol=null, $values=null)
     {
         if (!is_object($result) || !is_a($result, 'db_result')) {
-            return self::raiseError('Argument 1 of HTML_Select::loadDbResult is not a valid DB_result');
+            return PEAR::raiseError('Argument 1 of HTML_Select::loadDbResult is not a valid DB_result');
         }
         if (isset($values)) {
             $this->setValue($values);
@@ -410,7 +410,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element {
         } elseif (is_subclass_of($conn, "db_common")) {
             $dbConn = &$conn;
         } else {
-            return self::raiseError('Argument 1 of HTML_Select::loadQuery is not a valid type');
+            return PEAR::raiseError('Argument 1 of HTML_Select::loadQuery is not a valid type');
         }
         $result = $dbConn->query($sql);
         if (DB::isError($result)) {
@@ -493,9 +493,10 @@ class HTML_QuickForm_select extends HTML_QuickForm_element {
             }
             $strHtml .= $tabs . '<select' . $attrString . ">\n";
 
+            $strValues = is_array($this->_values)? array_map('strval', $this->_values): array();
             foreach ($this->_options as $option) {
-                if (is_array($this->_values) && in_array((string)$option['attr']['value'], $this->_values)) {
-                    $this->_updateAttrArray($option['attr'], array('selected' => 'selected'));
+                if (!empty($strValues) && in_array($option['attr']['value'], $strValues, true)) {
+                    $option['attr']['selected'] = 'selected';
                 }
                 $strHtml .= $tabs . "\t<option" . $this->_getAttrString($option['attr']) . '>' .
                             $option['text'] . "</option>\n";
@@ -521,7 +522,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element {
         if (is_array($this->_values)) {
             foreach ($this->_values as $key => $val) {
                 for ($i = 0, $optCount = count($this->_options); $i < $optCount; $i++) {
-                    if ((string)$val == (string)$this->_options[$i]['attr']['value']) {
+                    if (0 == strcmp($val, $this->_options[$i]['attr']['value'])) {
                         $value[$key] = $this->_options[$i]['text'];
                         break;
                     }
@@ -568,7 +569,7 @@ class HTML_QuickForm_select extends HTML_QuickForm_element {
             $cleanValue = null;
             foreach ($value as $v) {
                 for ($i = 0, $optCount = count($this->_options); $i < $optCount; $i++) {
-                    if ($v == $this->_options[$i]['attr']['value']) {
+                    if (0 == strcmp($v, $this->_options[$i]['attr']['value'])) {
                         $cleanValue[] = $v;
                         break;
                     }

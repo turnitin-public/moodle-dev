@@ -25,6 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once("HTML/QuickForm/input.php");
+require_once($CFG->libdir."/form/element_traits.php");
 
 /**
  * The editor for the marking guide advanced grading plugin.
@@ -34,6 +35,8 @@ require_once("HTML/QuickForm/input.php");
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class moodlequickform_guideeditor extends HTML_QuickForm_input {
+    use form_element;
+
     /** @var string help message */
     public $_helpbutton = '';
     /** @var null|false|string stores the result of the last validation: null - undefined, false - no errors,

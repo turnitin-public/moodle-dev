@@ -27,6 +27,8 @@
 
 require_once('HTML/QuickForm/radio.php');
 require_once('templatable_form_element.php');
+require_once('element_traits.php');
+
 /**
  * radio type form element
  *
@@ -39,6 +41,10 @@ require_once('templatable_form_element.php');
  */
 class MoodleQuickForm_radio extends HTML_QuickForm_radio implements templatable {
     use templatable_form_element;
+    use form_element, element_radio {
+        // The radio-specific override takes precedence over the element override, so enforce this.
+        element_radio::_generateId insteadof form_element;
+    }
 
     /** @var string html for help button, if empty then no help */
     var $_helpbutton='';

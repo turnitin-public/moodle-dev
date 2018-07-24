@@ -28,8 +28,10 @@
 
 require_once('HTML/QuickForm/element.php');
 require_once($CFG->dirroot.'/lib/filelib.php');
+require_once($CFG->libdir.'/form/element_traits.php');
 
 class MoodleQuickForm_wikifiletable extends HTML_QuickForm_element {
+    use form_element;
 
     private $_contextid;
     private $_filearea;

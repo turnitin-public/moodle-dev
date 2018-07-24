@@ -27,6 +27,7 @@
 
 require_once('HTML/QuickForm/checkbox.php');
 require_once('templatable_form_element.php');
+require_once('element_traits.php');
 
 /**
  * HTML class for a checkbox type element
@@ -45,6 +46,7 @@ class MoodleQuickForm_checkbox extends HTML_QuickForm_checkbox implements templa
     use templatable_form_element {
         export_for_template as export_for_template_base;
     }
+    use form_element;
 
     /** @var string html for help button, if empty then no help */
     var $_helpbutton='';

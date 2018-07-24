@@ -72,7 +72,6 @@ class HTML_QuickForm_radio extends HTML_QuickForm_input
         $this->_persistantFreeze = true;
         $this->setType('radio');
         $this->_text = $text;
-        $this->_generateId();
     } //end constructor
 
     /**

@@ -25,6 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once("HTML/QuickForm/input.php");
+require_once($CFG->libdir."/form/element_traits.php");
 
 /**
  * Form element for handling rubric editor
@@ -42,6 +43,8 @@ require_once("HTML/QuickForm/input.php");
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class MoodleQuickForm_rubriceditor extends HTML_QuickForm_input {
+    use form_element;
+
     /** @var string help message */
     public $_helpbutton = '';
     /** @var string|bool stores the result of the last validation: null - undefined, false - no errors, string - error(s) text */

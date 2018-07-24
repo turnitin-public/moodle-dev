@@ -26,6 +26,7 @@
  */
 
 require_once 'HTML/QuickForm/header.php';
+require_once('element_traits.php');
 
 /**
  * Header form element
@@ -39,6 +40,8 @@ require_once 'HTML/QuickForm/header.php';
  */
 class MoodleQuickForm_header extends HTML_QuickForm_header
 {
+    use form_element;
+
     /** @var string html for help button, if empty then no help */
     var $_helpbutton='';
 

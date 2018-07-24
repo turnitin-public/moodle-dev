@@ -1120,10 +1120,15 @@ abstract class moodleform {
                 if ($elementclone instanceof HTML_QuickForm_group && !$elementclone->_appendName) {
                     foreach ($elementclone->getElements() as $el) {
                         $this->repeat_elements_fix_clone($i, $el, $namecloned);
+                        // For each cloned element in a group, regenerate its ID based on the final name to avoid duplicate ids.
+                        $el->removeAttribute('id');
+                        $el->_generateId();
                     }
                     $elementclone->setLabel(str_replace('{no}', $i + 1, $elementclone->getLabel()));
                 }
-
+                // For each cloned element NOT in a group, regenerate its ID based on the final name to avoid duplicate ids.
+                $elementclone->removeAttribute('id');
+                $elementclone->_generateId();
                 $mform->addElement($elementclone);
             }
         }

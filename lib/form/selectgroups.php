@@ -27,6 +27,7 @@
 
 require_once('HTML/QuickForm/element.php');
 require_once('templatable_form_element.php');
+require_once('element_traits.php');
 
 /**
  * select type form element
@@ -43,6 +44,7 @@ class MoodleQuickForm_selectgroups extends HTML_QuickForm_element implements tem
     use templatable_form_element {
         export_for_template as export_for_template_base;
     }
+    use form_element;
 
     /** @var bool add choose option */
     var $showchoose = false;

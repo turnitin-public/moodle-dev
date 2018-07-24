@@ -27,6 +27,7 @@
 
 require_once("HTML/QuickForm/static.php");
 require_once('templatable_form_element.php');
+require_once('element_traits.php');
 
 /**
  * Text type element
@@ -42,6 +43,7 @@ class MoodleQuickForm_static extends HTML_QuickForm_static implements templatabl
     use templatable_form_element {
         export_for_template as export_for_template_base;
     }
+    use form_element;
 
     /** @var string Form element type */
     var $_elementTemplateType='static';

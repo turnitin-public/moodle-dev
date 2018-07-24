@@ -31,6 +31,7 @@ require_once('HTML/QuickForm/element.php');
 require_once($CFG->dirroot.'/lib/filelib.php');
 require_once($CFG->dirroot.'/repository/lib.php');
 require_once('templatable_form_element.php');
+require_once('element_traits.php');
 
 /**
  * Filemanager form element
@@ -45,6 +46,7 @@ class MoodleQuickForm_filemanager extends HTML_QuickForm_element implements temp
     use templatable_form_element {
         export_for_template as export_for_template_base;
     }
+    use form_element;
 
     /** @var string html for help button, if empty then no help will icon will be dispalyed. */
     public $_helpbutton = '';

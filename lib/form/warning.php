@@ -26,6 +26,7 @@
  */
 require_once("HTML/QuickForm/static.php");
 require_once('templatable_form_element.php');
+require_once('element_traits.php');
 
 /**
  * static warning
@@ -41,6 +42,7 @@ class MoodleQuickForm_warning extends HTML_QuickForm_static implements templatab
     use templatable_form_element {
         export_for_template as export_for_template_base;
     }
+    use form_element;
 
     /** @var string Form element type */
     var $_elementTemplateType='warning';

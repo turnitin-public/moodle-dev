@@ -27,6 +27,7 @@
 
 require_once("HTML/QuickForm/text.php");
 require_once('templatable_form_element.php');
+require_once('element_traits.php');
 
 /**
  * url type form element
@@ -41,6 +42,7 @@ class MoodleQuickForm_url extends HTML_QuickForm_text implements templatable {
     use templatable_form_element {
         export_for_template as export_for_template_base;
     }
+    use form_element;
 
     /** @var string html for help button, if empty then no help */
     var $_helpbutton='';

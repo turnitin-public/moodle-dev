@@ -29,6 +29,7 @@ global $CFG;
 require_once("HTML/QuickForm/element.php");
 require_once($CFG->dirroot.'/grade/grading/form/lib.php');
 require_once('templatable_form_element.php');
+require_once('element_traits.php');
 
 if (class_exists('HTML_QuickForm')) {
     HTML_QuickForm::registerRule('gradingvalidated', 'callback', '_validate', 'MoodleQuickForm_grading');
@@ -52,6 +53,7 @@ class MoodleQuickForm_grading extends HTML_QuickForm_input implements templatabl
     use templatable_form_element {
         export_for_template as export_for_template_base;
     }
+    use form_element;
 
     /** @var string html for help button, if empty then no help */
     var $_helpbutton='';

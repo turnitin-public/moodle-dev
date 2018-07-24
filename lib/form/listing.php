@@ -29,6 +29,7 @@ if (!defined('MOODLE_INTERNAL')) {
 }
 
 require_once("HTML/QuickForm/input.php");
+require_once('element_traits.php');
 
 /**
 * The listing element is a simple customizable "select" without the input type=select.
@@ -55,6 +56,7 @@ require_once("HTML/QuickForm/input.php");
 * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 */
 class MoodleQuickForm_listing extends HTML_QuickForm_input {
+    use form_element;
 
     /** @var array items to display. */
     protected $items = array();

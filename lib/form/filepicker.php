@@ -30,6 +30,7 @@ global $CFG;
 require_once("HTML/QuickForm/button.php");
 require_once($CFG->dirroot.'/repository/lib.php');
 require_once('templatable_form_element.php');
+require_once('element_traits.php');
 
 /**
  * Filepicker form element
@@ -45,6 +46,8 @@ class MoodleQuickForm_filepicker extends HTML_QuickForm_input implements templat
     use templatable_form_element {
         export_for_template as export_for_template_base;
     }
+    use form_element;
+
     /** @var string html for help button, if empty then no help will icon will be dispalyed. */
     public $_helpbutton = '';
 

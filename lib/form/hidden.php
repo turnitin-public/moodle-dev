@@ -26,6 +26,7 @@
  */
 
 require_once('HTML/QuickForm/hidden.php');
+require_once('element_traits.php');
 
 /**
  * Hidden type form element
@@ -38,6 +39,8 @@ require_once('HTML/QuickForm/hidden.php');
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class MoodleQuickForm_hidden extends HTML_QuickForm_hidden{
+    use form_element;
+
     /** @var string html for help button, if empty then no help */
     var $_helpbutton='';
 

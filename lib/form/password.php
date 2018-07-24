@@ -27,6 +27,7 @@
 
 require_once('HTML/QuickForm/password.php');
 require_once('templatable_form_element.php');
+require_once('element_traits.php');
 
 /**
  * Password type form element
@@ -40,6 +41,7 @@ require_once('templatable_form_element.php');
  */
 class MoodleQuickForm_password extends HTML_QuickForm_password implements templatable {
     use templatable_form_element;
+    use form_element;
 
     /** @var string, html for help button, if empty then no help */
     var $_helpbutton='';

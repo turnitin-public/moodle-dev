@@ -27,6 +27,7 @@
 
 require_once("HTML/QuickForm/group.php");
 require_once('templatable_form_element.php');
+require_once('element_traits.php');
 
 /**
  * HTML class for a form element group
@@ -42,6 +43,7 @@ class MoodleQuickForm_group extends HTML_QuickForm_group implements templatable 
     use templatable_form_element {
         export_for_template as export_for_template_base;
     }
+    use form_element;
 
     /** @var string html for help button, if empty then no help */
     var $_helpbutton='';

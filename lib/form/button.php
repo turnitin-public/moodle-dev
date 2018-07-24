@@ -28,6 +28,7 @@
 require_once("HTML/QuickForm/button.php");
 require_once(__DIR__ . '/../outputcomponents.php');
 require_once('templatable_form_element.php');
+require_once('element_traits.php');
 
 /**
  * HTML class for a button type element
@@ -42,6 +43,7 @@ require_once('templatable_form_element.php');
 class MoodleQuickForm_button extends HTML_QuickForm_button implements templatable
 {
     use templatable_form_element;
+    use form_element;
 
     /** @var string html for help button, if empty then no help */
     var $_helpbutton='';

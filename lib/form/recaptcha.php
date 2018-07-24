@@ -27,6 +27,7 @@
 
 require_once('HTML/QuickForm/input.php');
 require_once('templatable_form_element.php');
+require_once('element_traits.php');
 
 /**
  * recaptcha type form element
@@ -42,6 +43,7 @@ class MoodleQuickForm_recaptcha extends HTML_QuickForm_input implements templata
     use templatable_form_element {
         export_for_template as export_for_template_base;
     }
+    use form_element;
 
     /** @var string html for help button, if empty then no help */
     var $_helpbutton='';

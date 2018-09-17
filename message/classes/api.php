@@ -24,6 +24,8 @@
 
 namespace core_message;
 
+use core_favourites\local\entity\favourite;
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/lib/messagelib.php');
@@ -277,9 +279,68 @@ class api {
      * @return array
      */
     public static function get_conversations($userid, $limitfrom = 0, $limitnum = 20) {
+        return self::get_user_conversations($userid, $limitfrom, $limitnum, false);
+    }
+
+    /**
+     * Mark a conversation as a favourite for the given user.
+     *
+     * @param int $conversationid the id of the conversation to mark as a favourite.
+     * @param int $userid the id of the user to whom the favourite belongs.
+     * @return favourite the favourite object.
+     * @throws \moodle_exception if the user or conversation don't exist.
+     */
+    public static function set_favourite_conversation(int $conversationid, int $userid) : favourite {
+        if (!self::is_user_in_conversation($userid, $conversationid)) {
+            throw new \moodle_exception("Conversation doesn't exist or user is not a member");
+        }
+        $ufservice = \core_favourites\service_factory::get_service_for_user_context(\context_user::instance($userid));
+        return $ufservice->create_favourite('core_message', 'message_conversations', $conversationid, \context_system::instance());
+    }
+
+    /**
+     * Unset a conversation as a favourite for the given user.
+     *
+     * @param int $conversationid the id of the conversation to unset as a favourite.
+     * @param int $userid the id to whom the favourite belongs.
+     * @throws \moodle_exception if the favourite does not exist for the user.
+     */
+    public static function unset_favourite_conversation(int $conversationid, int $userid) {
+        $ufservice = \core_favourites\service_factory::get_service_for_user_context(\context_user::instance($userid));
+        $ufservice->delete_favourite('core_message', 'message_conversations', $conversationid, \context_system::instance());
+    }
+
+    /**
+     * Helper method used to fetch conversations information for listing all conversations, or favourite conversations.
+     *
+     * Used by get_conversations(), get_favourite_conversations().
+     *
+     * @param int $userid the id of the user to whom the favourite belongs.
+     * @param int $limitfrom The offset to start at
+     * @param int $limitnum The number of records to fetch
+     * @param bool $favouritesonly if we only want those conversations which have been favourited.
+     * @return array the array of conversations
+     * @throws \coding_exception
+     * @throws \dml_exception
+     * @throws \moodle_exception
+     */
+    protected static function get_user_conversations(int $userid, int $limitfrom, int $limitnum, bool $favouritesonly) {
         global $DB;
 
-        // Get the last message from each conversation that the user belongs to.
+        if ($favouritesonly) {
+            // Ask the favourites subsystem for the user's favourite conversations.
+            $service = \core_favourites\service_factory::get_service_for_user_context(\context_user::instance($userid));
+            $favourites = $service->find_favourites_by_type('core_message', 'message_conversations', $limitfrom, $limitnum);
+            if (empty($favourites)) {
+                return []; // No favourited conversations, so return none.
+            }
+            $favids = array_values(array_map(function ($fav) {
+                return $fav->itemid;
+            }, $favourites));
+            list ($insql, $inparams) = $DB->get_in_or_equal($favids, SQL_PARAMS_NAMED, 'favouriteids');
+        }
+
+        // Get the last message from each conversation that the user belongs to and has favourited.
         $sql = "SELECT m.id, m.conversationid, m.useridfrom, mcm2.userid as useridto, m.smallmessage, m.timecreated
                   FROM {messages} m
             INNER JOIN (
@@ -305,10 +366,20 @@ class api {
             INNER JOIN {message_conversation_members} mcm2
                     ON mcm2.conversationid = m.conversationid
                  WHERE mcm.userid = m.useridfrom
-                   AND mcm.id != mcm2.id
-              ORDER BY m.timecreated DESC";
-        $messageset = $DB->get_recordset_sql($sql, ['userid' => $userid, 'action' => self::MESSAGE_ACTION_DELETED,
-            'userid2' => $userid], $limitfrom, $limitnum);
+                   AND mcm.id != mcm2.id";
+        if ($favouritesonly) {
+            $sql .= " AND m.conversationid {$insql}";
+        }
+        $sql .= " ORDER BY m.timecreated DESC";
+        $params = ['userid' => $userid, 'action' => self::MESSAGE_ACTION_DELETED,
+            'userid2' => $userid];
+        if ($favouritesonly) {
+            $params = array_merge($params, $inparams);
+            // Reset the limit and offset. These have already been used in generating the where in clause.
+            $limitfrom = 0;
+            $limitnum = 0;
+        }
+        $messageset = $DB->get_recordset_sql($sql, $params, $limitfrom, $limitnum);
 
         $messages = [];
         foreach ($messageset as $message) {
@@ -407,6 +478,18 @@ class api {
         }
 
         return $arrconversations;
+    }
+
+    /**
+     * Gets the list of conversations favourited by the user.
+     *
+     * @param int $userid the id of the user to whom the favourite conversations belong.
+     * @param int $limitfrom optional pagination control for returning a subset of records, starting at this point.
+     * @param int $limitnum optional pagination control for returning a subset comprising this many records.
+     * @return array the list of conversations which have been favourited by the user.
+     */
+    public static function get_favourite_conversations($userid, $limitfrom = 0, $limitnum = 20) {
+        return self::get_user_conversations($userid, $limitfrom, $limitnum, true);
     }
 
     /**

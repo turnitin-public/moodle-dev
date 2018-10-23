@@ -106,6 +106,39 @@ if ($contactsfirst) {
     $conversations = \core_message\api::get_contacts($user1->id, 0, 20);
 } else {
     $conversations = \core_message\api::get_conversations($user1->id, 0, 20);
+    // Transform new data format back into the old format, just for BC during the deprecation life cycle.
+    $tmp = [];
+    foreach ($conversations as $id => $conv) {
+        $data = new \stdClass();
+        // The logic for the 'other user' is a follows:
+        // If a conversation is of type 'individual', the other user is always the member who is not the current user, unless
+        // the current user is the only conversation member.
+        // If the conversation is of type 'group', the other user is always the sender of the most recent message.
+        if ($conv->type == \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL) {
+            $otheruserid = $user1->id;
+            foreach ($conv->members as $member) {
+                if ($member->id != $otheruserid) {
+                    $otheruserid = $member->id;
+                }
+            }
+        } else if ($conv->type == \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP) {
+            $otheruserid = $conv->messages[0]->useridfrom;
+        }
+        $data->userid = $otheruserid;
+        $data->useridfrom = $conv->messages[0]->useridfrom ?? null;
+        $data->fullname = $conv->members[$otheruserid]->fullname;
+        $data->profileimageurl = $conv->members[$otheruserid]->profileimageurl;
+        $data->profileimageurlsmall = $conv->members[$otheruserid]->profileimageurlsmall;
+        $data->ismessaging = isset($conv->messages[0]->text) ? true : false;
+        $data->lastmessage = $conv->messages[0]->text ?? null;
+        $data->messageid = $conv->messages[0]->id ?? null;
+        $data->isonline = $conv->members[$otheruserid]->isonline ?? null;
+        $data->isblocked = $conv->members[$otheruserid]->isblocked ?? null;
+        $data->isread = $conv->isread;
+        $data->unreadcount = $conv->unreadcount;
+        $tmp[$data->userid] = $data;
+    }
+    $conversations = $tmp;
 }
 $messages = [];
 if (!$user2realuser) {

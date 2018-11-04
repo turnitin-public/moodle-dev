@@ -55,7 +55,7 @@ require_once(__DIR__ . '/../message/lib.php');
  * @return mixed the integer ID of the new message or false if there was a problem with submitted data
  */
 function message_send(\core\message\message $eventdata) {
-    global $CFG, $DB;
+    global $CFG, $DB, $SITE;
 
     //new message ID to return
     $messageid = false;
@@ -74,6 +74,204 @@ function message_send(\core\message\message $eventdata) {
         $eventdata->notification = 1;
     }
 
+    // This is a message directed to a conversation, not a specific user as was the way in legacy messaging .
+    // We need to check each conversation member's processor list individually
+    // and we must call send_message (which deals with event generation) for each member too.
+    if (!$eventdata->notification && $eventdata->convid) {
+        // Get user records for all members of the conversation.
+        $sql = "SELECT u.*
+                  FROM {message_conversation_members} mcm
+                  JOIN {user} u
+                    ON (mcm.conversationid = :convid AND u.id = mcm.userid)";
+        $members = $DB->get_records_sql($sql, ['convid' => $eventdata->convid]);
+        if (empty($members)) {
+            throw new \moodle_exception("Conversation has no members or does not exist.");
+        }
+
+        if (!is_object($eventdata->userfrom)) {
+            $eventdata->userfrom = $members[$eventdata->userfrom];
+        }
+        $otherusers = array_filter($members, function($member) use($eventdata) {
+            return $member->id != $eventdata->userfrom->id;
+        });
+
+        // Only one message will be saved to the DB.
+        $conversationid = $eventdata->convid;
+        $table = 'messages';
+        $tabledata = new stdClass();
+        $tabledata->courseid = $eventdata->courseid;
+        $tabledata->useridfrom = $eventdata->userfrom->id;
+        $tabledata->conversationid = $conversationid;
+        $tabledata->subject = $eventdata->subject;
+        $tabledata->fullmessage = $eventdata->fullmessage;
+        $tabledata->fullmessageformat = $eventdata->fullmessageformat;
+        $tabledata->fullmessagehtml = $eventdata->fullmessagehtml;
+        $tabledata->smallmessage = $eventdata->smallmessage;
+        $tabledata->timecreated = time();
+
+        if (PHPUNIT_TEST and class_exists('phpunit_util')) {
+            // Add some more tests to make sure the normal code can actually work.
+            $componentdir = core_component::get_component_directory($eventdata->component);
+            if (!$componentdir or !is_dir($componentdir)) {
+                throw new coding_exception('Invalid component specified in message-send(): '.$eventdata->component);
+            }
+            if (!file_exists("$componentdir/db/messages.php")) {
+                throw new coding_exception("$eventdata->component does not contain db/messages.php necessary for message_send()");
+            }
+            $messageproviders = null;
+            include("$componentdir/db/messages.php");
+            if (!isset($messageproviders[$eventdata->name])) {
+                $errormsg = "Missing messaging defaults for event '$eventdata->name' in '$eventdata->component' messages.php file";
+                throw new coding_exception($errormsg);
+            }
+            unset($componentdir);
+            unset($messageproviders);
+            // Now ask phpunit if it wants to catch this message.
+            if (phpunit_util::is_redirecting_messages()) {
+                $messageid = $DB->insert_record($table, $tabledata);
+                $message = $DB->get_record($table, array('id' => $messageid));
+
+                // Mark the message as read for each of the other users.
+                foreach ($otherusers as $othermember) {
+                    \core_message\api::mark_message_as_read($othermember->id, $message);
+                }
+
+                // Unit tests need this detail.
+                $message->notification = $eventdata->notification;
+                phpunit_util::message_sent($message);
+                return $messageid;
+            }
+        }
+
+        // Cache messages.
+        if (!empty($eventdata->convid)) {
+            // Cache the timecreated value of the last message in this conversation.
+            $cache = cache::make('core', 'message_time_last_message_between_users');
+            $key = \core_message\helper::get_last_message_time_created_cache_key($eventdata->convid);
+            $cache->set($key, $tabledata->timecreated);
+        }
+
+        // Store unread message just in case we get a fatal error any time later.
+        $tabledata->id = $DB->insert_record($table, $tabledata);
+        $eventdata->savedmessageid = $tabledata->id;
+
+        // Fetch enabled processors.
+        // If we are dealing with a message some processors may want to handle it regardless of user and site settings.
+        $processors = array_filter(get_message_processors(false), function($processor) {
+            if ($processor->object->force_process_messages()) {
+                return true;
+            }
+
+            return ($processor->enabled && $processor->configured);
+        });
+
+        // For each member of the conversation, other than the sender:
+        // 1. Set recipient specific event data (language specific, user prefs, etc)
+        // 2. Generate recipient specific processor list
+        // 3. Call send_message() to pass the message to processors and generate the relevant per-user events.
+        foreach ($otherusers as $member) {
+            $usertoisrealuser = (core_user::is_real_user($member->id) != false);
+
+            // Using string manager directly so that strings in the message will be in the message recipients language rather than
+            // the sender's.
+            $eventdata->subject = get_string_manager()->get_string('unreadnewmessage', 'message', fullname($eventdata->userfrom),
+                $member->lang);
+
+            // Spoof the userto based on the current member.
+            $eventdata->userto = $member;
+
+            $s = new stdClass();
+            $s->sitename = format_string($SITE->shortname, true, array('context' => context_course::instance(SITEID)));
+            // When the new interface lands, the URL may reintroduced, but for now it isn't supported.
+            $s->url = '';
+            $emailtagline = get_string_manager()->get_string('emailtagline', 'message', $s, $member->lang);
+            if (!empty($eventdata->fullmessage)) {
+                $eventdata->fullmessage .= "\n\n---------------------------------------------------------------------\n"
+                    . $emailtagline;
+            }
+            if (!empty($eventdata->fullmessagehtml)) {
+                $eventdata->fullmessagehtml .= "<br><br>---------------------------------------------------------------------<br>"
+                    . $emailtagline;
+            }
+
+            // If recipient is internal user (noreply user), and emailstop is set then don't send any msg.
+            if (!$usertoisrealuser && !empty($member->emailstop)) {
+                debugging('Attempt to send msg to internal (noreply) user', DEBUG_NORMAL);
+                return false;
+            }
+
+            // Set the online state.
+            if (isset($CFG->block_online_users_timetosee)) {
+                $timetoshowusers = $CFG->block_online_users_timetosee * 60;
+            } else {
+                $timetoshowusers = 300;
+            }
+
+            // Work out if the user is logged in or not.
+            $userstate = 'loggedoff';
+            if (!empty($eventdata->userto->lastaccess) && (time() - $timetoshowusers) < $eventdata->userto->lastaccess) {
+                $userstate = 'loggedin';
+            }
+
+            // Fill in the array of processors to be used based on default and user preferences.
+            $processorlist = [];
+            foreach ($processors as $processor) {
+                // Skip adding processors for internal user, if processor doesn't support sending message to internal user.
+                if (!$usertoisrealuser && !$processor->object->can_send_to_any_users()) {
+                    continue;
+                }
+
+                // First find out permissions.
+                $defaultpreference = $processor->name.'_provider_'.$preferencebase.'_permitted';
+                if (isset($defaultpreferences->{$defaultpreference})) {
+                    $permitted = $defaultpreferences->{$defaultpreference};
+                } else {
+                    // MDL-25114 They supplied an $eventdata->component $eventdata->name combination which doesn't
+                    // exist in the message_provider table (thus there is no default settings for them).
+                    $preferrormsg = "Could not load preference $defaultpreference. Make sure the component and name you supplied
+                    to message_send() are valid.";
+                    throw new coding_exception($preferrormsg);
+                }
+
+                // Find out if user has configured this output.
+                // Some processors cannot function without settings from the user.
+                $userisconfigured = $processor->object->is_user_configured($member);
+
+                // DEBUG: notify if we are forcing unconfigured output.
+                if ($permitted == 'forced' && !$userisconfigured) {
+                    debugging('Attempt to force message delivery to user who has "'.$processor->name.'" output unconfigured',
+                        DEBUG_NORMAL);
+                }
+
+                // Populate the list of processors we will be using.
+                if (!$eventdata->notification && $processor->object->force_process_messages()) {
+                    $processorlist[] = $processor->name;
+                } else if ($permitted == 'forced' && $userisconfigured) {
+                    // An admin is forcing users to use this message processor. Use this processor unconditionally.
+                    $processorlist[] = $processor->name;
+                } else if ($permitted == 'permitted' && $userisconfigured && !$member->emailstop) {
+                    // User has not disabled notifications.
+                    // See if user set any notification preferences, otherwise use site default ones.
+                    $userpreferencename = 'message_provider_'.$preferencebase.'_'.$userstate;
+                    if ($userpreference = get_user_preferences($userpreferencename, null, $member)) {
+                        if (in_array($processor->name, explode(',', $userpreference))) {
+                            $processorlist[] = $processor->name;
+                        }
+                    } else if (isset($defaultpreferences->{$userpreferencename})) {
+                        if (in_array($processor->name, explode(',', $defaultpreferences->{$userpreferencename}))) {
+                            $processorlist[] = $processor->name;
+                        }
+                    }
+                }
+            }
+            \core\message\manager::send_message($eventdata, $tabledata, $processorlist);
+        }
+        return $tabledata->id;
+    }
+
+    // Notifications and legacy messaging code:
+    // Most of the next steps are shared by both the legacy message code (those being sent to a single 'userto', not to a
+    // conversation), and for notifications. Any message-specific or notification-specific steps are clearly marked.
     if (!is_object($eventdata->userto)) {
         $eventdata->userto = core_user::get_user($eventdata->userto);
     }
@@ -105,7 +303,7 @@ function message_send(\core\message\message $eventdata) {
 
     // Verify all necessary data fields are present.
     if (!isset($eventdata->userto->auth) or !isset($eventdata->userto->suspended)
-            or !isset($eventdata->userto->deleted) or !isset($eventdata->userto->emailstop)) {
+        or !isset($eventdata->userto->deleted) or !isset($eventdata->userto->emailstop)) {
 
         debugging('Necessary properties missing in userto object, fetching full record', DEBUG_DEVELOPER);
         $eventdata->userto = core_user::get_user($eventdata->userto->id);
@@ -132,10 +330,8 @@ function message_send(\core\message\message $eventdata) {
         $userstate = 'loggedoff';
     }
 
-    // Check if we are creating a notification or message.
     if ($eventdata->notification) {
         $table = 'notifications';
-
         $tabledata = new stdClass();
         $tabledata->useridfrom = $eventdata->userfrom->id;
         $tabledata->useridto = $eventdata->userto->id;
@@ -158,11 +354,11 @@ function message_send(\core\message\message $eventdata) {
         } else {
             $tabledata->contexturlname = null;
         }
+        $tabledata->timecreated = time();
     } else {
         $table = 'messages';
-
         if (!$conversationid = \core_message\api::get_conversation_between_users([$eventdata->userfrom->id,
-                $eventdata->userto->id])) {
+            $eventdata->userto->id])) {
             $conversation = \core_message\api::create_conversation(
                 \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL,
                 [
@@ -172,7 +368,6 @@ function message_send(\core\message\message $eventdata) {
             );
             $conversationid = $conversation->id;
         }
-
         $tabledata = new stdClass();
         $tabledata->courseid = $eventdata->courseid;
         $tabledata->useridfrom = $eventdata->userfrom->id;
@@ -182,10 +377,10 @@ function message_send(\core\message\message $eventdata) {
         $tabledata->fullmessageformat = $eventdata->fullmessageformat;
         $tabledata->fullmessagehtml = $eventdata->fullmessagehtml;
         $tabledata->smallmessage = $eventdata->smallmessage;
+        $tabledata->timecreated = time();
     }
 
-    $tabledata->timecreated = time();
-
+    // PHP Unit specific hack, allowing messages to be buffered and captured.
     if (PHPUNIT_TEST and class_exists('phpunit_util')) {
         // Add some more tests to make sure the normal code can actually work.
         $componentdir = core_component::get_component_directory($eventdata->component);
@@ -225,8 +420,10 @@ function message_send(\core\message\message $eventdata) {
     }
 
     // Fetch enabled processors.
-    // If we are dealing with a message some processors may want to handle it regardless of user and site settings.
-    if (!$eventdata->notification) {
+    if ($eventdata->notification) {
+        $processors = get_message_processors(true);
+    } else {
+        // If we are dealing with a message some processors may want to handle it regardless of user and site settings.
         $processors = array_filter(get_message_processors(false), function($processor) {
             if ($processor->object->force_process_messages()) {
                 return true;
@@ -234,8 +431,6 @@ function message_send(\core\message\message $eventdata) {
 
             return ($processor->enabled && $processor->configured);
         });
-    } else {
-        $processors = get_message_processors(true);
     }
 
     // Preset variables
@@ -255,7 +450,7 @@ function message_send(\core\message\message $eventdata) {
             // MDL-25114 They supplied an $eventdata->component $eventdata->name combination which doesn't
             // exist in the message_provider table (thus there is no default settings for them).
             $preferrormsg = "Could not load preference $defaultpreference. Make sure the component and name you supplied
-                    to message_send() are valid.";
+                to message_send() are valid.";
             throw new coding_exception($preferrormsg);
         }
 
@@ -290,14 +485,13 @@ function message_send(\core\message\message $eventdata) {
         }
     }
 
-    // Only cache messages, not notifications.
-    if (!$eventdata->notification) {
-        if (!empty($eventdata->convid)) {
-            // Cache the timecreated value of the last message in this conversation.
-            $cache = cache::make('core', 'message_time_last_message_between_users');
-            $key = \core_message\helper::get_last_message_time_created_cache_key($eventdata->convid);
-            $cache->set($key, $tabledata->timecreated);
-        }
+    // We have either created or derived a conversationid, which we can use to
+    // update the 'message_time_last_message_between_users' cache.
+    if (!empty($tabledata->conversationid)) {
+        // Cache the timecreated value of the last message in this conversation.
+        $cache = cache::make('core', 'message_time_last_message_between_users');
+        $key = \core_message\helper::get_last_message_time_created_cache_key($tabledata->conversationid);
+        $cache->set($key, $tabledata->timecreated);
     }
 
     // Store unread message just in case we get a fatal error any time later.

@@ -88,6 +88,9 @@ function message_send(\core\message\message $eventdata) {
             throw new \moodle_exception("Conversation has no members or does not exist.");
         }
 
+        // Get conversation type and name. We'll use this to determine which message subject to generate, depending on type.
+        $conv = $DB->get_record('message_conversations', ['id' => $eventdata->convid], 'id, type, name');
+
         if (!is_object($eventdata->userfrom)) {
             $eventdata->userfrom = $members[$eventdata->userfrom];
         }
@@ -174,8 +177,14 @@ function message_send(\core\message\message $eventdata) {
 
             // Using string manager directly so that strings in the message will be in the message recipients language rather than
             // the sender's.
-            $eventdata->subject = get_string_manager()->get_string('unreadnewmessage', 'message', fullname($eventdata->userfrom),
-                $member->lang);
+            if ($conv->type == \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL) {
+                $eventdata->subject = get_string_manager()->get_string('unreadnewmessage', 'message',
+                    fullname($eventdata->userfrom), $member->lang);
+            } else if ($conv->type == \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP) {
+                $stringdata = (object) ['name' => fullname($eventdata->userfrom), 'conversationname' => $conv->name];
+                $eventdata->subject = get_string_manager()->get_string('unreadnewgroupconversationmessage', 'message', $stringdata,
+                    $member->lang);
+            }
 
             // Spoof the userto based on the current member.
             $eventdata->userto = $member;

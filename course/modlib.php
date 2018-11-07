@@ -170,10 +170,12 @@ function add_moduleinfo($moduleinfo, $course, $mform = null) {
     $eventdata = clone $moduleinfo;
     $eventdata->modname = $eventdata->modulename;
     $eventdata->id = $eventdata->coursemodule;
+
+    $moduleinfo = edit_module_post_actions($moduleinfo, $course);
+
     $event = \core\event\course_module_created::create_from_cm($eventdata, $modcontext);
     $event->trigger();
 
-    $moduleinfo = edit_module_post_actions($moduleinfo, $course);
     $transaction->allow_commit();
 
     return $moduleinfo;
@@ -618,10 +620,11 @@ function update_moduleinfo($cm, $moduleinfo, $course, $mform = null) {
     if ($completion->is_enabled() && !empty($moduleinfo->completionunlocked)) {
         $completion->reset_all_state($cm);
     }
+    
+    $moduleinfo = edit_module_post_actions($moduleinfo, $course);
+
     $cm->name = $moduleinfo->name;
     \core\event\course_module_updated::create_from_cm($cm, $modcontext)->trigger();
-
-    $moduleinfo = edit_module_post_actions($moduleinfo, $course);
 
     return array($cm, $moduleinfo);
 }

@@ -242,6 +242,14 @@ class manager {
                     }
                 }
             }
+            // Only messages to individual conversations can use the email processor.
+            // We don't want a single message triggering tens of emails to all recipients.
+            if ($conv->type != \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL) {
+                if ($emailkey = array_search('email', $processorlist)) {
+                    unset($processorlist[$emailkey]);
+                }
+            }
+
             // Batch up the localised event data and processor list for all users into a local buffer.
             $eventprocmaps[] = [clone($localisedeventdata), $processorlist];
         }

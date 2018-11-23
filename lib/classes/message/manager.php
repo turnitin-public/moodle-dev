@@ -82,7 +82,9 @@ class manager {
         $localisedeventdata = clone $eventdata;
 
         // Get user records for all members of the conversation.
-        $sql = "SELECT u.*
+        // We must fetch distinct users, because it's possible for a user to message themselves via bulk user actions.
+        // In such cases, there will be 2 records referring to the same user.
+        $sql = "SELECT DISTINCT u.id, u.*
                   FROM {message_conversation_members} mcm
                   JOIN {user} u
                     ON (mcm.conversationid = :convid AND u.id = mcm.userid)

@@ -350,6 +350,14 @@ $definitions = array(
         'datasource' => '\core_message\time_last_message_between_users',
     ),
 
+    // Caches the list of conversations for a user.
+    'message_user_conversations' => array(
+        'mode' => cache_store::MODE_SESSION,
+        'simplekeys' => true, // The user id is used.
+        'simplevalues' => true,
+        'datasource' => '\core_message\user_conversations_list',
+    ),
+
     // Caches font awesome icons.
     'fontawesomeiconmapping' => array(
         'mode' => cache_store::MODE_APPLICATION,

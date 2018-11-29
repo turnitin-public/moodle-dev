@@ -25,6 +25,7 @@
 namespace core_message;
 
 use core_favourites\local\entity\favourite;
+use core_message\local\conversation_cache_factory;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -516,6 +517,16 @@ class api {
             throw new \moodle_exception("Invalid value ($type) for type param, please see api constants.");
         }
 
+        // Check the cache to see whether we need to fetch the data.
+        error_log('checking cached conversations');
+        $cachedconversations = conversation_cache_factory::get_conversation_cache()->get_cached_user_conversations($userid, $type,
+            $favourites, $limitfrom, $limitnum);
+        if (!is_null($cachedconversations)) {
+            error_log('found in cache');
+            return $cachedconversations;
+        }
+        error_log('no hit in cache');
+
         // We need to know which conversations are favourites, so we can either:
         // 1) Include the 'isfavourite' attribute on conversations (when $favourite = null and we're including all conversations)
         // 2) Restrict the results to ONLY those conversations which are favourites (when $favourite = true)
@@ -524,6 +535,9 @@ class api {
         $favouriteconversations = $service->find_favourites_by_type('core_message', 'message_conversations');
         $favouriteconversationids = array_column($favouriteconversations, 'itemid');
         if ($favourites && empty($favouriteconversationids)) {
+            error_log('no conversations found in get_conversations() for FAV, returning early');
+            conversation_cache_factory::get_conversation_cache()->set_user_conversation_cache($userid, [], $type, $favourites,
+                $limitfrom, $limitnum);
             return []; // If we are aiming to return ONLY favourites, and we have none, there's nothing more to do.
         }
 
@@ -592,6 +606,9 @@ class api {
 
         // If there are no conversations found, then return early.
         if (empty($conversations)) {
+            error_log('no conversations found in get_conversations(), returning early');
+            conversation_cache_factory::get_conversation_cache()->set_user_conversation_cache($userid, [], $type, $favourites,
+                $limitfrom, $limitnum);
             return [];
         }
 
@@ -796,6 +813,11 @@ class api {
 
             $arrconversations[] = $conv;
         }
+
+        // Cache the conversations.
+        conversation_cache_factory::get_conversation_cache()->set_user_conversation_cache($userid, $arrconversations, $type,
+            $favourites, $limitfrom, $limitnum);
+
         return $arrconversations;
     }
 

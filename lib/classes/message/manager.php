@@ -194,6 +194,32 @@ class manager {
                 $userstate = 'loggedin';
             }
 
+            // Update the conversations cache for the recipient.
+            $cache = \cache::make('core', 'message_user_conversations');
+            $cachekey = $recipient->id;
+            $cachedconversations = $cache->get($cachekey);
+            if (!is_null($cachedconversations)) {
+                error_log('in here');
+                $cachedconversations = unserialize($cachedconversations);
+
+                // Update the conversation with id == $conv->id.
+                foreach ($cachedconversations as $cachedconv) {
+                    error_log('in here');
+                    if ($cachedconv->id == $conv->id) {
+                        // Update the message and member information.
+                        $cachedconv->messages[0]->text = 'cats';
+                        error_log('updating cache for recipient of message');
+                        break;
+                    }
+                }
+
+                // Reserialise and set.
+                $updatedcachedconversations = serialize($cachedconversations);
+                $cache->set($cachekey, $updatedcachedconversations);
+            } else {
+                error_log('failed to find conversations for recipient when sending');
+            }
+
             // Fill in the array of processors to be used based on default and user preferences.
             // This applies only to individual conversations. Messages to group conversations ignore processors.
             $processorlist = [];

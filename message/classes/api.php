@@ -522,6 +522,15 @@ class api {
             throw new \moodle_exception("Invalid value ($type) for type param, please see api constants.");
         }
 
+        // Check the cache to see whether we need to fetch the data.
+        $cachedconversations = local\cache_helper::get_cached_user_conversations($userid, $type, $favourites);
+        if (!is_null($cachedconversations)) {
+            return $cachedconversations;
+        } else {
+            error_log('Conversations not found in cache');
+        }
+        sleep(1);
+
         // We need to know which conversations are favourites, so we can either:
         // 1) Include the 'isfavourite' attribute on conversations (when $favourite = null and we're including all conversations)
         // 2) Restrict the results to ONLY those conversations which are favourites (when $favourite = true)
@@ -530,6 +539,7 @@ class api {
         $favouriteconversations = $service->find_favourites_by_type('core_message', 'message_conversations');
         $favouriteconversationids = array_column($favouriteconversations, 'itemid');
         if ($favourites && empty($favouriteconversationids)) {
+            local\cache_helper::set_user_conversation_cache($userid, [], $type, $favourites);
             return []; // If we are aiming to return ONLY favourites, and we have none, there's nothing more to do.
         }
 
@@ -598,6 +608,7 @@ class api {
 
         // If there are no conversations found, then return early.
         if (empty($conversations)) {
+            local\cache_helper::set_user_conversation_cache($userid, [], $type, $favourites);
             return [];
         }
 
@@ -789,6 +800,10 @@ class api {
 
             $arrconversations[] = $conv;
         }
+
+        // Cache it and return.
+        \core_message\local\cache_helper::set_user_conversation_cache($userid, $arrconversations, $type, $favourites);
+
         return $arrconversations;
     }
 

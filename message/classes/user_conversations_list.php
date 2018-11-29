@@ -50,7 +50,7 @@ class user_conversations_list implements \cache_data_source {
      * @return object
      */
     public static function get_instance_for_cache(cache_definition $definition) {
-        if (is_null(self::$questionfinder)) {
+        if (is_null(self::$cacheinstance)) {
             self::$cacheinstance = new user_conversations_list();
         }
         return self::$cacheinstance;
@@ -63,6 +63,8 @@ class user_conversations_list implements \cache_data_source {
      * @return mixed What ever data should be returned, or false if it can't be loaded.
      */
     public function load_for_cache($key) {
+        error_log('IN LOAD FOR CACHE');
+        return null;
         $conversations = api::get_conversations($key);
 
         if ($conversations) {

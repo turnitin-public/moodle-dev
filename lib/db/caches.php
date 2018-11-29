@@ -352,7 +352,7 @@ $definitions = array(
 
     // Caches the list of conversations for a user.
     'message_user_conversations' => array(
-        'mode' => cache_store::MODE_SESSION,
+        'mode' => cache_store::MODE_APPLICATION,
         'simplekeys' => true, // The user id is used.
         'simplevalues' => true,
         'datasource' => '\core_message\user_conversations_list',

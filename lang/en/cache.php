@@ -76,6 +76,7 @@ $string['cachedef_temp_tables'] = 'Temporary tables cache';
 $string['cachedef_userselections'] = 'Data used to persist user selections throughout Moodle';
 $string['cachedef_user_group_groupings'] = 'User\'s groupings and groups per course';
 $string['cachedef_yuimodules'] = 'YUI Module definitions';
+$string['cachedef_message_user_conversations'] = 'User\'s messaging conversations';
 $string['cachelock_file_default'] = 'Default file locking';
 $string['cachestores'] = 'Cache stores';
 $string['component'] = 'Component';

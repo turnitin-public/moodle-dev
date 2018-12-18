@@ -593,6 +593,7 @@ class api {
         $individualmembers = [];
         $groupmembers = [];
         foreach ($conversationset as $conversation) {
+            $conversation->conversationname = format_string($conversation->conversationname);
             $conversations[$conversation->id] = $conversation;
             $members[$conversation->id] = [];
         }

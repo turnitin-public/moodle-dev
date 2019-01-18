@@ -840,8 +840,8 @@ function clean_param($param, $type) {
             return (int)$param;
 
         case PARAM_FLOAT:
-            // Convert to float.
-            return (float)$param;
+            // Convert to float, swapping out decsep for . to make it a php-compatible float.
+            return unformat_float($param, true);
 
         case PARAM_ALPHA:
             // Remove everything not `a-z`.

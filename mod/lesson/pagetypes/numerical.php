@@ -49,12 +49,12 @@ class lesson_page_type_numerical extends lesson_page {
     }
     public function display($renderer, $attempt) {
         global $USER, $CFG, $PAGE;
-        $mform = new lesson_display_answer_form_shortanswer($CFG->wwwroot.'/mod/lesson/continue.php', array('contents'=>$this->get_contents(), 'lessonid'=>$this->lesson->id));
+        $mform = new lesson_display_answer_form_numerical($CFG->wwwroot.'/mod/lesson/continue.php', array('contents'=>$this->get_contents(), 'lessonid'=>$this->lesson->id));
         $data = new stdClass;
         $data->id = $PAGE->cm->id;
         $data->pageid = $this->properties->id;
         if (isset($USER->modattempts[$this->lesson->id])) {
-            $data->answer = s($attempt->useranswer);
+            $data->answer = s(format_float($attempt->useranswer, strlen($attempt->useranswer), true, true));
         }
         $mform->set_data($data);
 
@@ -74,8 +74,7 @@ class lesson_page_type_numerical extends lesson_page {
     public function check_answer() {
         global $CFG;
         $result = parent::check_answer();
-
-        $mform = new lesson_display_answer_form_shortanswer($CFG->wwwroot.'/mod/lesson/continue.php', array('contents'=>$this->get_contents()));
+        $mform = new lesson_display_answer_form_numerical($CFG->wwwroot.'/mod/lesson/continue.php', array('contents'=>$this->get_contents()));
         $data = $mform->get_data();
         require_sesskey();
 
@@ -91,13 +90,18 @@ class lesson_page_type_numerical extends lesson_page {
             $result->noanswer = true;
             return $result;
         } else {
-            // Just doing default PARAM_RAW, not doing PARAM_INT because it could be a float.
-            $result->useranswer = (float)$data->answer;
+            // $data->answer will already be validated as a PARAM_FLOAT, with locale taken into account.
+            $result->useranswer = format_float($data->answer, strlen($data->answer), true, true);
+            // Set this to the 'proper format' as it overrides.
+            // the useranswer in record_attempt before saving to the db.
+            $result->userresponse = $data->answer;
         }
-        $result->studentanswer = $result->userresponse = $result->useranswer;
+        $result->studentanswer = $result->useranswer;
         $answers = $this->get_answers();
+
         foreach ($answers as $answer) {
             $answer = parent::rewrite_answers_urls($answer);
+
             if (strpos($answer->answer, ':')) {
                 // there's a pairs of values
                 list($min, $max) = explode(':', $answer->answer);
@@ -108,7 +112,7 @@ class lesson_page_type_numerical extends lesson_page {
                 $minimum = (float) $answer->answer;
                 $maximum = $minimum;
             }
-            if (($result->useranswer >= $minimum) && ($result->useranswer <= $maximum)) {
+            if (($result->userresponse >= $minimum) && ($result->userresponse <= $maximum)) {
                 $result->newpageid = $answer->jumpto;
                 $result->response = format_text($answer->response, $answer->responseformat, $formattextdefoptions);
                 if ($this->lesson->jumpto_is_correct($this->properties->id, $result->newpageid)) {
@@ -129,6 +133,7 @@ class lesson_page_type_numerical extends lesson_page {
     }
 
     public function display_answers(html_table $table) {
+        echo "<br><br><br>IN DISPLAY ANSWERS<br>";
         $answers = $this->get_answers();
         $options = new stdClass;
         $options->noclean = true;
@@ -148,7 +153,16 @@ class lesson_page_type_numerical extends lesson_page {
             } else {
                 $cells[] = '<label class="correct">' . get_string('answer', 'lesson') . ' ' . $i . '</label>:';
             }
-            $cells[] = format_text($answer->answer, $answer->answerformat, $options);
+            $formattedanswer = $answer->answer;
+            print_r($formattedanswer);
+            if (strpos($formattedanswer, ':')) {
+                list($min, $max) = explode(':', $formattedanswer);
+                $formattedanswer = format_float($min, strlen($min), true, true)  . ':' .
+                    format_float($max, strlen($max), true, true);
+            } else {
+                $formattedanswer = format_float($formattedanswer, strlen($formattedanswer), true, true);
+            }
+            $cells[] = format_text($formattedanswer, $answer->answerformat, $options);
             $table->data[] = new html_table_row($cells);
 
             $cells = array();
@@ -193,6 +207,9 @@ class lesson_page_type_numerical extends lesson_page {
     }
 
     public function report_answers($answerpage, $answerdata, $useranswer, $pagestats, &$i, &$n) {
+        echo "<br><br><br>";
+        echo "IN REPORT ANSWERS<br>";
+        //die;
         $answers = $this->get_answers();
         $formattextdefoptions = new stdClass;
         $formattextdefoptions->para = false;  //I'll use it widely in this page
@@ -205,7 +222,8 @@ class lesson_page_type_numerical extends lesson_page {
                     unset($stats["total"]);
                     foreach ($stats as $valentered => $ntimes) {
                         $data = '<input class="form-control" type="text" size="50" ' .
-                                'disabled="disabled" readonly="readonly" value="'.s($valentered).'" />';
+                                'disabled="disabled" readonly="readonly" value="'.
+                                s(format_float($valentered, strlen($valentered), true, true)).'" />';
                         $percent = $ntimes / $total * 100;
                         $percent = round($percent, 2);
                         $percent .= "% ".get_string("enteredthis", "lesson");
@@ -219,7 +237,8 @@ class lesson_page_type_numerical extends lesson_page {
                     empty($answerdata->answers)))) {
                 // Get in here when the user answered or for the last answer.
                 $data = '<input class="form-control" type="text" size="50" ' .
-                        'disabled="disabled" readonly="readonly" value="'.s($useranswer->useranswer).'">';
+                        'disabled="disabled" readonly="readonly" value="'.
+                        s(format_float($useranswer->useranswer, strlen($useranswer->useranswer), true, true)).'">';
                 if (isset($pagestats[$this->properties->id][$useranswer->useranswer])) {
                     $percent = $pagestats[$this->properties->id][$useranswer->useranswer] / $pagestats[$this->properties->id]["total"] * 100;
                     $percent = round($percent, 2);
@@ -277,6 +296,71 @@ class lesson_add_page_form_numerical extends lesson_add_page_form_base {
             $this->add_score($i, null, ($i===0)?1:0);
         }
     }
+
+    protected function format_answer_field($data) {
+        if (!empty($data->answer_editor)) {
+            foreach ($data->answer_editor as $key => $answer) {
+                if (strpos($answer, ':')) {
+                    list($min, $max) = explode(':', $answer);
+                    $data->answer_editor[$key] = unformat_float($min) . ':' . unformat_float($max);
+                } else {
+                    $data->answer_editor[$key] = unformat_float($answer);
+                }
+            }
+        }
+        return $data;
+    }
+
+    /**
+     * We call get data when storing the data into the db. Override to format the floats properly
+     *
+     * @return object|void
+     */
+    public function get_data() {
+        $data = parent::get_data();
+        return $this->format_answer_field($data);
+    }
+
+    /**
+     * Return submitted data if properly submitted or returns NULL if validation fails or
+     * if there is no submitted data with formatted numbers
+     *
+     * @return object submitted data; NULL if not valid or not submitted or cancelled
+     */
+    /*public function get_submitted_data() {
+        $data = parent::get_submitted_data();
+        return $this->format_answer_field($data);
+    }*/
+
+    /**
+     * Load in existing data as form defaults. Usually new entry defaults are stored directly in
+     * form definition (new entry form); this function is used to load in data where values
+     * already exist and data is being edited (edit entry form) after formatting numbers
+     *
+     *
+     * @param stdClass|array $defaults object or array of default values
+     */
+    public function set_data($defaults) {
+        if (is_object($defaults)) {
+            $defaults = (array) $defaults;
+        }
+        $editor = 'answer_editor';
+        foreach ($defaults as $key => $answer) {
+            if (substr($key, 0, strlen($editor)) == $editor) { //&& is_numeric($answer)) {
+                if (strpos($answer, ':')) {
+                    list($min, $max) = explode(':', $answer);
+                    $defaults[$key] = $min . ':' . $max;
+                    if (is_numeric($min) && is_numeric($max)) {
+                        $defaults[$key] = format_float($min, strlen($min), true, true) . ':' .
+                                          format_float($max, strlen($max), true, true);
+                    }
+                } else {
+                    $defaults[$key] = is_numeric($answer) ? format_float($answer, strlen($answer), true, true) : $answer;
+                }
+            }
+        }
+        parent::set_data($defaults);
+    }
 }
 
 class lesson_display_answer_form_numerical extends moodleform {
@@ -321,5 +405,4 @@ class lesson_display_answer_form_numerical extends moodleform {
             $this->add_action_buttons(null, get_string("submit", "lesson"));
         }
     }
-
 }

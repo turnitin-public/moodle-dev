@@ -841,7 +841,7 @@ function clean_param($param, $type) {
 
         case PARAM_FLOAT:
             // Convert to float.
-            return (float)$param;
+            return unformat_float($param);
 
         case PARAM_ALPHA:
             // Remove everything not `a-z`.

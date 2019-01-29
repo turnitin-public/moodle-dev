@@ -135,6 +135,63 @@ class conversation_cache {
     }
 
     /**
+     * Add the conversation to the list of conversations cached against destinationcachekey.
+     *
+     * This will splice the value into the correct location, based on the id of the recent message, with higher ids occupying lower
+     * indexes in the array.
+     *
+     * @param \stdClass $conversation must be a prior-cached conversation structure, NOT a conversation record.
+     * @param string $cachekey the key corresponding to the conversation category for a specific user.
+     */
+    protected function cache_insert_conversation_for_key(\stdClass $conversation, string $cachekey) : void {
+        if (($destinationconversations = unserialize($this->cache->get($cachekey))) === false) {
+            error_log("cache_insert_conversation_for_key: couldn't find cached values, returning");
+            return;
+        }
+        // Insert the conversation into the appropriate spot - ordering based on the id of the recent message.
+        $insertindex = count($destinationconversations);
+        foreach ($destinationconversations as $destinationindex => $destinationconversation) {
+            if ($conversation->messages[0]->id > $destinationconversation->messages[0]->id) {
+                $insertindex = $destinationindex;
+                break;
+            }
+        }
+        error_log("cache_insert_conversation_for_key: inserting conversation into $cachekey at index: $insertindex");
+        array_splice($destinationconversations, $insertindex, 0, [$conversation]);
+        $this->cache->set($cachekey, serialize($destinationconversations));
+    }
+
+    /**
+     * Returns the item matched on id from the list of conversations cached at index $categorykey.
+     *
+     * This is a helper used to grab a conversations, by id, from a known category cache, and can optionally remove the item too.
+     *
+     * @param string $categorykey the key representing the category to search within.
+     * @param int $id the id of the item.
+     * @param bool $delete whether or not the item should also be removed from the list.
+     * @return \stdClass the item.
+     * @throws \moodle_exception if the cache contains no values or doesn't contain an item identified by the specified id.
+     */
+    protected function category_cache_get_by_id(string $categorykey, int $id, bool $delete = false) : \stdClass{
+        if (($values = unserialize($this->cache->get($categorykey))) === false) {
+            error_log("cache_values_contain_id: no cached values found for key: $categorykey");
+            throw new \moodle_exception('no cached values found for the specified key');
+        }
+        if (($index = array_search($id, array_column($values, 'id'))) === false) {
+            throw new \moodle_exception('item not found in cached values');
+        }
+        $item = $values[$index];
+
+        if ($delete) {
+            unset($values[$index]);
+            $values = array_values($values);
+            $this->cache->set($categorykey, serialize($values));
+        }
+
+        return $item;
+    }
+
+    /**
      * Update the recent message in a cached conversation for a single user.
      *
      * @param int $userid the user whose cache is to be updated.
@@ -236,5 +293,63 @@ class conversation_cache {
         error_log("get: returning conversations from the cache for key: '$cachekey'");
 
         return unserialize($cachedconversations);
+    }
+
+    /**
+     * Updates the cache when a conversation is marked as a favourite by a user.
+     *
+     * This will remove the conversation from its respective category cache (individual, group), if present, and place it in the
+     * favourite category, if present.
+     *
+     * @param \stdClass $conversation a full conversation record.
+     * @param int $userid the id of the user whose cache we wish to update.
+     */
+    public function conversation_favourited_by_user(\stdClass $conversation, int $userid) {
+
+        $originkey = $this->get_key_from_params($userid, $conversation->type, false);
+        $destinationkey = $this->get_key_from_params($userid, null, true);
+
+        try {
+            // Get the conversation from the origin list, removing it in the process.
+            $cachedconversation = $this->category_cache_get_by_id($originkey, $conversation->id, true);
+
+            // Update the favourite status and store in the destination key (the favourites category).
+            $cachedconversation->isfavourite = true;
+            $this->cache_insert_conversation_for_key($cachedconversation, $destinationkey);
+        } catch (\moodle_exception $m) {
+            // No conversation was found in the origin cache, meaning both that key, and now the x_favourites keys are stale.
+            // We must delete them and force a reload of the data on next request.
+            $this->cache->delete_many([$originkey, $destinationkey]);
+            return;
+        }
+    }
+
+    /**
+     * Updates the cache when a conversation is unset as a favourite by a user.
+     *
+     * This will remove the conversation from the favourite category cache, if present, and place it in the appropriate type
+     * (individual, favourite) category cache, if present.
+     *
+     * @param \stdClass $conversation a full conversation record.
+     * @param int $userid the id of the user whose cache we wish to update.
+     */
+    public function conversation_unfavourited_by_user(\stdClass $conversation, int $userid) {
+
+        $originkey = $this->get_key_from_params($userid, null, true);
+        $destinationkey = $this->get_key_from_params($userid, $conversation->type, false);
+
+        try {
+            // Get the conversation from the origin list, removing it in the process.
+            $cachedconversation = $this->category_cache_get_by_id($originkey, $conversation->id, true);
+
+            // Update the favourite status and store in the destination key (the type-specific category).
+            $cachedconversation->isfavourite = false;
+            $this->cache_insert_conversation_for_key($cachedconversation, $destinationkey);
+        } catch (\moodle_exception $m) {
+            // No conversation was found in the origin cache, meaning both that key, and now the x_type keys are stale.
+            // We must delete them and force a reload of the data on next request.
+            $this->cache->delete_many([$originkey, $destinationkey]);
+            return;
+        }
     }
 }

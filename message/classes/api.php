@@ -1008,7 +1008,12 @@ class api {
         if ($favourite = $ufservice->get_favourite('core_message', 'message_conversations', $conversationid, $conversationctx)) {
             return $favourite;
         } else {
-            return $ufservice->create_favourite('core_message', 'message_conversations', $conversationid, $conversationctx);
+            $favourite = $ufservice->create_favourite('core_message', 'message_conversations', $conversationid, $conversationctx);
+
+            // Update the conversation caches.
+            conversation_cache_factory::get_conversation_cache()->conversation_favourited_by_user($conversation, $userid);
+
+            return $favourite;
         }
     }
 
@@ -1035,6 +1040,8 @@ class api {
 
         $ufservice = \core_favourites\service_factory::get_service_for_user_context($userctx);
         $ufservice->delete_favourite('core_message', 'message_conversations', $conversationid, $conversationctx);
+
+        conversation_cache_factory::get_conversation_cache()->conversation_unfavourited_by_user($conversation, $userid);
     }
 
     /**

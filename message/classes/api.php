@@ -2303,6 +2303,9 @@ class api {
             \core\event\message_deleted::create_from_ids($userid, $USER->id,
                 $messageid, $mua->id)->trigger();
 
+            // Let the cache layer know.
+            local\conversation_cache_factory::get_conversation_cache()->message_deleted_for_user($messageid, $userid);
+
             return true;
         }
 

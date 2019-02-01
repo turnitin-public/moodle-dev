@@ -352,4 +352,26 @@ class conversation_cache {
             return;
         }
     }
+
+    /**
+     * Called when a message has been deleted for a user, allowing caches to be checked, and purged if required.
+     *
+     * @param int $messageid the message which has been deleted.
+     * @param int $userid the user to whom the message belongs.
+     */
+    public function message_deleted_for_user(int $messageid, int $userid) {
+        // The message may have been a recent message in a conversation, so we need to check.
+        foreach ($this->get_all_cache_keys_for_user($userid) as $key) {
+            if (($values = unserialize($this->cache->get($key))) !== false) {
+                foreach ($values as $index => $conv) {
+                    if (!empty($conv->messages) && $conv->messages[0]->id == $messageid) {
+                        // It's a recent message, so nuke that cache key.
+                        error_log("deleted a recent message, killing cache key: $key");
+                        $this->cache->delete($key);
+                        return;
+                    }
+                }
+            }
+        }
+    }
 }

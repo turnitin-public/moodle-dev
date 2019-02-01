@@ -1493,6 +1493,9 @@ class api {
             \core\event\message_deleted::create_from_ids($userid, $USER->id,
                 $message->id, $mua->id)->trigger();
         }
+
+        // Update the cache.
+        local\conversation_cache_factory::get_conversation_cache()->conversation_deleted_for_user($conversationid, $userid);
     }
 
     /**

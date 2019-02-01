@@ -374,4 +374,26 @@ class conversation_cache {
             }
         }
     }
+
+    /**
+     * Let the cache know a user's conversation has been deleted, so it can update the relevant key.
+     *
+     * @param int $conversationid
+     * @param int $userid
+     * @throws \coding_exception
+     */
+    public function conversation_deleted_for_user(int $conversationid, int $userid) {
+        // Only the ID is provided, so we need to search all categories.
+        foreach ($this->get_all_cache_keys_for_user($userid) as $key) {
+            if (($values = unserialize($this->cache->get($key))) !== false) {
+                if (($index = array_search($conversationid, array_column($values, 'id'))) !== false) {
+                    error_log("conversation_deleted_for_user: found deleted conversation, removing from key: $key");
+                    unset($values[$index]);
+                    $values = array_values($values);
+                    $this->cache->set($key, serialize($values));
+                    return;
+                }
+            }
+        }
+    }
 }

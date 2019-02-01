@@ -200,7 +200,9 @@ class conversation_cache {
      */
     public function set_conversation_recent_message(int $userid, int $conversationid, \stdClass $message) {
         // Search through all categories of cached conversations.
+        $keys = [];
         foreach ($this->get_all_cache_keys_for_user($userid) as $key) {
+            $keys[] = $key;
             // Get the cached conversations, if any, and unserialise.
             $categoryconversations = [];
             if ($cacheval = $this->cache->get($key)) {
@@ -236,9 +238,11 @@ class conversation_cache {
 
                     // Update the cache.
                     $this->cache->set($key, serialize($categoryconversations));
-                    break;
+                    return;
                 }
             }
+            // Else no cache hits were found. We can't be sure which category the conversation is in, so reset all.
+            $this->cache->delete_many($keys);
         }
     }
 
@@ -395,5 +399,40 @@ class conversation_cache {
                 }
             }
         }
+    }
+
+    /**
+     * Purges the relevant keys for the supplied users on creation of a new conversation, forcing values to be regenerated.
+     *
+     * @param \stdClass $conversation the conversation object.
+     * @param array $userids the ids of the users present in the conversation.
+     */
+    public function conversation_created_between_users(\stdClass $conversation, array $userids) {
+        // Purge the caches for the users, but only for the specific conversation type.
+        $type = $conversation->type;
+        $keys = [];
+        foreach ($userids  as $userid) {
+            $key = $this->get_key_from_params($userid, $type, null);
+            error_log("conversation_creation: adding key: $key to purge list");
+            $keys[] = $key;
+        }
+        $this->cache->delete_many($keys);
+    }
+
+    /**
+     * A new conversation has been created, so we must purge the keys for these users.
+     *
+     * @param int $userid
+     */
+    public function legacy_message_sent(array $userids) {
+        // A message was sent using the legacy send (1:1 when conversation does NOT exist).
+        // We have no choice but to purge the individual conversations key for the user, so it can be regenerated.
+        $keys = [];
+        foreach ($userids as $userid) {
+            $key = $this->get_key_from_params($userid, \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL, false);
+            error_log("legacy_message_sent: conversation only just created, purging cache");
+            $keys[] = $key;
+        }
+        $this->cache->delete_many($key);
     }
 }

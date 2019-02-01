@@ -2465,6 +2465,9 @@ class api {
 
         $conversation->members = $arrmembers;
 
+        // Caches need to be regenerated.
+        local\conversation_cache_factory::get_conversation_cache()->conversation_created_between_users($conversation, $userids);
+
         return $conversation;
     }
 

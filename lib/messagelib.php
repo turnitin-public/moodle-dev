@@ -131,6 +131,12 @@ function message_send(\core\message\message $eventdata) {
         // We either have found a conversation, or created one.
         $conversationid = $conversationid ? $conversationid : $conversation->id;
         $eventdata->convid = $conversationid;
+
+        // So, try to set the conversation recent message for both the sender and recipient.
+        \core_message\local\conversation_cache_factory::get_conversation_cache()->legacy_message_sent([
+            $eventdata->userfrom->id,
+            $eventdata->userto->id
+        ]);
     }
 
     // This is a message directed to a conversation, not a specific user as was the way in legacy messaging.

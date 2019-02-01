@@ -248,6 +248,14 @@ class manager {
                     }
                 }
             }
+            // Update the conversations cache with the recent message for both the sender and recipients.
+            foreach ($otherusers as $recip) {
+                \core_message\local\conversation_cache_factory::get_conversation_cache()->set_conversation_recent_message(
+                    $recip->id, $conv->id, $savemessage);
+            }
+            \core_message\local\conversation_cache_factory::get_conversation_cache()->set_conversation_recent_message(
+                $localisedeventdata->userfrom->id, $conv->id, $savemessage);
+
             // Batch up the localised event data and processor list for all users into a local buffer.
             $eventprocmaps[] = [clone($localisedeventdata), $processorlist];
         }

@@ -133,21 +133,7 @@ class core_comment_external extends external_api {
         return new external_single_structure(
             array(
                 'comments' => new external_multiple_structure(
-                    new external_single_structure(
-                        array(
-                            'id'             => new external_value(PARAM_INT,  'Comment ID'),
-                            'content'        => new external_value(PARAM_RAW,  'The content text formated'),
-                            'format'         => new external_format_value('content'),
-                            'timecreated'    => new external_value(PARAM_INT,  'Time created (timestamp)'),
-                            'strftimeformat' => new external_value(PARAM_NOTAGS, 'Time format'),
-                            'profileurl'     => new external_value(PARAM_URL,  'URL profile'),
-                            'fullname'       => new external_value(PARAM_NOTAGS, 'fullname'),
-                            'time'           => new external_value(PARAM_NOTAGS, 'Time in human format'),
-                            'avatar'         => new external_value(PARAM_RAW,  'HTML user picture'),
-                            'userid'         => new external_value(PARAM_INT,  'User ID'),
-                            'delete'         => new external_value(PARAM_BOOL, 'Permission to delete=true/false', VALUE_OPTIONAL)
-                        ), 'comment'
-                    ), 'List of comments'
+                    self::get_comment_structure(), 'List of comments'
                 ),
                 'canpost' => new external_value(PARAM_BOOL, 'Whether the user can post in this comment area.', VALUE_OPTIONAL),
                 'warnings' => new external_warnings()

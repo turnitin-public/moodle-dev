@@ -1637,9 +1637,8 @@ class api {
         foreach ($countsrs as $key => $val) {
             if (!empty($val->itemtype)) {
                 $counts['favourites'] += $val->count;
-                continue;
             }
-            $counts['types'][$val->type] = $val->count;
+            $counts['types'][$val->type] += $val->count;
         }
         $countsrs->close();
 
@@ -3142,7 +3141,6 @@ class api {
         foreach ($unreadcounts as $convid => $info) {
             if (isset($favouriteconvids[$convid])) {
                 $counts['favourites']++;
-                continue;
             }
             $counts['types'][$info->type]++;
         }

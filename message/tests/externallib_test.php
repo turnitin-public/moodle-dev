@@ -6614,11 +6614,11 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
                 'deletemessages' => [],
                 'arguments' => [$user1],
                 'expectedcounts' => ['favourites' => 1, 'types' => [
-                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 1,
+                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 2,
                     \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP => 1
                 ]],
                 'expectedunreadcounts' => ['favourites' => 1, 'types' => [
-                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 1,
+                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 2,
                     \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP => 1
                 ]],
                 'deletedusers' => []
@@ -6659,11 +6659,11 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
                 'deletemessages' => [0],
                 'arguments' => [$user1],
                 'expectedcounts' => ['favourites' => 1, 'types' => [
-                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 1,
+                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 2,
                     \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP => 1
                 ]],
                 'expectedunreadcounts' => ['favourites' => 1, 'types' => [
-                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 1,
+                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 2,
                     \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP => 1
                 ]],
                 'deletedusers' => []
@@ -6674,11 +6674,11 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
                 'deletemessages' => [3],
                 'arguments' => [$user1],
                 'expectedcounts' => ['favourites' => 1, 'types' => [
-                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 1,
+                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 2,
                     \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP => 1
                 ]],
                 'expectedunreadcounts' => ['favourites' => 1, 'types' => [
-                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 1,
+                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 2,
                     \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP => 1
                 ]],
                 'deletedusers' => []
@@ -6704,11 +6704,11 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
                 'deletemessages' => [3, 4, 5],
                 'arguments' => [$user1],
                 'expectedcounts' => ['favourites' => 1, 'types' => [
-                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 0,
+                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 1,
                     \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP => 1
                 ]],
                 'expectedunreadcounts' => ['favourites' => 1, 'types' => [
-                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 0,
+                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 1,
                     \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP => 1
                 ]],
                 'deletedusers' => []
@@ -6749,11 +6749,11 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
                 'deletemessages' => [6, 7],
                 'arguments' => [$user1],
                 'expectedcounts' => ['favourites' => 1, 'types' => [
-                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 1,
+                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 2,
                     \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP => 1
                 ]],
                 'expectedunreadcounts' => ['favourites' => 1, 'types' => [
-                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 1,
+                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 2,
                     \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP => 1
                 ]],
                 'deletedusers' => []
@@ -6764,11 +6764,11 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
                 'deletemessages' => [6, 7, 8, 9],
                 'arguments' => [$user1],
                 'expectedcounts' => ['favourites' => 1, 'types' => [
-                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 1,
+                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 2,
                     \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP => 1
                 ]],
                 'expectedunreadcounts' => ['favourites' => 1, 'types' => [
-                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 1,
+                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 2,
                     \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP => 0
                 ]],
                 'deletedusers' => []
@@ -6779,11 +6779,11 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
                 'deletemessages' => [],
                 'arguments' => [$user1],
                 'expectedcounts' => ['favourites' => 1, 'types' => [
-                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 1,
+                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 2,
                     \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP => 1
                 ]],
                 'expectedunreadcounts' => ['favourites' => 1, 'types' => [
-                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 1,
+                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 2,
                     \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP => 1
                 ]],
                 'deletedusers' => [$user2]
@@ -6794,11 +6794,11 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
                 'deletemessages' => [],
                 'arguments' => [$user1],
                 'expectedcounts' => ['favourites' => 1, 'types' => [
-                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 1,
+                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 2,
                     \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP => 1
                 ]],
                 'expectedunreadcounts' => ['favourites' => 1, 'types' => [
-                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 1,
+                    \core_message\api::MESSAGE_CONVERSATION_TYPE_INDIVIDUAL => 2,
                     \core_message\api::MESSAGE_CONVERSATION_TYPE_GROUP => 1
                 ]],
                 'deletedusers' => [$user2, $user3, $user4]

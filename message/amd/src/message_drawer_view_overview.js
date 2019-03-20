@@ -228,9 +228,9 @@ function(
             // Favourite conversations section.
             [body.find(SELECTORS.FAVOURITES), CONVERSATION_TYPES.FAVOURITE, true],
             // Group conversations section.
-            [body.find(SELECTORS.GROUP_MESSAGES), CONVERSATION_TYPES.PUBLIC, false],
+            [body.find(SELECTORS.GROUP_MESSAGES), CONVERSATION_TYPES.PUBLIC, null],
             // Private conversations section.
-            [body.find(SELECTORS.MESSAGES), CONVERSATION_TYPES.PRIVATE, false]
+            [body.find(SELECTORS.MESSAGES), CONVERSATION_TYPES.PRIVATE, null]
         ];
 
         sections.forEach(function(args) {

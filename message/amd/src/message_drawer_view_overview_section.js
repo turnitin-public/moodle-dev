@@ -596,11 +596,6 @@ function(
                 if (!conversationElement.length) {
                     createNewConversation(root, conversation);
                 }
-            } else if (type == conversation.type) {
-                conversationElement = getConversationElement(root, conversation.id);
-                if (conversationElement.length) {
-                    deleteConversation(root, conversationElement);
-                }
             }
         });
 
@@ -610,11 +605,6 @@ function(
                 conversationElement = getConversationElement(root, conversation.id);
                 if (conversationElement.length) {
                     deleteConversation(root, conversationElement);
-                }
-            } else if (type == conversation.type) {
-                conversationElement = getConversationElement(root, conversation.id);
-                if (!conversationElement.length) {
-                    createNewConversation(root, conversation);
                 }
             }
         });

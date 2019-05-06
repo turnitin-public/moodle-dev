@@ -1019,9 +1019,9 @@ function lti_build_custom_parameters($toolproxy, $tool, $instance, $params, $cus
         $custom = array_merge(lti_split_custom_parameters($toolproxy, $tool, $params,
             $instructorcustomstr, $islti2), $custom);
     }
+    $custom = array_merge(lti_split_custom_parameters($toolproxy, $tool, $params,
+        $tool->parameter, true), $custom);
     if ($islti2) {
-        $custom = array_merge(lti_split_custom_parameters($toolproxy, $tool, $params,
-            $tool->parameter, true), $custom);
         $settings = lti_get_tool_settings($tool->toolproxyid);
         $custom = array_merge($custom, lti_get_custom_parameters($toolproxy, $tool, $params, $settings));
         if (!empty($instance->course)) {
@@ -1029,6 +1029,17 @@ function lti_build_custom_parameters($toolproxy, $tool, $instance, $params, $cus
             $custom = array_merge($custom, lti_get_custom_parameters($toolproxy, $tool, $params, $settings));
             if (!empty($instance->id)) {
                 $settings = lti_get_tool_settings($tool->toolproxyid, $instance->course, $instance->id);
+                $custom = array_merge($custom, lti_get_custom_parameters($toolproxy, $tool, $params, $settings));
+            }
+        }
+    } else {
+        $settings = lti_get_tool_settings(-$tool->id);
+        $custom = array_merge($custom, lti_get_custom_parameters($toolproxy, $tool, $params, $settings));
+        if (!empty($instance->course)) {
+            $settings = lti_get_tool_settings(-$tool->id, $instance->course);
+            $custom = array_merge($custom, lti_get_custom_parameters($toolproxy, $tool, $params, $settings));
+            if (!empty($instance->id)) {
+                $settings = lti_get_tool_settings(-$tool->id, $instance->course, $instance->id);
                 $custom = array_merge($custom, lti_get_custom_parameters($toolproxy, $tool, $params, $settings));
             }
         }

@@ -208,6 +208,9 @@ class linksettings extends \mod_lti\local\ltiservice\resource_base {
 
         if (strpos($value, '$LtiLink.custom.url') !== false) {
             $id = optional_param('id', 0, PARAM_INT); // Course Module ID.
+            if (empty($id)) {
+                $id = optional_param('lti_message_hint', 0, PARAM_INT); // Course Module ID.
+            }
             if (!empty($id)) {
                 $cm = get_coursemodule_from_id('lti', $id, 0, false, MUST_EXIST);
                 $this->params['link_id'] = $cm->instance;

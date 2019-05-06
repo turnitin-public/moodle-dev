@@ -244,14 +244,16 @@ class restore_lti_activity_structure_step extends restore_activity_structure_ste
         global $DB;
 
         $data = (object)$data;
-        $data->toolproxyid = $this->get_new_parentid('ltitoolproxy');
+        $toolproxyid = $this->get_new_parentid('ltitoolproxy');
 
-        if (!$data->toolproxyid) {
-            return;
+        if (!empty($toolproxyid)) {
+            $data->toolproxyid = $toolproxyid;
+        } else {
+            $data->typeid = $this->get_new_parentid('ltitype');
         }
 
         $data->course = $this->get_courseid();
-        $data->coursemoduleid = $this->task->get_moduleid();
+        $data->coursemoduleid = $this->task->get_activityid();
         $DB->insert_record('lti_tool_settings', $data);
     }
 

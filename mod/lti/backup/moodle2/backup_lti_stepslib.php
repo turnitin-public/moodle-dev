@@ -181,11 +181,16 @@ class backup_lti_activity_structure_step extends backup_activity_structure_step 
             // If this is LTI 2 tool add settings for the current activity.
             $ltitoolproxy->set_source_array([['id' => $ltitypedata->toolproxyid]]);
             $ltitoolsetting->set_source_sql("SELECT *
-                FROM {lti_tool_settings}
-                WHERE toolproxyid = ? AND course = ? AND coursemoduleid = ?",
+                FROM {lti_tool_settings} s
+                  INNER JOIN {course_modules} cm ON s.coursemoduleid = cm.instance
+                WHERE s.toolproxyid = ? AND s.course = ? AND cm.id = ?",
                 [backup_helper::is_sqlparam($ltitypedata->toolproxyid), backup::VAR_COURSEID, backup::VAR_MODID]);
         } else {
-            $ltitoolproxy->set_source_array([]);
+            $ltitoolsetting->set_source_sql("SELECT *
+                FROM {lti_tool_settings} s
+                  INNER JOIN {course_modules} cm ON s.coursemoduleid = cm.instance
+                WHERE s.typeid = ? AND s.course = ? AND cm.id = ?",
+                [backup_helper::is_sqlparam($ltirecord->typeid), backup::VAR_COURSEID, backup::VAR_MODID]);
         }
 
         // All the rest of elements only happen if we are including user info.

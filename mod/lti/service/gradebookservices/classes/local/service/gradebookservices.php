@@ -119,7 +119,7 @@ class gradebookservices extends service_base {
      */
     public function get_configuration_options(&$mform) {
 
-        $selectelementname = 'ltiservice_gradesynchronization';
+        $selectelementname = $this->get_component_id();
         $identifier = 'grade_synchronization';
         $options = [
             get_string('nevergs', $this->get_component_id()),
@@ -153,9 +153,10 @@ class gradebookservices extends service_base {
         $this->set_type(lti_get_type($typeid));
         $this->set_typeconfig(lti_get_type_config($typeid));
         // Only inject parameters if the service is enabled for this tool.
-        if (isset($this->get_typeconfig()['ltiservice_gradesynchronization'])) {
-            if ($this->get_typeconfig()['ltiservice_gradesynchronization'] == self::GRADEBOOKSERVICES_READ ||
-                $this->get_typeconfig()['ltiservice_gradesynchronization'] == self::GRADEBOOKSERVICES_FULL) {
+
+        if (isset($this->get_typeconfig()[$this->get_component_id()])) {
+            if ($this->get_typeconfig()[$this->get_component_id()] == self::GRADEBOOKSERVICES_READ ||
+                $this->get_typeconfig()[$this->get_component_id()] == self::GRADEBOOKSERVICES_FULL) {
                 // Check for used in context is only needed because there is no explicit site tool - course relation.
                 if ($this->is_allowed_in_context($typeid, $courseid)) {
                     if (is_null($modlti)) {

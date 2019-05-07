@@ -1019,8 +1019,10 @@ function lti_build_custom_parameters($toolproxy, $tool, $instance, $params, $cus
         $custom = array_merge(lti_split_custom_parameters($toolproxy, $tool, $params,
             $instructorcustomstr, $islti2), $custom);
     }
-    $custom = array_merge(lti_split_custom_parameters($toolproxy, $tool, $params,
-        $tool->parameter, true), $custom);
+    if ($tool) {
+        $custom = array_merge(lti_split_custom_parameters($toolproxy, $tool, $params,
+            $tool->parameter, true), $custom);
+    }
     if ($islti2) {
         $settings = lti_get_tool_settings($tool->toolproxyid);
         $custom = array_merge($custom, lti_get_custom_parameters($toolproxy, $tool, $params, $settings));
@@ -1032,7 +1034,7 @@ function lti_build_custom_parameters($toolproxy, $tool, $instance, $params, $cus
                 $custom = array_merge($custom, lti_get_custom_parameters($toolproxy, $tool, $params, $settings));
             }
         }
-    } else {
+    } else if ($tool) {
         $settings = lti_get_tool_settings(-$tool->id);
         $custom = array_merge($custom, lti_get_custom_parameters($toolproxy, $tool, $params, $settings));
         if (!empty($instance->course)) {
@@ -1841,7 +1843,7 @@ function lti_split_custom_parameters($toolproxy, $tool, $params, $customstr, $is
         $val = lti_parse_custom_parameter($toolproxy, $tool, $params, $val, $islti2);
         $key2 = lti_map_keyname($key);
         $retval['custom_'.$key2] = $val;
-        if (($islti2 || ($tool->ltiversion === LTI_VERSION_1P3)) && ($key != $key2)) {
+        if (($islti2 || ($tool && ($tool->ltiversion === LTI_VERSION_1P3))) && ($key != $key2)) {
             $retval['custom_'.$key] = $val;
         }
     }

@@ -38,7 +38,31 @@ $providers = get_message_providers();
 // Fetch the manage message outputs interface.
 $preferences = get_message_output_default_preferences();
 
+print_object($preferences);
+
+
 if (($form = data_submitted()) && confirm_sesskey()) {
+    // First, work out if we're enabling a new processor. In such cases, the preferences cannot be set based on submitted form data
+    // as it won't have been present on page load (as the processor was disabled at the time). We need to merge the existing
+    // preference data for that processor in now.
+
+    foreach ($allprocessors as $processor) {
+        $enabled = isset($form->{$processor->name});
+        \core_message\api::update_processor_status($processor, $enabled);
+    }
+    core_plugin_manager::reset_caches();
+    $allprocessors2 = get_message_processors(true, true);
+    $enabledprocessors = array_filter($allprocessors2, function($processor) {
+        return $processor->enabled;
+    });
+    if (count($enabledprocessors) > count($processors)) {
+        echo "in here";
+    }
+    //$url = new moodle_url('message.php');
+    //redirect($url);
+
+
+
     $preferences = array();
     // Prepare default message outputs settings.
     foreach ($providers as $provider) {

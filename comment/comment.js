@@ -440,6 +440,8 @@ M.core_comment = {
 
         new CommentHelper(options);
     },
+
+    /*
     init_admin: function(Y) {
         var select_all = Y.one('#comment_select_all');
         if (select_all) {
@@ -509,4 +511,5 @@ M.core_comment = {
             });
         }
     }
+    */
 };

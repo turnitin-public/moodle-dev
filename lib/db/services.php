@@ -332,6 +332,7 @@ $functions = array(
         'description' => 'Returns comments.',
         'type' => 'read',
         'capabilities' => 'moodle/comment:view',
+        'ajax' => true,
         'services' => array(MOODLE_OFFICIAL_MOBILE_SERVICE),
     ),
     'core_comment_add_comments' => array(
@@ -339,6 +340,7 @@ $functions = array(
         'methodname' => 'add_comments',
         'description' => 'Adds a comment or comments.',
         'type' => 'write',
+        'ajax' => true,
         'services' => array(MOODLE_OFFICIAL_MOBILE_SERVICE),
     ),
     'core_comment_delete_comments' => array(
@@ -346,6 +348,7 @@ $functions = array(
         'methodname' => 'delete_comments',
         'description' => 'Deletes a comment or comments.',
         'type' => 'write',
+        'ajax' => true,
         'services' => array(MOODLE_OFFICIAL_MOBILE_SERVICE),
     ),
     'core_completion_get_activities_completion_status' => array(

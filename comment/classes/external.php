@@ -39,6 +39,29 @@ require_once("$CFG->dirroot/comment/lib.php");
  * @since      Moodle 2.9
  */
 class core_comment_external extends external_api {
+
+    /**
+     * Returns description of method parameters
+     *
+     * @return external_function_parameters
+     * @since Moodle 3.8
+     */
+    public static function get_area_comments_parameters() {
+
+        return new external_function_parameters(
+            array(
+                'contextlevel' => new external_value(PARAM_ALPHA, 'contextlevel system, course, user...'),
+                'instanceid'   => new external_value(PARAM_INT, 'the Instance id of item associated with the context level'),
+                'component'    => new external_value(PARAM_COMPONENT, 'component'),
+                'itemid'       => new external_value(PARAM_INT, 'associated id'),
+                'area'         => new external_value(PARAM_AREA, 'string comment area', VALUE_DEFAULT, ''),
+                'page'         => new external_value(PARAM_INT, 'page number (0 based)', VALUE_DEFAULT, 0),
+            )
+        );
+    }
+
+
+
     /**
      * Returns description of method parameters
      *

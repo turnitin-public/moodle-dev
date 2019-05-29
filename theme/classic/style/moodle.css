@@ -9383,13 +9383,16 @@ table.mod_index {
 
 .comment-ctrl {
   font-size: 12px;
-  display: none;
+  display: block;
   margin: 0;
   padding: 0; }
 
 .comment-ctrl h5 {
   margin: 0;
   padding: 5px; }
+
+.comment-ctrl.hidden {
+  display: none; }
 
 .comment-area {
   max-width: 400px;
@@ -9437,7 +9440,8 @@ table.mod_index {
   padding: 2px; }
 
 .comment-paging .curpage {
-  border: 1px solid #ccc; }
+  border: 1px solid #ccc;
+  outline: none; }
 
 .comment-message .picture {
   width: 20px;
@@ -9457,6 +9461,10 @@ table.mod_index {
   right: 0;
   margin: .3em; }
 
+.comment-delete img {
+  height: 12px;
+  width: 12px; }
+
 .comment-report-selectall {
   display: none; }
 
@@ -9464,7 +9472,19 @@ table.mod_index {
   display: none; }
 
 .jsenabled .comment-link {
-  display: block; }
+  display: block;
+  padding-left: 1.5rem; }
+
+.jsenabled .comment-link.collapsed {
+  background: url([[pix:t/collapsed]]) left center no-repeat; }
+
+/*rtl:raw:
+.jsenabled .comment-link.collapsed {
+    background: url([[pix:t/collapsed_rtl]]) right center no-repeat;
+}
+*/
+.jsenabled .comment-link.collapsible {
+  background: url([[pix:t/expanded]]) left center no-repeat; }
 
 .jsenabled .showcommentsnonjs {
   display: none; }

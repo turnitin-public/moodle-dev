@@ -400,6 +400,7 @@ class comment {
      *                          initialised for.
      */
     public function initialise_javascript(moodle_page $page) {
+        global $CFG;
 
         $options = new stdClass;
         $options->client_id   = $this->cid;
@@ -411,8 +412,30 @@ class comment {
         $options->component   = $this->component;
         $options->notoggle    = $this->notoggle;
         $options->autostart   = $this->autostart;
+        $options->count = $this->count();
+        $options->commentsperpage = !empty($CFG->commentsperpage) ? $CFG->commentsperpage : 15;
 
-        $page->requires->js_init_call('M.core_comment.init', array($options), true);
+        // The comments widget needs to call the core_comment_get_comments webservice to fetch comments.
+        // This service requires the following:
+        //'contextlevel' => new external_value(PARAM_ALPHA, 'contextlevel system, course, user...'),
+        //'instanceid'   => new external_value(PARAM_INT, 'the Instance id of item associated with the context level'),
+        //'component'    => new external_value(PARAM_COMPONENT, 'component'),
+        //'itemid'       => new external_value(PARAM_INT, 'associated id'),
+        //'area'         => new external_value(PARAM_AREA, 'string comment area', VALUE_DEFAULT, ''),
+        //'page'         => new external_value(PARAM_INT, 'page number (0 based)', VALUE_DEFAULT, 0),
+
+        // So, in addition to the above, we need to provide the contextlevel string ('user', 'module', etc)
+        // and the instance id of the item to which the context relates. Eg if 'user', then the userid.
+        $levels = context_helper::get_all_levels();
+        $context = context::instance_by_id($this->contextid);
+
+        $contextlevelbits = explode('_', $levels[$context->contextlevel]);
+        $options->contextlevel = $contextlevelbits[1];
+        $options->instanceid = $context->instanceid;
+
+        //$page->requires->js_init_call('M.core_comment.init', array($options), true);
+
+        $page->requires->js_call_amd('core_comment/comment', 'init', [$options]);
 
         return true;
     }
@@ -423,8 +446,14 @@ class comment {
      * @return string|void
      */
     public function output($return = true) {
-        global $PAGE, $OUTPUT;
+        global $PAGE, $OUTPUT, $CFG;
         static $template_printed;
+
+        //TODO: Testing config changes here:
+
+        // Set notoggle = true:
+        //$this->set_notoggle(true);
+
 
         $this->initialise_javascript($PAGE);
 
@@ -432,6 +461,55 @@ class comment {
             // return non js comments interface
             return $this->print_comments(self::$comment_page, $return, true);
         }
+        echo "<BR><br><br>OUTPUTTING COMMENTS<br>";
+        if($return) {
+            echo "In output(\$return = true):<br>";
+        }
+
+        // Create the context and render the template.
+        if ($this->can_view()) {
+            $context = [
+                'widgetid' => $this->cid,
+                'count' => $this->count(),
+                'notoggle' => $this->notoggle,
+                'expanded' => $this->autostart,
+                'displaycancel' => $this->displaycancel,
+                'comments' => [],
+                'pages' => []
+            ];
+
+            // Generate the pagination data for the template context.
+            $perpage = $CFG->commentsperpage ?? 15;
+            $numpages = (int) ceil($this->count() / $perpage);
+            foreach (range(1, $numpages) as $pagenum) {
+                $context['pages'][] = ['number' => $pagenum];
+            }
+            $context['pages'][0]['iscurrent'] = true;
+
+
+            // If 'autostart' is set, then we render the comments as part of the server load.
+            // Otherwise, we delay this load until the client requests it.
+            if ($this->autostart || $this->notoggle) {
+                if ($this->notoggle) {
+                    echo "No toggle mode is set<br>";
+                }
+                if ($this->autostart) {
+                    echo "Auto start mode is set<br>";
+                }
+                // Each page of comments is ordered (top to bottom) from oldest to newest.
+                $context['comments'] = array_reverse($this->get_comments(0));
+            }
+            //print_object($this->get_comments(0));
+
+            $html = $OUTPUT->render_from_template('core_comment/comments_widget', $context);
+        }
+        if ($return) {
+            return $html;
+        }
+        echo $html;
+
+
+
 
         $html = '';
 
@@ -585,6 +663,13 @@ class comment {
             $c->time = userdate($c->timecreated, $c->strftimeformat);
             $c->content = format_text($c->content, $c->format, $formatoptions);
             $c->avatar = $OUTPUT->user_picture($u, array('size'=>18));
+
+            global $PAGE;
+            $userpicture = new user_picture($u);
+            $userpicture->size = 1;
+            $c->profileimageurl = $userpicture->get_url($PAGE)->out(false);
+
+            //print_object($u);
             $c->userid = $u->id;
 
             $candelete = $this->can_delete($c->id);
@@ -721,6 +806,13 @@ class comment {
             $newcmt->content = format_text($newcmt->content, $newcmt->format, $formatoptions);
             $newcmt->avatar = $OUTPUT->user_picture($USER, array('size'=>16));
 
+            //TODO: Refactor to use the URL like in get.
+            //$newcmt->profileimageurl = $OUTPUT->user_picture($USER, array('size'=>16));
+            global $PAGE;
+            $userpicture = new user_picture($USER);
+            $userpicture->size = 1;
+            $newcmt->profileimageurl = $userpicture->get_url($PAGE)->out(false);
+
             $commentlist = array($newcmt);
 
             if (!empty($this->plugintype)) {
@@ -843,6 +935,7 @@ class comment {
     public function print_comments($page = 0, $return = true, $nonjs = true) {
         global $DB, $CFG, $PAGE;
 
+
         if (!$this->can_view()) {
             return '';
         }
@@ -863,6 +956,7 @@ class comment {
         }
         // Reverse the comments array to display them in the correct direction
         foreach (array_reverse($comments) as $cmt) {
+            echo "in here 123";
             $html .= html_writer::tag('li', $this->print_comment($cmt, $nonjs), array('id' => 'comment-'.$cmt->id.'-'.$this->cid));
         }
         if ($nonjs) {
@@ -915,6 +1009,7 @@ class comment {
         global $OUTPUT;
         $patterns = array();
         $replacements = array();
+        echo "PRINTING SINGLE COMMENT";
 
         if (!empty($cmt->delete) && empty($nonjs)) {
             $strdelete = get_string('deletecommentbyon', 'moodle', (object)['user' => $cmt->fullname, 'time' => $cmt->time]);
@@ -931,7 +1026,7 @@ class comment {
         $patterns[] = '___name___';
         $patterns[] = '___content___';
         $patterns[] = '___time___';
-        $replacements[] = $cmt->avatar;
+        $replacements[] = $cmt->avatar; //$cmt->profileimageurl;
         $replacements[] = html_writer::link($cmt->profileurl, $cmt->fullname);
         $replacements[] = $cmt->content;
         $replacements[] = $cmt->time;

@@ -179,6 +179,9 @@ class MoodleQuickForm_group extends HTML_QuickForm_group implements templatable 
                     $element->setName($name);
                 }
             }
+            if ($element instanceof MoodleQuickForm_checkbox || $element instanceof MoodleQuickForm_radio) {
+                unset($element->_attributes['id']);
+            }
             $element->_generateId();
 
             $out = $OUTPUT->mform_element($element, false, false, '', true);

@@ -300,7 +300,7 @@ class HTML_QuickForm_RuleRegistry
                 $value =
                     "  value{$jsIndex} = new Array();\n" .
                     "  var valueIdx = 0;\n" .
-                    "  for (var i = 0; i < frm.elements['{$elementName}'].options.length; i++) {\n" . 
+                    "  for (var i = 0; i < frm.elements['{$elementName}'].options.length; i++) {\n" .
                     "    if (frm.elements['{$elementName}'].options[i].selected) {\n" .
                     "      value{$jsIndex}[valueIdx++] = frm.elements['{$elementName}'].options[i].value;\n" .
                     "    }\n" .
@@ -309,7 +309,7 @@ class HTML_QuickForm_RuleRegistry
                 $value = "  value{$jsIndex} = frm.elements['{$elementName}'].selectedIndex == -1? '': frm.elements['{$elementName}'].options[frm.elements['{$elementName}'].selectedIndex].value;\n";
             }
             if ($reset) {
-                $tmp_reset .= 
+                $tmp_reset .=
                     "    for (var i = 0; i < field.options.length; i++) {\n" .
                     "      field.options[i].selected = field.options[i].defaultSelected;\n" .
                     "    }\n";

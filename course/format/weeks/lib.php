@@ -366,7 +366,14 @@ class format_weeks extends format_base {
 
         if ($startdate === false) {
             $course = $this->get_course();
-            $startdate = $course->startdate;
+            //$startdate = $course->startdate;
+
+            // Relative dates.
+            // If start date has been provided, then we're asking for a calc based on that, and not the current user,
+            // so we only calculate relative dates if that's false.
+            global $USER;
+            $usercoursedates = course_get_course_dates_for_user_id($course, $USER->id);
+            $startdate = $usercoursedates['start'];
         }
 
         if (is_object($section)) {

@@ -4666,3 +4666,46 @@ function course_get_recent_courses(int $userid = null, int $limit = 0, int $offs
 
     return $recentcourses;
 }
+
+function course_get_course_dates_for_user_ids(stdClass $course, array $userids): array {
+    $enrolments = enrol_get_course_users($course->id, true, $userids);
+    $result = array_reduce($userids, function($carry, $userid) {
+        $carry[$userid] = [
+            'start' => null,
+            'startoffset' => null,
+            'end' => null,
+            'endoffset' => null
+        ];
+        return $carry;
+    }, []);
+    return array_reduce($enrolments, function($carry, $enrolment) use ($course) {
+        $userid = $enrolment->id;
+        $start = $course->startdate > $enrolment->uetimestart ? $course->startdate : $enrolment->uetimestart;
+        $startoffset = $start - $course->startdate;
+        $end = null;
+        $endoffset = null;
+        if ($course->enddate) {
+            $courseduration = $course->enddate - $course->startdate;
+            $end = $start + $courseduration;
+            $endoffset = $startoffset;
+        }
+        if ($enrolment->uetimeend) {
+            if ($end) {
+                $end = $end < $enrolment->uetimeend ? $end : $enrolment->uetimeend;
+                $endoffset = $end - $enrolment->uetimeend;
+            } else {
+                $end = $enrolment->uetimeend;
+            }
+        }
+        $carry[$userid] = [
+            'start' => $start,
+            'startoffset' => $startoffset,
+            'end' => $end,
+            'endoffset' => $endoffset
+        ];
+        return $carry;
+    }, $result);
+}
+function course_get_course_dates_for_user_id(stdClass $course, int $userid): array {
+    return (course_get_course_dates_for_user_ids($course, [$userid]))[$userid];
+}

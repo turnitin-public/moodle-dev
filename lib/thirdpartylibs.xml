@@ -74,15 +74,15 @@
     <location>pear/HTML/QuickForm.php</location>
     <name>Pear_HTML_QuickForm.php</name>
     <license>PHP</license>
-    <version>2.0</version>
-    <licenseversion>2.0</licenseversion>
+    <version>3.2.16</version>
+    <licenseversion>3.01</licenseversion>
   </library>
   <library>
     <location>pear/HTML/QuickForm</location>
     <name>Pear_HTML_QuickForm</name>
     <license>PHP</license>
-    <version>2.0</version>
-    <licenseversion>2.0</licenseversion>
+    <version>3.2.16</version>
+    <licenseversion>3.01</licenseversion>
   </library>
   <library>
     <location>pear/PEAR.php</location>

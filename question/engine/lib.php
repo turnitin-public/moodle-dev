@@ -556,6 +556,20 @@ class question_display_options {
     public $generalfeedback = self::VISIBLE;
 
     /**
+     * Try again state. This dictates whether or not to show the try again button at all.
+     *
+     * @var bool
+     */
+    public $tryagain = false;
+
+    /**
+     * Whether or not the try again option is visible to the user (true), or disabled (false).
+     *
+     * @var bool
+     */
+    public $tryagainvisible = false;
+
+    /**
      * Should the automatically generated display of what the correct answer is
      * be visible?
      * @var integer {@link question_display_options::HIDDEN} or

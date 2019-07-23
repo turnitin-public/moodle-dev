@@ -36,16 +36,16 @@ defined('MOODLE_INTERNAL') || die();
  */
 class qbehaviour_interactive_renderer extends qbehaviour_renderer {
     public function controls(question_attempt $qa, question_display_options $options) {
-        if ($options->readonly & qbehaviour_interactive::READONLY_EXCEPT_TRY_AGAIN) {
+        if ($options->tryagain) {
             return '';
         }
+        // The 'Check' button.
         return $this->submit_button($qa, $options);
     }
 
     public function feedback(question_attempt $qa, question_display_options $options) {
         // Show the Try again button if we are in try-again state.
-        if (!$qa->get_state()->is_active() ||
-                !($options->readonly & qbehaviour_interactive::READONLY_EXCEPT_TRY_AGAIN)) {
+        if (!$qa->get_state()->is_active() || !$options->tryagain) {
             return '';
         }
 
@@ -56,8 +56,8 @@ class qbehaviour_interactive_renderer extends qbehaviour_renderer {
             'value' => get_string('tryagain', 'qbehaviour_interactive'),
             'class' => 'submit btn',
         );
-        if ($options->readonly !== qbehaviour_interactive::READONLY_EXCEPT_TRY_AGAIN) {
-            // This means the question really was rendered with read-only option.
+
+        if (!$options->tryagainvisible) {
             $attributes['disabled'] = 'disabled';
         }
         $output = html_writer::empty_tag('input', $attributes);

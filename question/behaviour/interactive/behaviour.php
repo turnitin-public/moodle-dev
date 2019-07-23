@@ -40,18 +40,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class qbehaviour_interactive extends question_behaviour_with_multiple_tries {
-    /**
-     * Special value bitwise or-ed with {@link question_display_options::$readonly} when
-     * we are showing the try again button to the student during an attempt.
-     * that means ->readonly becomes something that PHP considers true,
-     * so the question is shown with all the controls disabled while
-     * we show the feedback and the Try again button.
-     * The renderer recognises this special value so the try again
-     * button enabled even though the rest of the question is disabled
-     * (unless the user is really viewing the question read-only).
-     * @var int
-     */
-    const READONLY_EXCEPT_TRY_AGAIN = 0x10000;
 
     public function is_compatible_question(question_definition $question) {
         return $question instanceof question_automatically_gradable;
@@ -98,8 +86,13 @@ class qbehaviour_interactive extends question_behaviour_with_multiple_tries {
         $options->numpartscorrect = $save->numpartscorrect;
 
         // In a try-again state, everything except the try again button
-        // Should be read-only. This is a mild hack to achieve this.
-        $options->readonly |= self::READONLY_EXCEPT_TRY_AGAIN;
+        // Should be read-only.
+        $options->tryagain = true;
+
+        // The readonly value dictates visibility "try again" button visibility.
+        // If true (teachers) then button not visible, otherwise (students) it's visible.
+        $options->tryagainvisible = !$options->readonly;
+        $options->readonly = true; // This impacts the display of the attempt, which is always readonly when in the tryagain state.
     }
 
     public function get_applicable_hint() {

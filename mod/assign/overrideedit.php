@@ -130,7 +130,7 @@ $mform->set_data($data);
 if ($mform->is_cancelled()) {
     redirect($overridelisturl);
 
-} else if (optional_param('resetbutton', 0, PARAM_ALPHA)) {
+} else if (optional_param('resetbutton', 0, PARAM_ALPHA) || (optional_param('userchange', 0, PARAM_ALPHA) && $action !== 'duplicate')) {
     $url->param('reset', true);
     if ($shouldadduserid) {
         $url->param('userid', $userid);

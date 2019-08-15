@@ -3323,6 +3323,7 @@ $GLOBALS['_HTML_QuickForm_default_renderer'] = new MoodleQuickForm_Renderer();
 
 /** Please keep this list in alphabetical order. */
 MoodleQuickForm::registerElementType('advcheckbox', "$CFG->libdir/form/advcheckbox.php", 'MoodleQuickForm_advcheckbox');
+MoodleQuickForm::registerElementType('advduration', "$CFG->libdir/form/advduration.php", 'MoodleQuickForm_advduration');
 MoodleQuickForm::registerElementType('autocomplete', "$CFG->libdir/form/autocomplete.php", 'MoodleQuickForm_autocomplete');
 MoodleQuickForm::registerElementType('button', "$CFG->libdir/form/button.php", 'MoodleQuickForm_button');
 MoodleQuickForm::registerElementType('cancel', "$CFG->libdir/form/cancel.php", 'MoodleQuickForm_cancel');

@@ -1,0 +1,15 @@
+{{< core_form/element-template-inline }}
+    {{$element}}
+        <div class="d-flex ml-1">
+            {{#element.elements}}
+                {{{separator}}}
+                {{{html}}}
+            {{/element.elements}}
+        </div>
+    {{/element}}
+{{/ core_form/element-template-inline }}
+{{#js}}
+require(['core_form/advduration'], function(AdvDuration) {
+    AdvDuration.init({{#quote}}{{element.id}}{{/quote}});
+});
+{{/js}}

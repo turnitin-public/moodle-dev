@@ -73,6 +73,7 @@ class mod_assign_extension_form extends moodleform {
                                                                     $assign->is_blind_marking(),
                                                                     $assign->get_uniqueid_for_user($user->id),
                                                                     $extrauserfields,
+                                                                    $assign,
                                                                     !$assign->is_active_user($userid)));
                 $usercount += 1;
         }
@@ -89,17 +90,24 @@ class mod_assign_extension_form extends moodleform {
         }
 
         $finaldate = 0;
-        if ($instance->duedate) {
+        if ($instance->duedate && !$assign->get_course()->relativedatesmode) {
             $mform->addElement('static', 'duedate', get_string('duedate', 'assign'), userdate($instance->duedate));
             $finaldate = $instance->duedate;
         }
-        if ($instance->cutoffdate) {
+        if ($instance->cutoffdate && !$assign->get_course()->relativedatesmode) {
             $mform->addElement('static', 'cutoffdate', get_string('cutoffdate', 'assign'), userdate($instance->cutoffdate));
             $finaldate = $instance->cutoffdate;
         }
-        $mform->addElement('date_time_selector', 'extensionduedate',
-                           get_string('extensionduedate', 'assign'), array('optional'=>true));
-        $mform->setDefault('extensionduedate', $finaldate);
+
+        // In relative dates mode, extensions are a block of time, not a specific date.
+        if ($assign->get_course()->relativedatesmode) {
+            $mform->addElement('advduration', 'extensionduedate', get_string('extensionperiod', 'assign'),
+                ['units' => ['w', 'd', 'h', 'i']]);
+        } else {
+            $mform->addElement('date_time_selector', 'extensionduedate',
+                get_string('extensionduedate', 'assign'), array('optional' => true));
+            $mform->setDefault('extensionduedate', $finaldate);
+        }
 
         $mform->addElement('hidden', 'id');
         $mform->setType('id', PARAM_INT);
@@ -119,15 +127,25 @@ class mod_assign_extension_form extends moodleform {
      * @param array $files
      */
     public function validation($data, $files) {
-        $errors = parent::validation($data, $files);
-        if ($this->instance->duedate && $data['extensionduedate']) {
+        $assign = $this->_customdata['assign'];
+
+        if ($assign->get_course()->relativedatesmode) {
+            $errors = parent::validation($data, $files);
+            // Validation of the duration element.
             if ($this->instance->duedate > $data['extensionduedate']) {
-                $errors['extensionduedate'] = get_string('extensionnotafterduedate', 'assign');
+
             }
-        }
-        if ($this->instance->allowsubmissionsfromdate && $data['extensionduedate']) {
-            if ($this->instance->allowsubmissionsfromdate > $data['extensionduedate']) {
-                $errors['extensionduedate'] = get_string('extensionnotafterfromdate', 'assign');
+        } else {
+            $errors = parent::validation($data, $files);
+            if ($this->instance->duedate && $data['extensionduedate']) {
+                if ($this->instance->duedate > $data['extensionduedate']) {
+                    $errors['extensionduedate'] = get_string('extensionnotafterduedate', 'assign');
+                }
+            }
+            if ($this->instance->allowsubmissionsfromdate && $data['extensionduedate']) {
+                if ($this->instance->allowsubmissionsfromdate > $data['extensionduedate']) {
+                    $errors['extensionduedate'] = get_string('extensionnotafterfromdate', 'assign');
+                }
             }
         }
 

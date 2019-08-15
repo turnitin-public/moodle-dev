@@ -6663,8 +6663,8 @@ class assign {
             return false;
         }
 
-        if ($this->get_instance()->duedate && $extensionduedate) {
-            if ($this->get_instance()->duedate > $extensionduedate) {
+        if ($this->get_instance($userid)->duedate && $extensionduedate) {
+            if ($this->get_instance($userid)->duedate > $extensionduedate) {
                 return false;
             }
         }
@@ -6743,7 +6743,13 @@ class assign {
                 $result = true;
                 foreach ($users as $userid) {
                     $user = $DB->get_record('user', array('id' => $userid), '*', MUST_EXIST);
-                    $result = $this->save_user_extension($user->id, $formdata->extensionduedate) && $result;
+                    $instance = $this->get_instance($user->id);
+                    if ($this->get_course()->relativedatesmode && $formdata->extensionduedate) {
+                        $extensionduedate = $formdata->extensionduedate + $instance->duedate;
+                    } else {
+                        $extensionduedate = $formdata->extensionduedate;
+                    }
+                    $result = $this->save_user_extension($user->id, $extensionduedate) && $result;
                 }
                 return $result;
             }

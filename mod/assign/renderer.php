@@ -159,6 +159,7 @@ class mod_assign_renderer extends plugin_renderer_base {
         } else {
             $o .= $this->output->user_picture($summary->user);
             $o .= $this->output->spacer(array('width'=>30));
+
             $urlparams = array('id' => $summary->user->id, 'course'=>$summary->courseid);
             $url = new moodle_url('/user/view.php', $urlparams);
             $fullname = fullname($summary->user, $summary->viewfullnames);
@@ -171,6 +172,14 @@ class mod_assign_renderer extends plugin_renderer_base {
             }
             $fullname .= $suspendedicon;
             $o .= $this->output->action_link($url, $fullname);
+
+            // Show the per-user due dates for relative date courses.
+            if ($this->page->course->relativedatesmode) {
+                $duedate = userdate($summary->assign->get_instance($summary->user->id)->duedate);
+                $o .= html_writer::tag('br','');
+                $o .= html_writer::div(get_string('duedatecolon', 'mod_assign', $duedate));
+
+            }
         }
         $o .= $this->output->box_end();
         $o .= $this->output->container_end();

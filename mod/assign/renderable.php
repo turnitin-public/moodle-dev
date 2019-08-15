@@ -152,6 +152,7 @@ class assign_user_summary implements renderable {
                                 $blindmarking,
                                 $uniqueidforuser,
                                 $extrauserfields,
+                                $assign,
                                 $suspendeduser = false) {
         $this->user = $user;
         $this->courseid = $courseid;
@@ -159,6 +160,7 @@ class assign_user_summary implements renderable {
         $this->blindmarking = $blindmarking;
         $this->uniqueidforuser = $uniqueidforuser;
         $this->extrauserfields = $extrauserfields;
+        $this->assign = $assign;
         $this->suspendeduser = $suspendeduser;
     }
 }

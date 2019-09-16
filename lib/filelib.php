@@ -2287,6 +2287,7 @@ function readstring_accel($string, $mimetype, $accelerate) {
  */
 function send_temp_file($path, $filename, $pathisstring=false) {
     global $CFG;
+    sleep(4);
 
     // Guess the file's MIME type.
     $mimetype = get_mimetype_for_sending($filename);
@@ -2318,6 +2319,7 @@ function send_temp_file($path, $filename, $pathisstring=false) {
         header('Expires: '. gmdate('D, d M Y H:i:s', 0) .' GMT');
         header('Pragma: no-cache');
     }
+    setcookie('download', 'download');
 
     // send the contents - we can not accelerate this because the file will be deleted asap
     if ($pathisstring) {

@@ -27,7 +27,7 @@ define(
     'core/notification',
     'core/pubsub',
     'core/str',
-    'core/promise',
+    'core/pending',
     'core/templates',
     'core/user_date',
     'core_message/message_repository',
@@ -206,7 +206,7 @@ function(
         // Helper to format the last message for rendering.
         // Returns a promise which resolves to either a string, or null
         // (such as in the event of an empty personal space).
-        var pendingPromise = new Pending(); // Behat will wait for this to be resolved.
+        var pending = new Pending();
         var parser = new DOMParser();
         var formatMessagePreview = function(lastMessage) {
             if (!lastMessage) {
@@ -320,9 +320,9 @@ function(
                 });
 
                 return Templates.render(TEMPLATES.CONVERSATIONS_LIST, {conversations: formattedConversations});
-            }).then(function() {
-                pendingPromise.resolve();
-                return;
+            }).then(function(html, js) {
+                pending.resolve();
+                return $.Deferred().resolve(html, js);
             }).catch(Notification.exception);
     };
 

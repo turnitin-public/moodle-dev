@@ -540,10 +540,25 @@ class question_category_object {
         if ((string) $idnumber === '') {
             $idnumber = null;
         } else if (!empty($tocontextid)) {
-            // While this check already exists in the form validation, this is a backstop preventing unnecessary errors.
-            if ($DB->record_exists('question_categories',
-                    ['idnumber' => $idnumber, 'contextid' => $tocontextid])) {
-                $idnumber = null;
+            // Check for a duplicate id number in the context. Here, there are several possible cases:
+            // i) Category is being updated with no change to its id number and no context id change.
+            // The exists call find the current record (a false positive, because we don't want
+            // to nullify in this case).
+            //
+            // ii) Category is updated with a change in contextid (moving it to a new parent, for example)
+            // The exists call finds any clash with id numbers in the new category and,
+            // if found, sets the id of the category being moved to null.
+            //
+            // iii) Category is updated with a change to its id number, but no contextid change.
+            // The exists call finds any clash with id numbers in the new category and,
+            // if found, sets the id of the category being moved to null.
+
+            // Only check for clashes if changing contexts or id numbers.
+            if ($oldcat->contextid != $tocontextid || $idnumber != $oldcat->idnumber) {
+                if ($DB->record_exists('question_categories',
+                        ['idnumber' => $idnumber, 'contextid' => $tocontextid])) {
+                    $idnumber = null;
+                }
             }
         }
 

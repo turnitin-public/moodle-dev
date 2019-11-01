@@ -63,6 +63,7 @@ function atto_h5p_strings_for_js() {
     global $PAGE;
 
     $strings = array(
+        'allowoffline',
         'browserepositories',
         'copyrightbutton',
         'downloadbutton',

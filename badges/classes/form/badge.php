@@ -140,7 +140,7 @@ class badge extends moodleform {
         $issuancedetails[] =& $mform->createElement('date_selector', 'expiredate', '');
         $issuancedetails[] =& $mform->createElement('static', 'expirydate_break', null, '<br/>');
         $issuancedetails[] =& $mform->createElement('radio', 'expiry', '', get_string('relative', 'badges'), 2);
-        $issuancedetails[] =& $mform->createElement('duration', 'expireperiod', '', array('defaultunit' => 86400, 'optional' => false));
+        $issuancedetails[] =& $mform->createElement('advduration', 'expireperiod', '', ['units' => ['w', 'd', 'h', 'i', 's']]);//array('defaultunit' => 86400, 'optional' => false));
         $issuancedetails[] =& $mform->createElement('static', 'expiryperiods_break', null, get_string('after', 'badges'));
 
         $mform->addGroup($issuancedetails, 'expirydategr', get_string('expirydate', 'badges'), array(' '), false);
@@ -150,8 +150,11 @@ class badge extends moodleform {
         $mform->disabledIf('expiredate[day]', 'expiry', 'neq', 1);
         $mform->disabledIf('expiredate[month]', 'expiry', 'neq', 1);
         $mform->disabledIf('expiredate[year]', 'expiry', 'neq', 1);
-        $mform->disabledIf('expireperiod[number]', 'expiry', 'neq', 2);
-        $mform->disabledIf('expireperiod[timeunit]', 'expiry', 'neq', 2);
+        $mform->disabledIf('expireperiod[w]', 'expiry', 'neq', 2);
+        $mform->disabledIf('expireperiod[d]', 'expiry', 'neq', 2);
+        $mform->disabledIf('expireperiod[h]', 'expiry', 'neq', 2);
+        $mform->disabledIf('expireperiod[i]', 'expiry', 'neq', 2);
+        $mform->disabledIf('expireperiod[s]', 'expiry', 'neq', 2);
 
         $mform->addElement('hidden', 'action', $action);
         $mform->setType('action', PARAM_TEXT);

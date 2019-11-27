@@ -165,6 +165,7 @@ class MoodleQuickForm_advduration extends HTML_QuickForm_element implements temp
         foreach ($this->options['units'] as $unit) {
             $context[$unit] = ['value' => $unitvalues[$unit]];
         }
+        $context['optional'] = $this->options['optional'];
         return $context;
     }
 
@@ -189,6 +190,52 @@ class MoodleQuickForm_advduration extends HTML_QuickForm_element implements temp
                     $this->setValue($value);
                 }
                 return true;
+
+            case 'createElement':
+                $this->set_options($arg[2] ?? []);
+                $arg[2] = $this->options;
+                if ($arg[2]['optional']) {
+                    $caller->disabledIf($arg[0].'[w]', $arg[0] . '[enabled]');
+                    $caller->disabledIf($arg[0].'[d]', $arg[0] . '[enabled]');
+                    $caller->disabledIf($arg[0].'[h]', $arg[0] . '[enabled]');
+                    $caller->disabledIf($arg[0].'[i]', $arg[0] . '[enabled]');
+                    $caller->disabledIf($arg[0].'[s]', $arg[0] . '[enabled]');
+                }
+                //$caller->setType($arg[0] . '[number]', PARAM_FLOAT);
+
+
+                // Hmmmm, can I somehow link 'advduration' to 'advduration[h]' here,
+                // so setting disabledIf on the element, captures all the sub-elements?
+                // Might need to check the disabledIfs on the caller...
+                // TODO.
+                if ($caller) {
+                    $match = false;
+                    foreach ($caller->_dependencies as $dependentOn => $conditions) {
+                        foreach ($conditions as $condition => $values) {
+                            foreach ($values as $value => $dependents) {
+                                foreach ($dependents as $dependent) {
+                                    if ($dependent == $arg[0]) {
+                                        // There is something which controls this element.
+                                        // Make this apply to each sub element too.
+                                        $caller->disabledIf($arg[0].'[w]', $dependentOn);
+                                        $caller->disabledIf($arg[0].'[d]', $dependentOn);
+                                        $caller->disabledIf($arg[0].'[h]', $dependentOn);
+                                        $caller->disabledIf($arg[0].'[i]', $dependentOn);
+                                        $caller->disabledIf($arg[0].'[s]', $dependentOn);
+                                        if ($arg[2]['optional']) {
+                                            $caller->disabledIf($arg[0].'[enabled]', $dependentOn);
+                                        }
+
+                                        // TODO: also consider different matching conditions, not just 'notchecked'.
+
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return parent::onQuickFormEvent($event, $arg, $caller);
             default:
                 return parent::onQuickFormEvent($event, $arg, $caller);
         }

@@ -1,61 +1,73 @@
 {{< core_form/element-template }}
     {{$element}}
         <div class="form-group row" id="{{element.id}}">
-        {{#element.w}}
-            <div class="form-group flex-column">
-                <input type="number" id="{{element.id}}_w" name="{{element.name}}[w]" class="form-control" value="{{value}}" min="-1" style="width: 5em"
-                    {{#element.frozen}}
-                        readonly {{#element.hardfrozen}}disabled{{/element.hardfrozen}}
-                    {{/element.frozen}}
-                />
-                <label for="{{element.id}}_w">{{#str}}weeks{{/str}}</label>
-            </div>
-        {{/element.w}}
-        {{#element.d}}
-            <div class="form-group flex-column">
-                <input type="number" id="{{element.id}}_d" name="{{element.name}}[d]" class="form-control" value="{{value}}" min="-1" style="width: 5em"
-                    {{#element.frozen}}
-                       readonly {{#element.hardfrozen}}disabled{{/element.hardfrozen}}
-                    {{/element.frozen}}
-                />
-                <label for="{{element.id}}_d">{{#str}}days{{/str}}</label>
-            </div>
-        {{/element.d}}
-        {{#element.h}}
-            <div class="form-group flex-column">
-                <input type="number" id="{{element.id}}_h" name="{{element.name}}[h]" class="form-control" value="{{value}}" min="-1" style="width: 5em"
-                    {{#element.frozen}}
-                       readonly {{#element.hardfrozen}}disabled{{/element.hardfrozen}}
-                    {{/element.frozen}}
-                />
-                <label for="{{element.id}}_h">{{#str}}hours{{/str}}</label>
-            </div>
-        {{/element.h}}
-        {{#element.i}}
-            <div class="form-group flex-column">
-                <input type="number" id="{{element.id}}_i" name="{{element.name}}[i]" class="form-control" value="{{value}}" min="-1" style="width: 5em"
-                    {{#element.frozen}}
-                       readonly {{#element.hardfrozen}}disabled{{/element.hardfrozen}}
-                    {{/element.frozen}}
-                />
-                <label for="{{element.id}}_i">{{#str}}minutes{{/str}}</label>
-            </div>
-        {{/element.i}}
-        {{#element.s}}
-            <div class="form-group flex-column">
-                <input type="number" id="{{element.id}}_s" name="{{element.name}}[s]" class="form-control" value="{{value}}" min="-1" style="width: 5em"
-                    {{#element.frozen}}
-                       readonly {{#element.hardfrozen}}disabled{{/element.hardfrozen}}
-                    {{/element.frozen}}
-                />
-                <label for="{{element.id}}_s">{{#str}}seconds{{/str}}</label>
-            </div>
-        {{/element.s}}
+            {{#element.w}}
+                <div class="form-group flex-column">
+                    <input type="number" id="{{element.id}}_w" name="{{element.name}}[w]" class="form-control" value="{{value}}" min="-1" style="width: 5em"
+                        {{#element.frozen}}
+                           readonly {{#element.hardfrozen}}disabled{{/element.hardfrozen}}
+                        {{/element.frozen}}
+                    />
+                    <label for="{{element.id}}_w">{{#str}}weeks{{/str}}</label>
+                </div>
+                &nbsp;
+            {{/element.w}}
+            {{#element.d}}
+                <div class="form-group flex-column">
+                    <input type="number" id="{{element.id}}_d" name="{{element.name}}[d]" class="form-control" value="{{value}}" min="-1" style="width: 5em"
+                        {{#element.frozen}}
+                           readonly {{#element.hardfrozen}}disabled{{/element.hardfrozen}}
+                        {{/element.frozen}}
+                    />
+                    <label for="{{element.id}}_d">{{#str}}days{{/str}}</label>
+                </div>
+                &nbsp;
+            {{/element.d}}
+            {{#element.h}}
+                <div class="form-group flex-column">
+                    <input type="number" id="{{element.id}}_h" name="{{element.name}}[h]" class="form-control" value="{{value}}" min="-1" style="width: 5em"
+                        {{#element.frozen}}
+                           readonly {{#element.hardfrozen}}disabled{{/element.hardfrozen}}
+                        {{/element.frozen}}
+                    />
+                    <label for="{{element.id}}_h">{{#str}}hours{{/str}}</label>
+                </div>
+                &nbsp;
+            {{/element.h}}
+            {{#element.i}}
+                <div class="form-group flex-column">
+                    <input type="number" id="{{element.id}}_i" name="{{element.name}}[i]" class="form-control" value="{{value}}" min="-1" style="width: 5em"
+                        {{#element.frozen}}
+                           readonly {{#element.hardfrozen}}disabled{{/element.hardfrozen}}
+                        {{/element.frozen}}
+                    />
+                    <label for="{{element.id}}_i">{{#str}}minutes{{/str}}</label>
+                </div>
+                &nbsp;
+            {{/element.i}}
+            {{#element.s}}
+                <div class="form-group flex-column">
+                    <input type="number" id="{{element.id}}_s" name="{{element.name}}[s]" class="form-control" value="{{value}}" min="-1" style="width: 5em"
+                        {{#element.frozen}}
+                           readonly {{#element.hardfrozen}}disabled{{/element.hardfrozen}}
+                        {{/element.frozen}}
+                    />
+                    <label for="{{element.id}}_s">{{#str}}seconds{{/str}}</label>
+                </div>
+                &nbsp;
+            {{/element.s}}
+            {{#element.optional}}
+                {{^element.frozen}}
+                    {{^element.hardfrozen}}
+                        <input type="checkbox" id="{{element.id}}_toggle" name="{{element.name}}[enabled]">&nbsp;Enable
+                    {{/element.hardfrozen}}
+                {{/element.frozen}}
+            {{/element.optional}}
         </div>
     {{/element}}
 {{/core_form/element-template}}
 {{#js}}
-require(['core_form/advduration'], function(AdvDuration) {
-    AdvDuration.init({{#quote}}{{element.id}}{{/quote}});
-});
+    require(['core_form/advduration'], function(AdvDuration) {
+        AdvDuration.init({{#quote}}{{element.id}}{{/quote}});
+    });
 {{/js}}

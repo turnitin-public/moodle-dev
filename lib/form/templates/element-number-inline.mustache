@@ -1,0 +1,26 @@
+{{< core_form/element-template-inline }}
+    {{$element}}
+        <div >
+            <input type="number"
+                    class="form-control {{#error}}is-invalid{{/error}}"
+                    name="{{element.name}}"
+                    style="width:6em"
+                {{#element.frozen}}
+                    readonly {{#element.hardfrozen}}disabled{{/element.hardfrozen}}
+                {{/element.frozen}}
+                    id="{{element.id}}"
+                    value="{{element.value}}"
+                    min="{{element.min}}"
+                    max="{{element.max}}"
+                    {{#error}}
+                        autofocus aria-describedby="{{element.iderror}}"
+                    {{/error}}
+                    {{{element.attributes}}} >
+            <label>
+            {{#element.text}}
+                {{{.}}}
+            {{/element.text}}
+            </label>
+        </div>
+    {{/element}}
+{{/ core_form/element-template-inline }}

@@ -3347,6 +3347,7 @@ MoodleQuickForm::registerElementType('listing', "$CFG->libdir/form/listing.php",
 MoodleQuickForm::registerElementType('defaultcustom', "$CFG->libdir/form/defaultcustom.php", 'MoodleQuickForm_defaultcustom');
 MoodleQuickForm::registerElementType('modgrade', "$CFG->libdir/form/modgrade.php", 'MoodleQuickForm_modgrade');
 MoodleQuickForm::registerElementType('modvisible', "$CFG->libdir/form/modvisible.php", 'MoodleQuickForm_modvisible');
+MoodleQuickForm::registerElementType('number', "$CFG->libdir/form/number.php", 'MoodleQuickForm_number');
 MoodleQuickForm::registerElementType('password', "$CFG->libdir/form/password.php", 'MoodleQuickForm_password');
 MoodleQuickForm::registerElementType('passwordunmask', "$CFG->libdir/form/passwordunmask.php", 'MoodleQuickForm_passwordunmask');
 MoodleQuickForm::registerElementType('questioncategory', "$CFG->libdir/form/questioncategory.php", 'MoodleQuickForm_questioncategory');

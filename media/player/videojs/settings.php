@@ -24,6 +24,12 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+$ADMIN->add('mediaplayers',
+    new admin_category('mediaplayervideojs', $plugininfo->displayname, $plugininfo->is_enabled() === false));
+
+$settings = new admin_settingpage('videojssettings', new lang_string('playersettings', 'media_videojs'));
+$subsettings = new admin_settingpage('videojssubsettings', new lang_string('subplugins', 'media_videojs'));
+
 if ($ADMIN->fulltree) {
 
     $settings->add(new admin_setting_filetypes('media_videojs/videoextensions',
@@ -61,4 +67,20 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configcheckbox('media_videojs/limitsize',
         new lang_string('limitsize', 'media_videojs'),
         new lang_string('configlimitsize', 'media_videojs'), 1));
+
+    // Subplugin setting page.
+    $subsettings->add(new \media_videojs\subplugins\settings());
+
 }
+
+$ADMIN->add('mediaplayervideojs', $settings);
+$ADMIN->add('mediaplayervideojs', $subsettings);
+
+// Get subplugins.
+$plugins = core_plugin_manager::instance()->get_plugins_of_type('videojs');
+foreach ($plugins as $plugin) {
+    /** @var \media_videojs\plugininfo\tinymce $plugin */
+    $plugin->load_settings($ADMIN, 'videojs', $hassiteconfig);
+}
+
+$settings = null;

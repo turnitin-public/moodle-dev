@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<libraries>
+    <library>
+        <location>amd/src/download.js</location>
+        <name>videojs-vjsdownload</name>
+        <version>1.0.4</version>
+        <license>Apache</license>
+        <licenseversion>2.0</licenseversion>
+    </library>
+</libraries>

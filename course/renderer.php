@@ -135,8 +135,7 @@ class core_course_renderer extends plugin_renderer_base {
     /**
      * Build the HTML for the module chooser javascript popup
      *
-     * @param array $modules A set of modules as returned form @see
-     * get_module_metadata
+     * @param array $modules A set of modules as returned by \core_course\local\service\content_item_service.
      * @param object $course The course that will be displayed
      * @return string The composed HTML for the module
      */
@@ -253,19 +252,26 @@ class core_course_renderer extends plugin_renderer_base {
      * @return string
      */
     function course_section_add_cm_control($course, $section, $sectionreturn = null, $displayoptions = array()) {
-        global $CFG;
+        global $CFG, $PAGE, $USER;
 
         $vertical = !empty($displayoptions['inblock']);
 
-        // check to see if user can add menus and there are modules to add
+        // Check to see if user can add menus.
         if (!has_capability('moodle/course:manageactivities', context_course::instance($course->id))
-                || !$this->page->user_is_editing()
-                || !($modnames = get_module_types_names()) || empty($modnames)) {
+                || !$this->page->user_is_editing()) {
             return '';
         }
 
         // Retrieve all modules with associated metadata
-        $modules = get_module_metadata($course, $modnames, $sectionreturn);
+        $contentitemservice = new \core_course\local\service\content_item_service($PAGE->get_renderer('course'));
+        $urlparams = !is_null($sectionreturn) ? ['sr' => $sectionreturn] : [];
+        $modules = $contentitemservice->get_content_items_for_user_in_course($USER, $course, $urlparams);
+
+        // Return if there are no content items to add.
+        if (empty($modules)) {
+            return '';
+        }
+
         $urlparams = array('section' => $section);
 
         // We'll sort resources and activities into two lists

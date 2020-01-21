@@ -66,11 +66,16 @@ class content_item_readonly_repository implements content_item_readonly_reposito
      * @return content_item a content item object.
      */
     private function content_item_from_legacy_data(\stdClass $item): content_item {
+        if (!isset($item->id)) {
+            $item->id = 0;
+        }
+
         if (is_string($item->title)) {
             $item->title = new string_title($item->title);
         } else if ($item->title instanceof \lang_string) {
             $item->title = new lang_string_title($item->title->get_identifier(), $item->title->get_component());
         }
+
         return new content_item($item->id, $item->name, $item->title, $item->link, $item->icon, $item->help ?? '',
             $item->archetype, 'mod_' . $item->name);
     }

@@ -38,7 +38,7 @@ import selectors from 'core_course/local/chooser/selectors';
  *
  * @return {Object} moduleInfo Object that now has the section information attached
  */
-const moduleInfoFormatter = (e, moduleInfo, section) => {
+const moduleInfoFormatter = (moduleInfo, section) => {
     let sectionid;
     // Set the section for this version of the dialogue.
 
@@ -51,9 +51,11 @@ const moduleInfoFormatter = (e, moduleInfo, section) => {
     } else if (siteMenu !== null) {
         // The block site menu has a sectionid of 0.
         sectionid = 0;
-    } else if (e.target.id) {
-        const caller = section.querySelector(`#${e.target.id}`);
-        sectionid = caller.dataset.sectionid;
+    } else  {
+        //const caller = section.querySelector(`#${e.target.id}`);
+        sectionid =  0;
+        window.console.log(sectionid);
+        window.console.log(section);
     }
 
     // If the sectionid exists, append the section parameter to the add module url.
@@ -87,13 +89,23 @@ const sectionEventHandler = (section, moduleInfo) => {
 
     CustomEvents.define(chooserSpan, events);
 
+    const builtModuleInfo = moduleInfoFormatter(moduleInfo, section);
+
     // Display module chooser event listeners.
     events.forEach((event) => {
-        chooserSpan.addEventListener(event, (e) => {
-            e.preventDefault();
-            const builtModuleInfo = moduleInfoFormatter(e, moduleInfo, section);
-            ChooserDialogue.displayChooser(e, builtModuleInfo);
+
+        //ChooserDialogue.displayChooser(event, builtModuleInfo);
+
+        var modal = ChooserDialogue.displayChooser(builtModuleInfo);
+        modal.then(function(modalr) {
+            window.console.log(modalr);
+            chooserSpan.addEventListener(event, (e) => {
+                e.preventDefault();
+
+                modalr.show();
+            });
         });
+
     });
 };
 
@@ -104,6 +116,9 @@ const sectionEventHandler = (section, moduleInfo) => {
  * @param {Object} moduleInfo Object containing the data required by the chooser template
  */
 const setupForSection = (moduleInfo) => {
+
+    window.console.log('here 2');
+
     // TODO: check if needed.
     document.querySelectorAll(selectors.elements.sitetopic).forEach((section) => {
         sectionEventHandler(section, moduleInfo);

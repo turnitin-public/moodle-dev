@@ -159,9 +159,9 @@ const clickErrorHandler = (item) => {
  * @param {EventFacade} e Triggering Event
  * @param {Object} data Object containing the data required by the chooser template
  */
-export const displayChooser = async(e, data) => {
+export const displayChooser = async(data) => {
     // Combine a class with the section id to avoid other sectionid data attributes.
-    const origin = document.querySelector(`.section-modchooser-text[data-sectionid="${e.target.dataset.sectionid}"]`);
+    const origin = document.querySelector(`.section-modchooser-text[data-sectionid="0"]`);
 
     const [
         modal,
@@ -200,5 +200,8 @@ export const displayChooser = async(e, data) => {
         }
     });
 
-    modal.show();
+    window.console.log('modal creation code', modal);
+    //modal.show();
+    modal.attachToDOM();
+    return modal;
 };

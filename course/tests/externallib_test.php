@@ -3162,4 +3162,33 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         });
         $this->assertCount(0, $favourited);
     }
+
+    /**
+     * Test the web service returning course content items for inclusion in activity choosers, etc.
+     */
+    public function test_get_course_content_items() {
+        $this->resetAfterTest();
+        global $USER;
+
+        $course  = self::getDataGenerator()->create_course();
+        $user = self::getDataGenerator()->create_and_enrol($course, 'editingteacher');
+
+        // As the editing teacher.
+        $this->setUser($user);
+
+        // Fetch course modules.
+        $result = core_course_external::get_course_content_items($course->id);
+        $result = external_api::clean_returnvalue(core_course_external::get_course_content_items_returns(), $result);
+
+        $contentitemservice = new \core_course\local\service\content_item_service(
+            new \core_course\local\repository\content_item_readonly_repository()
+        );
+
+        // Check if the webservice returns exactly what the service defines, albeit in array form.
+        $serviceitemsasarray = array_map(function($item) {
+            return (array) $item;
+        }, $contentitemservice->get_content_items_for_user_in_course($user, $course));
+
+        $this->assertEquals($serviceitemsasarray, $result['content_items']);
+    }
 }

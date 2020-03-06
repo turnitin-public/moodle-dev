@@ -16,7 +16,8 @@ $iconsizes: map-merge((
   2: ($icon-width * .5),
   3: $icon-width,
   4: ($icon-width * 1.5),
-  5: ($icon-width * 3)
+  5: ($icon-width * 3),
+  6: ($icon-width * 3.5),
 ), $iconsizes);
 // stylelint-enable
 
@@ -90,6 +91,17 @@ $iconsizes: map-merge((
 }
 
 @each $size, $length in $iconsizes {
+    // Max heights needs to help restrict X & Y sizes since mustache pix helper has no class support.
+    .icon-max-height-#{$size} {
+        .icon {
+            max-height: $length !important; /* stylelint-disable-line declaration-no-important */
+        }
+    }
+    .icon-max-width-#{$size} {
+        .icon {
+            max-width: $length !important; /* stylelint-disable-line declaration-no-important */
+        }
+    }
     .icon-size-#{$size} {
         .icon {
             height: $length !important; /* stylelint-disable-line declaration-no-important */

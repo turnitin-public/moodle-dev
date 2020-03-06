@@ -153,12 +153,24 @@ class core_course_renderer extends plugin_renderer_base {
      * @return string
      */
     public function course_activitychooser($courseid) {
-
         if (!$this->page->requires->should_create_one_time_item_now('core_course_modchooser')) {
             return '';
         }
 
-        $this->page->requires->js_call_amd('core_course/activitychooser', 'init', [$courseid]);
+        $pluginswithfunction = get_plugins_with_function('custom_choooser_footer', 'lib.php');
+        if ($pluginswithfunction) {
+            foreach ($pluginswithfunction as $plugintype => $plugins) {
+                foreach ($plugins as $pluginfunction) {
+                    $footerdata = $pluginfunction();
+                    $footerdata->img = $this->image_url($footerdata->image['name'], $footerdata->image['component'])
+                        ->out(false);
+                    break; // Only a single plugin can modify the footer.
+                }
+                break; // Only a single plugin can modify the footer.
+            }
+        }
+
+        $this->page->requires->js_call_amd('core_course/activitychooser', 'init', [$courseid, $footerdata]);
 
         return '';
     }

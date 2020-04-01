@@ -1,14 +1,15 @@
 @core @core_user
-Feature: First name and surname as well as additional names are displayed correctly for users and administrators
-  In order to have my user menu consistent with everywhere else my name is shown
-  As any user
-  I need to rely on my name being displayed as expected
+Feature: Users' names are displayed across the site according to the user policy settings
+  In order to control the way students and teachers see users' names
+  As a teacher or admin
+  I need to be able to configure the name display formats 'fullnamedisplay' and 'alternativefullnameformat'
 
   Background:
     Given the following "users" exist:
       | username | firstname | lastname    | email                | middlename | alternatename | firstnamephonetic | lastnamephonetic |
       | user1    | Grainne   | Beauchamp   | one@example.com      | Ann        | Jill          | Gronya            | Beecham          |
       | user2    | Niamh     | Cholmondely | two@example.com      | Jane       | Nina          | Nee               | Chumlee          |
+      | user3    | Siobhan   | Desforges   | three@example.com    | Sarah      | Sev           | Shevon            | De-forjay        |
       | teacher1 | Teacher   | 1           | teacher1@example.com |            |               |                   |                  |
     And the following "courses" exist:
       | fullname | shortname | format |
@@ -18,54 +19,63 @@ Feature: First name and surname as well as additional names are displayed correc
       | teacher1 | C1     | editingteacher |
       | user1    | C1     | student        |
       | user2    | C1     | student        |
-    And I log in as "admin"
-    And I navigate to "Users > Permissions > User policies" in site administration
     And the following config values are set as admin:
       | fullnamedisplay | firstnamephonetic,lastnamephonetic |
       | alternativefullnameformat | middlename, alternatename, firstname, lastname |
 
-  Scenario: See my name in the course profile displayed in the fullnamedisplay format
-    When I log out
-    And I log in as "user1"
+  Scenario: As a student, 'fullnamedisplay' should be used in the participants list and when viewing my own course profile
+    Given I log in as "user1"
     And I am on "Course 1" course homepage
-    And I navigate to course participants
+    When I navigate to course participants
     And I click on "Gronya,Beecham" "link" in the "Gronya,Beecham" "table_row"
     Then I should see "Gronya,Beecham" in the "region-main" "region"
+    And I log out
 
-  Scenario: As admin, in the course profile, still see the name in alternativefullname format when fullnamedisplay is changed
-    Given I log out
-    And I log in as "admin"
-    And I navigate to "Users > Permissions > User policies" in site administration
-    And the following config values are set as admin:
-      | fullnamedisplay | alternatename and lastname |
+  Scenario: As a student, 'fullnamedisplay' should be used in the participants list and when viewing another user's course profile
+    Given I log in as "user2"
     And I am on "Course 1" course homepage
-    And I navigate to course participants
-    And I should not see "Gronya,Beecham"
-    Then I should see "Ann, Jill, Grainne, Beauchamp"
+    When I navigate to course participants
+    And I click on "Gronya,Beecham" "link" in the "Gronya,Beecham" "table_row"
+    Then I should see "Gronya,Beecham" in the "region-main" "region"
+    And I log out
 
-  Scenario: See my name in my profile
-    When I log out
-    And I log in as "user1"
-    And I follow "Dashboard" in the user menu
+  Scenario: As a teacher, 'alternativefullnameformat' should be used in the participants list but 'fullnamedisplay' used on the course profile
+    Given I log in as "teacher1"
+    And I am on "Course 1" course homepage
+    When I navigate to course participants
+    Then I should see "Ann, Jill, Grainne, Beauchamp" in the "Ann, Jill, Grainne, Beauchamp" "table_row"
+    And I click on "Ann, Jill, Grainne, Beauchamp" "link" in the "Ann, Jill, Grainne, Beauchamp" "table_row"
+    And I should see "Gronya,Beecham" in the "region-main" "region"
+    And I log out
+
+  Scenario: As an authenticated user, 'fullnamedisplay' should be used in the navigation and when viewing my profile
+    Given I log in as "user1"
+    When I follow "Profile" in the user menu
     Then I should see "Gronya,Beecham" in the ".usermenu" "css_element"
+    And I should see "Gronya,Beecham" in the ".page-context-header" "css_element"
+    And I log out
 
-  Scenario: See my name in my profile logged in as another user
-    When I log out
-    And I log in as "admin"
-    And I navigate to "Users > Accounts > Browse list of users" in site administration
+  Scenario: As an admin, 'fullnamedisplay' should be used when using the 'log in as' function
+    Given I log in as "admin"
+    When I navigate to "Users > Accounts > Browse list of users" in site administration
     And I follow "Jane, Nina, Niamh, Cholmondely"
     And I follow "Log in as"
     Then I should see "You are logged in as Nee,Chumlee"
+    And I log out
 
-  Scenario: See my name, as admin, in the user's site profile
+  Scenario: As an admin, 'fullnamedisplay' should be used when viewing another user's site profile
+    Given I log in as "admin"
     When I navigate to "Users > Accounts > Browse list of users" in site administration
     And I follow "Ann, Jill, Grainne, Beauchamp"
     Then I should see "Gronya,Beecham" in the ".page-header-headings" "css_element"
+    And I log out
 
-  Scenario: See my name, as another user, in the user's course profile
-    When I log out
-    And I log in as "user2"
+  @javascript
+  Scenario: As a teacher, the 'alternativefullnameformat' should be used when searching for and enrolling a user
+    Given I log in as "teacher1"
     And I am on "Course 1" course homepage
-    And I navigate to course participants
-    And I click on "Gronya,Beecham" "link" in the "Gronya,Beecham" "table_row"
-    Then I should see "Gronya,Beecham" in the "region-main" "region"
+    When I navigate to course participants
+    And I press "Enrol users"
+    And I set the field "Select users" to "three@example.com"
+    And I click on ".form-autocomplete-downarrow" "css_element" in the "Select users" "form_row"
+    Then I should see "Sarah, Sev, Siobhan, Desforges"

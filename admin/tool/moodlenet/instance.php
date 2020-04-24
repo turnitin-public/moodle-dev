@@ -26,6 +26,9 @@ require_once(__DIR__ . '/../../../config.php');
 
 require_login();
 
+$course = required_param('course', PARAM_INT);
+$section = required_param('section', PARAM_INT);
+
 // The integration must be enabled for this import endpoint to be active.
 if (!get_config('tool_moodlenet', 'enablemoodlenet')) {
     print_error('moodlenetnotenabled', 'tool_moodlenet');
@@ -39,7 +42,7 @@ $PAGE->set_heading(get_string('instancepageheader', 'tool_moodlenet'));
 
 echo $OUTPUT->header();
 
-$renderable = new \tool_moodlenet\output\instances_page();
+$renderable = new \tool_moodlenet\output\instances_page($course, $section);
 $renderer = $PAGE->get_renderer('tool_moodlenet');
 echo $renderer->render($renderable);
 

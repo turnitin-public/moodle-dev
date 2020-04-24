@@ -25,7 +25,7 @@ require_once('../../config.php');
 require_once('lib.php');
 
 $course = required_param('course', PARAM_INT);            // Course ID.
-$section   = optional_param('sr', 0, PARAM_INT);           // Section Id.
+$section   = required_param('section', PARAM_INT);           // Section Id.
 
 if (!$course = get_course($course)) {
     print_error('coursemisconf');

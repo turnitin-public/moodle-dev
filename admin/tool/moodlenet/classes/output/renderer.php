@@ -46,9 +46,10 @@ class renderer extends plugin_renderer_base {
      * @return string HTML
      */
     protected function render_instances_page(\tool_moodlenet\output\instances_page $instancespage): string {
-        $this->page->requires->js_call_amd('tool_moodlenet/instance_form', 'init', ['defaulturl' => DEFAULT_MOODLE_NET_LINK]);
-
+	global $CFG;
         $data = $instancespage->export_for_template($this);
+        $link = DEFAULT_MOODLE_NET_LINK . "?site=" . urlencode($CFG->wwwroot) . "&path=" . urlencode("admin/tool/moodlenet/import.php?course={$data->course}&section={$data->section}");
+        $this->page->requires->js_call_amd('tool_moodlenet/instance_form', 'init', ['defaulturl' => $link]);
         return parent::render_from_template('tool_moodlenet/instances_page', $data);
     }
 

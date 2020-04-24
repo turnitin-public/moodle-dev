@@ -35,6 +35,8 @@ defined('MOODLE_INTERNAL') || die;
  */
 class instances_page implements \renderable, \templatable {
 
+	var $course;
+	var $section;
     /**
      * Export the data.
      *
@@ -46,8 +48,15 @@ class instances_page implements \renderable, \templatable {
         // Prepare the context object.
         $data = new \stdClass();
         $data->sesskey = sesskey();
+	$data->course = $this->course;
+	$data->section = $this->section;
         $data->img = $output->image_url('MoodleNet', 'tool_moodlenet')->out(false);
 
         return $data;
+    }
+
+    public function __construct(int $course, int $section = 0) {
+        $this->course = $course;
+        $this->section = $section;
     }
 }

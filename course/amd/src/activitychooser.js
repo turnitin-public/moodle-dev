@@ -87,7 +87,11 @@ const registerListenerEvents = (courseId, footerData) => {
                 const favouriteFunction = partiallyAppliedFavouriteManager(data, sectionId);
                 const builtModuleData = sectionIdMapper(data, sectionId);
                 const footerplugin = await getPlugin(footerData.customfooterjs);
-                const builtFooterData = await footerplugin.footerDataBuilder(footerData, courseId, sectionId);
+                var modifiedData = JSON.parse(JSON.stringify(footerData));
+                if (modifiedData.advanced) {
+                    modifiedData.advanced += "%26section%3D" + sectionId;
+                }
+                const builtFooterData = await footerplugin.footerDataBuilder(modifiedData, courseId, sectionId);
                 const sectionModal = await modalBuilder(builtModuleData, builtFooterData);
                 ChooserDialogue.displayChooser(caller, sectionModal, builtModuleData, favouriteFunction, builtFooterData);
             }

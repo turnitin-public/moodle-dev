@@ -82,6 +82,7 @@ class external extends external_api {
         if ($userlink['result'] === true) {
             profile_manager::save_moodlenet_user_profile($mnetprofile);
         }
+
         return $userlink;
     }
 

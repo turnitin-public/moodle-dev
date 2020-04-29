@@ -50,7 +50,7 @@ function generate_mnet_endpoint(string $profileurl, int $course, int $section = 
  * @return object What we are going too pass to the Activity Chooser to orender as a footer
  * @throws dml_exception
  */
-function tool_moodlenet_custom_choooser_footer() {
+function tool_moodlenet_custom_choooser_footer($courseid) {
     global $USER;
     $tool = core_plugin_manager::instance()->get_plugin_info('tool_moodlenet');
     if ($tool) {
@@ -61,8 +61,15 @@ function tool_moodlenet_custom_choooser_footer() {
         if ($installed) {
             $mnetprofile = \tool_moodlenet\profile_manager::get_moodlenet_user_profile($USER->id);
             if ($mnetprofile !== null) {
-                $profilelink = \tool_moodlenet\profile_manager::get_moodlenet_profile_link($mnetprofile);
-                $advanced = $profilelink['domain'];
+                // This is firing on every page load, which is adding a huge lag.
+                //$profilelink = \tool_moodlenet\profile_manager::get_moodlenet_profile_link($mnetprofile);
+                //$advanced = $profilelink['domain'] ?? '';
+
+                // Set the site and path. MoodleNet requires this to send the user back to Moodle.
+                global $CFG;
+                $advanced = $mnetprofile->get_domain() ?? '';
+                $advanced = "https://moodlenet.prototype.moodledemo.net/testclient.php";
+                $advanced .= "?site=" . urlencode($CFG->wwwroot) . "&path=" . urlencode("admin/tool/moodlenet/import.php?course=".$courseid);
             }
         }
 

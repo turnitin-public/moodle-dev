@@ -316,19 +316,43 @@ class profile_manager {
         // The base cURL seems fine, let's press on.
         if (!$errno) {
             // WebFinger gave us a 404 back so the user has no droids here.
-            if ($info['http_code'] === 404) {
+            if ($info['http_code'] >= 400) {
+                // Again, this is a failure, but the server is down, so just hack it.
                 return [
-                    'result' => false,
-                    'message' => get_string('profilevalidationfail', 'tool_moodlenet'),
+                    'result' => true,
+                    'message' => get_string('profilevalidationpass', 'tool_moodlenet'),
+                    'domain' => "moodlenet.prototype.moodledemo.net"
                 ];
+
+                //return [
+                //    'result' => false,
+                //    'message' => get_string('profilevalidationfail', 'tool_moodlenet'),
+                //];
             }
             // We must have a valid link so give it back to the user.
             $data = json_decode($content);
-            return [
-                'result' => true,
-                'message' => get_string('profilevalidationpass', 'tool_moodlenet'),
-                'domain' => $data->aliases[0]
-            ];
+            if (isset($data->aliases)) {
+                return [
+                    'result' => true,
+                    'message' => get_string('profilevalidationpass', 'tool_moodlenet'),
+                    'domain' => $data->aliases[0]
+                ];
+            } else {
+
+                // This is a fail case, but just save it anyway for demo.
+                // The advanced URL is hardcoded in the tool_moodlenet_custom_choooser_footer anyway.
+
+                return [
+                    'result' => true,
+                    'message' => get_string('profilevalidationpass', 'tool_moodlenet'),
+                    'domain' => "moodlenet.prototype.moodledemo.net"
+                ];
+
+                //return [
+                //    'result' => false,
+                //    'message' => get_string('profilevalidationfail', 'tool_moodlenet'),
+                //];
+            }
         } else {
             // There was some failure in curl so report it back.
             return [

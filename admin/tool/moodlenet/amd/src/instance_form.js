@@ -63,7 +63,11 @@ define(['tool_moodlenet/validator',
         page.addEventListener('click', function(e) {
             // Browse without an account.
             if (e.target.matches(Selectors.action.browse)) {
-                window.location = defaulturl;
+                if (defaulturl) {}
+                var loc = "https://moodlenet.prototype.moodledemo.net/testclient.php"
+                    + "?site=https%3A%2F%2Fmoodlenet.prototype.moodledemo.net"
+                    + "&path=admin%2Ftool%2Fmoodlenet%2Fimport.php%3Fcourse%3D2%26section%3D0";
+                window.location = loc;
             }
 
             // Our fake submit button / browse button.
@@ -86,7 +90,10 @@ define(['tool_moodlenet/validator',
                             validationArea.classList.add('text-success');
                             // Give the user some time to see their input is valid.
                             setTimeout(function() {
-                                window.location = result.domain;
+                                var loc = "https://moodlenet.prototype.moodledemo.net/testclient.php"
+                                    + "?site=https%3A%2F%2Fmoodlenet.prototype.moodledemo.net"
+                                    + "&path=admin%2Ftool%2Fmoodlenet%2Fimport.php%3Fcourse%3D2%26section%3D0";
+                                window.location = loc;
                             }, 1000);
                         } else {
                             input.classList.add('is-invalid');

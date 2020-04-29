@@ -161,7 +161,7 @@ class core_course_renderer extends plugin_renderer_base {
         if ($pluginswithfunction) {
             foreach ($pluginswithfunction as $plugintype => $plugins) {
                 foreach ($plugins as $pluginfunction) {
-                    $footerdata = $pluginfunction();
+                    $footerdata = $pluginfunction($courseid);
                     $footerdata->img = $this->image_url($footerdata->image['name'], $footerdata->image['component'])
                         ->out(false);
                     break; // Only a single plugin can modify the footer.

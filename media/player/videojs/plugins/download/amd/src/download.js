@@ -38,6 +38,12 @@ define(['media_videojs/video-lazy'], function(videojs) {
 
     class DownloadButton extends vjsButton {
 
+        createEl(tag = 'button', props = {}, atts = {}) {
+            let el = super.createEl(tag, props, atts);
+            el.innerHTML = "<i class=\"fa fa-download\">";
+            return el;
+        }
+
       /**
       * Allow sub components to stack CSS class names
       *
@@ -74,14 +80,18 @@ define(['media_videojs/video-lazy'], function(videojs) {
      * @param    {Object} [options={}]
      */
     const onPlayerReady = (player, options) => {
-      let DButton = player.controlBar.addChild(new DownloadButton(player, options), {});
+        videojs.registerComponent('dlButton', DownloadButton);
 
-      DButton.controlText(options.textControl);
+        let DButton = player.getChild('controlBar').addChild('dlButton', {});
 
-      player.controlBar.el().insertBefore(DButton.el(),
-        player.controlBar.getChild(options.beforeElement).el());
+        DButton.controlText(options.textControl);
 
-      player.addClass('vjs-vjsdownload');
+        player.controlBar.el().insertBefore(
+            DButton.el(),
+            player.controlBar.getChild(options.beforeElement).el()
+        );
+
+        player.addClass('vjs-vjsdownload');
     };
 
     /**

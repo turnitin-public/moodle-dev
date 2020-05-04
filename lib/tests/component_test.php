@@ -437,6 +437,7 @@ class core_component_testcase extends advanced_testcase {
             'editor' => "$CFG->dirroot/lib/editor",
             'tool' => "$CFG->dirroot/$CFG->admin/tool",
             'local' => "$CFG->dirroot/local",
+            'media' => "$CFG->dirroot/media/player",
         );
 
         $this->assertSame($expected, $types);

@@ -58,7 +58,7 @@ class core_component {
         'yui' => true,
     ];
     /** @var array list plugin types that support subplugins, do not add more here unless absolutely necessary */
-    protected static $supportsubplugins = array('mod', 'editor', 'tool', 'local');
+    protected static $supportsubplugins = array('mod', 'editor', 'tool', 'local', 'media');
 
     /** @var object JSON source of the component data */
     protected static $componentsource = null;

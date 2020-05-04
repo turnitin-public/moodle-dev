@@ -382,11 +382,52 @@ class media_videojs_plugin extends core_media_player_native {
     }
 
     /**
+     * Get the videojs plugins to load as well as their specific configuration.
+     * This method gets the videojs plugin amd module names from
+     * each installed videojs media subplugin.
+     *
+     * @return array A list of videojs plugins as AMD module names and a list of their configuration.
+     */
+    private function get_videojs_plugins() : array {
+        // Get the plugins for videojs.
+        $plugins = \core_component::get_plugin_list('videojs');
+        $pluginmanager = core_plugin_manager::instance();
+        $pluginnames = array_keys($plugins);
+        $pluginamdlist = array();
+        $pluginamdconfig = new \stdClass();
+
+        foreach ($pluginnames as $plugin) {
+            // Only process enabled plugins.
+            $plugininfo = $pluginmanager->get_plugin_info('videojs_' . $plugin);
+            if (!$plugininfo->is_enabled()) {
+                continue;
+            }
+
+            // For each plugin get the module to load.
+            $pluginamdmodule = 'videojs_' . $plugin . '/' . $plugin;
+            $pluginamdlist[] = $pluginamdmodule;
+
+            // For each plugin get any plugin specific configuration.
+            $pluginclass = "\\videojs_$plugin\\$plugin";
+            $pluginobj = new $pluginclass();
+            $pluginconfig = $pluginobj->get_plugin_config();
+            $pluginamdconfig->{$plugin} = $pluginconfig;
+        }
+
+        return array($pluginamdlist, $pluginamdconfig);
+    }
+
+    /**
      * Setup page requirements.
      *
      * @param moodle_page $page The page we are going to add requirements to.
      */
     public function setup($page) {
+
+        // Get the availble videojs plugins and their config to pass to the loader.
+        list($pluginamdlist, $pluginamdconfig) = $this->get_videojs_plugins();
+        $pluginlistjson = json_encode($pluginamdlist);
+        $pluginconfigjson = json_encode($pluginamdconfig);
 
         // Load dynamic loader. It will scan page for videojs media and load necessary modules.
         // Loader will be loaded on absolutely every page, however the videojs will only be loaded
@@ -394,11 +435,13 @@ class media_videojs_plugin extends core_media_player_native {
         $path = new moodle_url('/media/player/videojs/videojs/video-js.swf');
         $contents = 'videojs.options.flash.swf = "' . $path . '";' . "\n";
         $contents .= $this->find_language(current_language());
+        // JS is initiated this way and variables passed because of VideoJS language string loading.
+        // MDL-67608 will fix this.
         $page->requires->js_amd_inline(<<<EOT
 require(["media_videojs/loader"], function(loader) {
     loader.setUp(function(videojs) {
         $contents
-    });
+    }, $pluginlistjson, $pluginconfigjson);
 });
 EOT
         );

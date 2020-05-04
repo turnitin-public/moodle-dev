@@ -30,13 +30,28 @@ define(['jquery', 'core/event'], function($, Event) {
     var onload;
 
     /**
+     * The videojs plugins to add.
+     */
+    var videojsplugins;
+
+    /**
+     * VideoJS plugin configurations.
+     */
+    var videjspluginconfig;
+
+    /**
      * Set-up.
      *
      * Adds the listener for the event to then notify video.js.
      * @param {Function} executeonload function to execute when media_videojs/video is loaded
+     * @param {array} plugins array of module names for plugins to load.
+     * @param {array} pluginsconfig array of included plugin configuration options.
      */
-    var setUp = function(executeonload) {
+    var setUp = function(executeonload, plugins, pluginsconfig) {
         onload = executeonload;
+        videojsplugins = plugins;
+        videjspluginconfig = pluginsconfig;
+
         // Notify Video.js about the nodes already present on the page.
         notifyVideoJS(null, $('body'));
         // We need to call popover automatically if nodes are added to the page later.
@@ -73,12 +88,21 @@ define(['jquery', 'core/event'], function($, Event) {
                     // Add Flash to the list of modules we require.
                     modules.push('media_videojs/videojs-flash-lazy');
                 }
+
+                // Add any additional installed VideoJs plugins.
+                modules = modules.concat(videojsplugins);
+
+                // Add configuration for additional VideoJS plugins.
+                config.plugins = videjspluginconfig;
+
                 require(modules, function(videojs) {
                     if (onload) {
                         onload(videojs);
                         onload = null;
                     }
+
                     videojs(id, config);
+
                 });
             });
     };

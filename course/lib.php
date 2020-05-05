@@ -4978,3 +4978,23 @@ function course_output_fragment_new_base_form($args) {
 
     return $o;
 }
+
+/**
+ * Fallback for the activity chooser footer if there are no lib files that call the hook.
+ *
+ * @param int $courseid The course thar
+ * @return object
+ * @throws dml_exception
+ */
+function course_activity_chooser_footer_fallback(int $courseid) {
+    global $OUTPUT;
+    $renderedfooter = $OUTPUT->render_from_template('core_course/local/activitychooser/footer_fallback', (object)[
+        'enabled' => (bool)get_config('core', 'enablemoodlenet'),
+        'generic' => get_config('core', 'defaultmoodlenet'),
+    ]);
+
+    return new core_course\local\entity\activity_chooser_footer(
+        'core_course/local/activitychooser/footerfallback',
+        $renderedfooter
+    );
+}

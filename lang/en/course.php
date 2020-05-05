@@ -22,6 +22,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['activitychooserbrowse'] = "Browse for content on";
 $string['activitychoosercategory'] = 'Activity chooser';
 $string['activitychooserrecommendations'] = 'Recommended activities';
 $string['activitychoosersettings'] = 'Activity chooser settings';
@@ -30,6 +31,7 @@ $string['activitychoosertabmode_desc'] = "The activity chooser enables a teacher
 $string['activitychoosertabmodeone'] = 'Starred, All, Activities, Resources, Recommended';
 $string['activitychoosertabmodetwo'] = 'Starred, All, Recommended';
 $string['activitychoosertabmodethree'] = 'Starred, Activities, Resources, Recommended';
+$string['aria:activitychooserbrowse'] = "Browse for content on MoodleNet";
 $string['aria:coursecategory'] = 'Course category';
 $string['aria:courseimage'] = 'Course image';
 $string['aria:courseshortname'] = 'Course short name';

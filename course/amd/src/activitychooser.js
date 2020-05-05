@@ -37,7 +37,7 @@ import Pending from 'core/pending';
  * @method init
  * @param {Number} courseId Course ID to use later on in fetchModules()
  */
-export const init = courseId => {
+export const init = (courseId) => {
     const pendingPromise = new Pending();
 
     registerListenerEvents(courseId);
@@ -72,12 +72,27 @@ const registerListenerEvents = (courseId) => {
         };
     })();
 
+    const fetchFooterData = (() => {
+        let footerInnerPromise = null;
+
+        return (sectionId) => {
+            if (!footerInnerPromise) {
+                footerInnerPromise = new Promise((resolve) => {
+                    resolve(Repository.fetchFooterData(courseId, sectionId));
+                });
+            }
+
+            return footerInnerPromise;
+        };
+    })();
+
     CustomEvents.define(document, events);
 
     // Display module chooser event listeners.
     events.forEach((event) => {
         document.addEventListener(event, async(e) => {
             if (e.target.closest(selectors.elements.sectionmodchooser)) {
+
                 // We need to know who called this.
                 // Standard courses use the ID in the main section info.
                 const sectionDiv = e.target.closest(selectors.elements.section);
@@ -92,7 +107,8 @@ const registerListenerEvents = (courseId) => {
                     bodyPromiseResolver = resolve;
                 });
 
-                const sectionModal = buildModal(bodyPromise);
+                const footerData = await fetchFooterData(caller.dataset.sectionid);
+                const sectionModal = buildModal(bodyPromise, footerData);
 
                 // Now we have a modal we should start fetching data.
                 const data = await fetchModuleData();
@@ -104,6 +120,7 @@ const registerListenerEvents = (courseId) => {
                     sectionModal,
                     builtModuleData,
                     partiallyAppliedFavouriteManager(data, caller.dataset.sectionid),
+                    footerData,
                 );
 
                 bodyPromiseResolver(await Templates.render(
@@ -169,13 +186,15 @@ const templateDataBuilder = (data) => {
  *
  * @method buildModal
  * @param {Promise} bodyPromise
+ * @param {String|Boolean} footer Either a footer to add or nothing
  * @return {Object} The modal ready to display immediately and render body in later.
  */
-const buildModal = bodyPromise => {
+const buildModal = (bodyPromise, footer) => {
     return ModalFactory.create({
         type: ModalFactory.types.DEFAULT,
         title: getString('addresourceoractivity'),
         body: bodyPromise,
+        footer: footer.customfootertemplate,
         large: true,
         templateContext: {
             classes: 'modchooser'

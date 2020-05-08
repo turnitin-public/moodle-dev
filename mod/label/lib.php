@@ -212,7 +212,8 @@ function label_dndupload_register() {
     $strdndtext = get_string('dnduploadlabeltext', 'mod_label');
     return array_merge($ret, array('types' => array(
         array('identifier' => 'text/html', 'message' => $strdndtext, 'noname' => true),
-        array('identifier' => 'text', 'message' => $strdndtext, 'noname' => true)
+        array('identifier' => 'text', 'message' => $strdndtext, 'noname' => true),
+        array('identifier' => 'url', 'message' => 'create label containing the url')
     )));
 }
 
@@ -254,7 +255,12 @@ function label_dndupload_handle($uploadinfo) {
     } else if (!empty($uploadinfo->content)) {
         $data->intro = $uploadinfo->content;
         if ($uploadinfo->type != 'text/html') {
-            $data->introformat = FORMAT_PLAIN;
+            if ($uploadinfo->type == 'url') {
+                $data->introformat = FORMAT_HTML;
+                $data->intro = '<a href="'.$data->intro.'">'.$data->intro.'</a>';
+            } else {
+                $data->introformat = FORMAT_PLAIN;
+            }
         }
     }
 

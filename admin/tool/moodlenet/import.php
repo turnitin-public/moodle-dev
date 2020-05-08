@@ -37,6 +37,7 @@ if (!get_config('core', 'enablemoodlenet')) {
 
 $course = optional_param('course', null, PARAM_INT);
 $section = optional_param('section', null, PARAM_INT);
+$resourcetype = optional_param('resourcetype', 'file', PARAM_TEXT);
 
 // The POST data must be present and valid.
 if (!empty($_POST)) {
@@ -47,7 +48,7 @@ if (!empty($_POST)) {
         $resourceurl = urlencode($resourceurl);
 
         // Build the URL to fetch.
-        $url = new moodle_url('/admin/tool/moodlenet/index.php', ['resourceurl' => $resourceurl]);
+        $url = new moodle_url('/admin/tool/moodlenet/index.php', ['resourceurl' => $resourceurl, 'rt' => $resourcetype]);
 
         if (!is_null($course)) {
             $url->param('course', $course);

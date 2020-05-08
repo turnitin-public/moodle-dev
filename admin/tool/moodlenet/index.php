@@ -32,6 +32,7 @@ require_once(__DIR__ . '/../../../config.php');
 require_once($CFG->dirroot .'/course/lib.php');
 
 $resourceurl = required_param('resourceurl', PARAM_RAW);
+$resourcetype = required_param('rt', PARAM_TEXT);
 $resourceurl = urldecode($resourceurl);
 $course = optional_param('course', null, PARAM_INT);
 $section = optional_param('section', null, PARAM_INT);
@@ -95,6 +96,7 @@ if ($cancel) {
     if (!is_null($course) && !is_null($section)) {
         redirect(new \moodle_url('/admin/tool/moodlenet/options.php', [
             'resourceurl' => urlencode($resourceurl),
+            'rt' => $resourcetype,
             'course' => $course,
             'section' => $section,
         ]));

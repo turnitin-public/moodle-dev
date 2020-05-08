@@ -42,26 +42,59 @@ class import_handler_info {
     /** @var string $description the description. */
     protected $description;
 
+    /** @var string $resourcetype the type of resource */
+    protected $resourcetype;
+
+    /** @var string[] $validtypes the list of valid resource types. */
+    protected $validtypes = ['file', 'url'];
+
     /**
      * The import_handler_info constructor.
      *
-     * @param string $extension the extension this handler will be responsible for.
      * @param string $modulename the name of the module handling the file extension. E.g. 'label'.
      * @param string $description A description of how the module handles files of this extension type.
+     * @param string $resourcetype the type this handler will be responsible for, e.g. 'file', 'url', etc.
+     * @param string $extension the extension this handler will be responsible for.
      */
-    public function __construct(string $extension, string $modulename, string $description) {
-        if (empty($extension)) {
-            throw new \coding_exception("Extension cannot be empty.");
-        }
+    public function __construct(string $modulename, string $description, string $resourcetype, string $extension = null) {
         if (empty($modulename)) {
             throw new \coding_exception("Module name cannot be empty.");
         }
         if (empty($description)) {
             throw new \coding_exception("Description cannot be empty.");
         }
-        $this->extension = $extension;
+        if (empty($resourcetype)) {
+            throw new \coding_exception("Resource type cannot be empty.");
+        }
+        if (!$this->valid_resource_type($resourcetype)) {
+            throw new \coding_exception("Invalid resource type '$resourcetype'.");
+        }
+        if ($resourcetype === 'file' && empty($extension)) {
+            throw new \coding_exception("Extension cannot be empty.");
+        }
         $this->modulename = $modulename;
         $this->description = $description;
+        $this->resourcetype = $resourcetype;
+        $this->extension = $extension;
+    }
+
+    /**
+     * Check whether the supplied string is a valid resource type or not.
+     *
+     * @param $type the string type to check
+     * @return bool true if valid, false otherwise.
+     */
+    protected function valid_resource_type($type): bool {
+        return in_array($type, $this->validtypes);
+    }
+
+    /**
+     * Return the resource type being handled.
+     *
+     * @return string the resource type, e.g. 'file' or 'url'.
+     */
+    public function get_resource_type(): string {
+        return $this->resourcetype;
     }
 
     /**

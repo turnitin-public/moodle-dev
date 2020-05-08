@@ -47,6 +47,7 @@ $course = required_param('course', PARAM_INT);
 $section = required_param('section', PARAM_INT);
 $resourceurl = required_param('resourceurl', PARAM_RAW);
 $resourceurl = urldecode($resourceurl);
+$resourcetype = optional_param('rt', null, PARAM_TEXT);
 $modhandler = optional_param('modhandler', null, PARAM_TEXT);
 $import = optional_param('import', null, PARAM_TEXT);
 $cancel = optional_param('cancel', null, PARAM_TEXT);
@@ -66,27 +67,55 @@ if ($modhandler && $import) {
     require_capability('moodle/course:manageactivities', context_course::instance($course->id));
     confirm_sesskey();
 
-    $modandext = explode('_', $modhandler);
-    $remoteresource = new remote_resource(new curl(), new url($resourceurl));
-    $handlerinfo = $handlerregistry->get_file_handler_for_extension_and_plugin($modandext[1], $modandext[0]);
-    if (is_null($handlerinfo)) {
-        throw new coding_exception("Invalid handler data '$modhandler'. An import handler could not be found.");
+    $handlerbits = explode('_', $modhandler);
+    // TODO if the handler id really is unique, we should be able to get the handler from the registry and just have on code block here.
+    if ($handlerbits[1] === 'file') {
+        $remoteresource = new remote_resource(new curl(), new url($resourceurl));
+        $handlerinfo = $handlerregistry->get_file_handler_for_extension_and_plugin($handlerbits[1], $handlerbits[0]);
+        if (is_null($handlerinfo)) {
+            throw new coding_exception("Invalid handler data '$modhandler'. An import handler could not be found.");
+        }
+        $importproc = new import_processor($course, $section, $remoteresource, $handlerinfo, $handlerregistry);
+        $importproc->process();
+    } else if ($handlerbits[1] === 'url') {
+        $remoteresource = new remote_resource(new curl(), new url($resourceurl));
+        $handlerinfo = $handlerregistry->get_url_handler_for_plugin($handlerbits[0]);
+        if (is_null($handlerinfo)) {
+            throw new coding_exception("Invalid handler data '$modhandler'. An import handler could not be found.");
+        }
+        $importproc = new import_processor($course, $section, $remoteresource, $handlerinfo, $handlerregistry);
+        $importproc->process();
+    } else {
+        throw new coding_exception("invalid resource type '$handlerbits[1]' found in form data.");
     }
-    $importproc = new import_processor($course, $section, $remoteresource, $handlerinfo, $handlerregistry);
-    $importproc->process();
+
     redirect(new moodle_url('/course/view.php', ['id' => $course->id]));
 }
 
 // Render the form, providing the user with actions, starting by getting the handlers supporting this extension.
 $resource = new remote_resource(new curl(), new url($resourceurl));
-$handlers = $handlerregistry->get_file_handlers_for_extension($resource->get_extension());
 $handlercontext = [];
-foreach ($handlers as $handler) {
-    $handlercontext[] = [
-        'module' => $handler->get_module_name(),
-        'extension' => $handler->get_extension(),
-        'message' => $handler->get_description()
-    ];
+// TODO helper anon to get helper ID from the handler so we can have a single foreach below.
+if ($resourcetype === 'url') {
+    $handlers = $handlerregistry->get_url_handlers();
+    foreach ($handlers as $handler) {
+        $handlercontext[] = [
+            'module' => $handler->get_module_name(),
+            'extension' => null,
+            'message' => $handler->get_description(),
+            'handlerid' => $handler->get_module_name() . '_url'
+        ];
+    }
+} else {
+    $handlers = $handlerregistry->get_file_handlers_for_extension($resource->get_extension());
+    foreach ($handlers as $handler) {
+        $handlercontext[] = [
+            'module' => $handler->get_module_name(),
+            'extension' => $handler->get_extension(),
+            'message' => $handler->get_description(),
+            'handlerid' => $handler->get_module_name() . '_file_' . $handler->get_extension()
+        ];
+    }
 }
 
 // Setup the page and display the form.

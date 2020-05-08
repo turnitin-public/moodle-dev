@@ -93,14 +93,16 @@ class import_processor {
         }
         $this->handlerinfo = $handlerinfo;
 
-        // Ensure the supplied handler is valid for the file extension of the remote resource.
-        $extension = $this->remoteresource->get_extension();
-        $handlers = $this->handlerregistry->get_file_handlers_for_extension($extension);
-        $supported = !empty(array_filter($handlers, function($handler) {
-            return $handler->get_module_name() == $this->handlerinfo->get_module_name();
-        }));
-        if (!$supported) {
-            throw new \coding_exception("Module {$this->handlerinfo->get_module_name()} does not support extension '$extension'.");
+        if ($this->handlerinfo->get_resource_type() == 'file') {
+            // Ensure the supplied handler is valid for the file extension of the remote resource.
+            $extension = $this->remoteresource->get_extension();
+            $handlers = $this->handlerregistry->get_file_handlers_for_extension($extension);
+            $supported = !empty(array_filter($handlers, function ($handler) {
+                return $handler->get_module_name() == $this->handlerinfo->get_module_name();
+            }));
+            if (!$supported) {
+                throw new \coding_exception("Module {$this->handlerinfo->get_module_name()} does not support extension '$extension'.");
+            }
         }
     }
 
@@ -111,44 +113,68 @@ class import_processor {
      * @throws \moodle_exception if the file exceeds the user's upload limits for the course.
      */
     public function process() {
-        // Before starting a potentially lengthy download, try to ensure the file size does not exceed the upload size restrictions
-        // for the user. This is a time saving measure.
-        // This is a naive check, that serves only to catch files if they provide the content length header.
-        // Because of potential content encoding (compression), the stored file will be checked again after download as well.
-        $size = $this->remoteresource->get_download_size() ?? -1;
-        if ($this->size_exceeds_upload_limit($size)) {
-            throw new \moodle_exception('uploadlimitexceeded', 'tool_moodlenet', '', ['filesize' => $size,
-                'uploadlimit' => $this->useruploadlimit]);
+        if ($this->handlerinfo->get_resource_type() == 'file') {
+            // Before starting a potentially lengthy download, try to ensure the file size does not exceed the upload size restrictions
+            // for the user. This is a time saving measure.
+            // This is a naive check, that serves only to catch files if they provide the content length header.
+            // Because of potential content encoding (compression), the stored file will be checked again after download as well.
+            $size = $this->remoteresource->get_download_size() ?? -1;
+            if ($this->size_exceeds_upload_limit($size)) {
+                throw new \moodle_exception('uploadlimitexceeded', 'tool_moodlenet', '', ['filesize' => $size,
+                    'uploadlimit' => $this->useruploadlimit]);
+            }
+
+            // Download the file into a request directory and scan it.
+            [$filepath, $filename] = $this->remoteresource->download_to_requestdir();
+            \core\antivirus\manager::scan_file($filepath, $filename, true);
+
+            // Check the final size of file against the user upload limits.
+            $localsize = filesize(sprintf('%s/%s', $filepath, $filename));
+            if ($this->size_exceeds_upload_limit($localsize)) {
+                throw new \moodle_exception('uploadlimitexceeded', 'tool_moodlenet', '', ['filesize' => $localsize,
+                    'uploadlimit' => $this->useruploadlimit]);
+            }
+
+            // Store in the user draft file area.
+            $storedfile = $this->create_user_draft_stored_file($filename, $filepath);
+
+            // Create a course module to hold the new instance.
+            $this->create_course_module();
+
+            // Ask the module to set itself up, using the dndupload_handle hook.
+            $moduledata = $this->prepare_module_data($storedfile->get_itemid());
+            $instanceid = plugin_callback('mod', $this->handlerinfo->get_module_name(), 'dndupload', 'handle', [$moduledata],
+                'invalidfunction');
+            if ($instanceid == 'invalidfunction') {
+                $name = $this->handlerinfo->get_module_name();
+                throw new \coding_exception("$name does not support drag and drop upload (missing {$name}_dndupload_handle function)");
+            }
+
+            // Finish setting up the course module.
+            $this->finish_setup_course_module($instanceid);
+        } else if ($this->handlerinfo->get_resource_type() == 'url') {
+            // Create a course module to hold the new instance.
+            $this->create_course_module();
+
+            // Ask the module to set itself up.
+            $data = new \stdClass();
+            $data->type = 'url';
+            $data->course = $this->course;
+            $data->content = $this->remoteresource->get_url()->get_value();
+            $data->coursemodule = $this->cm->id;
+            $data->displayname = $this->remoteresource->get_name();
+
+            $instanceid = plugin_callback('mod', $this->handlerinfo->get_module_name(), 'dndupload', 'handle', [$data],
+                'invalidfunction');
+            if ($instanceid === 'invalidfunction') {
+                $name = $this->handlerinfo->get_module_name();
+                throw new coding_exception("$name does not support drag and drop upload (missing {$name}_dndupload_handle function");
+            }
+
+            // Finish setting up the course module.
+            $this->finish_setup_course_module($instanceid);
         }
 
-        // Download the file into a request directory and scan it.
-        [$filepath, $filename] = $this->remoteresource->download_to_requestdir();
-        \core\antivirus\manager::scan_file($filepath, $filename, true);
-
-        // Check the final size of file against the user upload limits.
-        $localsize = filesize(sprintf('%s/%s', $filepath, $filename));
-        if ($this->size_exceeds_upload_limit($localsize)) {
-            throw new \moodle_exception('uploadlimitexceeded', 'tool_moodlenet', '', ['filesize' => $localsize,
-                'uploadlimit' => $this->useruploadlimit]);
-        }
-
-        // Store in the user draft file area.
-        $storedfile = $this->create_user_draft_stored_file($filename, $filepath);
-
-        // Create a course module to hold the new instance.
-        $this->create_course_module();
-
-        // Ask the module to set itself up, using the dndupload_handle hook.
-        $moduledata = $this->prepare_module_data($storedfile->get_itemid());
-        $instanceid = plugin_callback('mod', $this->handlerinfo->get_module_name(), 'dndupload', 'handle', [$moduledata],
-            'invalidfunction');
-        if ($instanceid == 'invalidfunction') {
-            $name = $this->handlerinfo->get_module_name();
-            throw new \coding_exception("$name does not support drag and drop upload (missing {$name}_dndupload_handle function)");
-        }
-
-        // Finish setting up the course module.
-        $this->finish_setup_course_module($instanceid);
     }
 
     /**

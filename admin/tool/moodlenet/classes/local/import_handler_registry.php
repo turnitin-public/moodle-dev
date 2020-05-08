@@ -39,6 +39,11 @@ class import_handler_registry {
     protected $filehandlers = [];
 
     /**
+     * @var array array of import_url_handler_info objects.
+     */
+    protected $urlhandlers = [];
+
+    /**
      * @var \context_course the course context object.
      */
     protected $context;
@@ -66,6 +71,15 @@ class import_handler_registry {
 
         // Generate the full list of handlers for all extensions for this user and course.
         $this->populate_handlers();
+    }
+
+    /**
+     * Return an array of handlers supporting urls.
+     *
+     * @return array an array of import_url_handler_info objects.
+     */
+    public function get_url_handlers(): array {
+        return $this->urlhandlers;
     }
 
     /**
@@ -102,6 +116,21 @@ class import_handler_registry {
     }
 
     /**
+     * Return the import_handler_info object for urls for the module $modname, or null if not found.
+
+     * @param string $modname the module name to check for.
+     * @return import_handler_info|null the import_handler_info object, if found, otherwise null.
+     */
+    public function get_url_handler_for_plugin(string $modname): ?import_handler_info {
+        foreach ($this->urlhandlers as $key => $urlhandler) {
+            if ($urlhandler->get_module_name() == $modname) {
+                return $urlhandler;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Build up a list of extension handlers by leveraging the dndupload_register callbacks.
      */
     protected function populate_handlers() {
@@ -130,9 +159,19 @@ class import_handler_registry {
                 continue;
             };
 
+            // File handers.
             if (isset($resp['files'])) {
                 foreach ($resp['files'] as $file) {
                     $this->register_file_handler($file['extension'], $modname, $file['message']);
+                }
+            }
+
+            // URL handlers.
+            if (isset($resp['types'])) {
+                foreach ($resp['types'] as $typeentry) {
+                    if ($typeentry['identifier'] === 'url') {
+                        $this->register_url_handler($modname, $typeentry['message']);
+                    }
                 }
             }
         }
@@ -147,8 +186,19 @@ class import_handler_registry {
      */
     protected function register_file_handler(string $extension, string $module, string $message) {
         $extension = strtolower($extension);
-        $handler = new import_handler_info($extension, $module, $message);
+        $handler = new import_handler_info($module, $message, 'file', $extension);
         $this->filehandlers[] = $handler;
+    }
+
+    /**
+     * Add a url handler to the list.
+     *
+     * @param string $module the name of the module handling the url, e.g. 'url'.
+     * @param string $message the message describing how the module handles the extension.
+     */
+    protected function register_url_handler(string $module, string $message): void {
+        $handler = new import_handler_info($module, $message, 'url', null);
+        $this->urlhandlers[] = $handler;
     }
 }
 

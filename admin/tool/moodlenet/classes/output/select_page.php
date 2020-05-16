@@ -63,7 +63,7 @@ class select_page implements \renderable, \templatable {
         // Prepare the context object.
         $data = new \stdClass();
         $data->resourceurl = $this->resouceurl;
-        $remoteresource = new remote_resource(new \curl(), new url($this->resouceurl));
+        $remoteresource = new remote_resource(new \curl(), new url($this->resouceurl), $this->linkparams['name'], $this->linkparams['description']);
         $data->name = $remoteresource->get_name() . '.' . $remoteresource->get_extension();
         $data->cancellink = new \moodle_url('/my');
 

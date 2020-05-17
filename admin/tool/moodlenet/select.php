@@ -21,20 +21,20 @@
  * @copyright  2020 Mathew May {@link https://mathew.solutions}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+use tool_moodlenet\local\import_info;
+use tool_moodlenet\output\select_page;
 
 require_once(__DIR__ . '/../../../config.php');
 
+// Access control.
 require_login();
-
-$resourceurl = required_param('resourceurl', PARAM_RAW);
-$resourceurl = urldecode($resourceurl);
-$type = required_param('type', PARAM_TEXT);
-$name = required_param('name', PARAM_TEXT);
-$description = optional_param('description', null, PARAM_TEXT);
-
-// The integration must be enabled to access this page.
 if (!get_config('core', 'enablemoodlenet')) {
     print_error('moodlenetnotenabled', 'tool_moodlenet');
+}
+
+global $USER;
+if (is_null($importinfo = import_info::load($USER->id))) {
+    throw new coding_exception('need import data');
 }
 
 $PAGE->set_url('/admin/tool/moodlenet/select.php');
@@ -45,8 +45,7 @@ $PAGE->set_heading(format_string($SITE->fullname));
 
 echo $OUTPUT->header();
 
-$renderable = new \tool_moodlenet\output\select_page($resourceurl, ['type' => $type, 'name' => $name,
-    'description' => $description]);
+$renderable = new select_page($importinfo->get_resource()->get_name());
 $renderer = $PAGE->get_renderer('tool_moodlenet');
 echo $renderer->render($renderable);
 

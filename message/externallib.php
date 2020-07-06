@@ -292,6 +292,7 @@ class core_message_external extends external_api {
      * Create contacts.
      *
      * @deprecated since Moodle 3.6
+     * TODO: MDL-63261
      * @param array $userids array of user IDs.
      * @param int $userid The id of the user we are creating the contacts for
      * @return external_description
@@ -323,14 +324,32 @@ class core_message_external extends external_api {
 
         $warnings = array();
         foreach ($params['userids'] as $id) {
-            if (!message_add_contact($id, 0, $params['userid'])) {
+            if (!core_user::get_user($id)) {
                 $warnings[] = array(
                     'item' => 'user',
                     'itemid' => $id,
                     'warningcode' => 'contactnotcreated',
                     'message' => 'The contact could not be created'
                 );
+                continue;
             }
+            if (core_message\api::is_contact($params['userid'], $id)) {
+                continue;
+            }
+
+            // Create + accept the contact request - this is akin to creating a contact the old way.
+            $request = \core_message\api::create_contact_request($params['userid'], $id);
+            if (!$request) {
+                $warnings[] = array(
+                    'item' => 'user',
+                    'itemid' => $id,
+                    'warningcode' => 'contactnotcreated',
+                    'message' => 'The contact could not be created'
+                );
+                continue;
+            }
+            core_message\api::confirm_contact_request($params['userid'], $id);
+
         }
         return $warnings;
     }
@@ -682,6 +701,7 @@ class core_message_external extends external_api {
      * Block contacts.
      *
      * @deprecated since Moodle 3.6
+     * TODO: MDL-63261
      * @param array $userids array of user IDs.
      * @param int $userid The id of the user we are blocking the contacts for
      * @return external_description
@@ -713,13 +733,17 @@ class core_message_external extends external_api {
 
         $warnings = array();
         foreach ($params['userids'] as $id) {
-            if (!message_block_contact($id, $params['userid'])) {
+            if (!core_user::get_user($id)) {
                 $warnings[] = array(
                     'item' => 'user',
                     'itemid' => $id,
                     'warningcode' => 'contactnotblocked',
                     'message' => 'The contact could not be blocked'
                 );
+            } else {
+                if (!core_message\api::is_blocked($params['userid'], $id)) {
+                    \core_message\api::block_user($params['userid'], $id);
+                }
             }
         }
         return $warnings;
@@ -798,7 +822,7 @@ class core_message_external extends external_api {
         }
 
         foreach ($params['userids'] as $id) {
-            message_unblock_contact($id, $params['userid']);
+            core_message\api::unblock_user($params['userid'], $id);
         }
 
         return null;

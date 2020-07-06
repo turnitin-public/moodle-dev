@@ -353,25 +353,21 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
 
         // Adding a contact.
         $return = core_message_external::create_contacts(array($user2->id));
-        $this->assertDebuggingCalled();
         $return = external_api::clean_returnvalue(core_message_external::create_contacts_returns(), $return);
         $this->assertEquals(array(), $return);
 
         // Adding a contact who is already a contact.
         $return = core_message_external::create_contacts(array($user2->id));
-        $this->assertDebuggingCalled();
         $return = external_api::clean_returnvalue(core_message_external::create_contacts_returns(), $return);
         $this->assertEquals(array(), $return);
 
         // Adding multiple contacts.
         $return = core_message_external::create_contacts(array($user3->id, $user4->id));
-        $this->assertDebuggingCalledCount(2);
         $return = external_api::clean_returnvalue(core_message_external::create_contacts_returns(), $return);
         $this->assertEquals(array(), $return);
 
         // Adding a non-existing user.
         $return = core_message_external::create_contacts(array(99999));
-        $this->assertDebuggingCalled();
         $return = external_api::clean_returnvalue(core_message_external::create_contacts_returns(), $return);
         $this->assertCount(1, $return);
         $return = array_pop($return);
@@ -380,7 +376,6 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
 
         // Adding contacts with valid and invalid parameters.
         $return = core_message_external::create_contacts(array($user5->id, 99999));
-        $this->assertDebuggingCalledCount(2);
         $return = external_api::clean_returnvalue(core_message_external::create_contacts_returns(), $return);
         $this->assertCount(1, $return);
         $return = array_pop($return);
@@ -457,25 +452,21 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
 
         // Blocking a contact.
         $return = core_message_external::block_contacts(array($user2->id));
-        $this->assertDebuggingCalled();
         $return = external_api::clean_returnvalue(core_message_external::block_contacts_returns(), $return);
         $this->assertEquals(array(), $return);
 
         // Blocking a contact who is already a contact.
         $return = core_message_external::block_contacts(array($user2->id));
-        $this->assertDebuggingCalled();
         $return = external_api::clean_returnvalue(core_message_external::block_contacts_returns(), $return);
         $this->assertEquals(array(), $return);
 
         // Blocking multiple contacts.
         $return = core_message_external::block_contacts(array($user3->id, $user4->id));
-        $this->assertDebuggingCalledCount(2);
         $return = external_api::clean_returnvalue(core_message_external::block_contacts_returns(), $return);
         $this->assertEquals(array(), $return);
 
         // Blocking a non-existing user.
         $return = core_message_external::block_contacts(array(99999));
-        $this->assertDebuggingCalled();
         $return = external_api::clean_returnvalue(core_message_external::block_contacts_returns(), $return);
         $this->assertCount(1, $return);
         $return = array_pop($return);
@@ -484,7 +475,6 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
 
         // Blocking contacts with valid and invalid parameters.
         $return = core_message_external::block_contacts(array($user5->id, 99999));
-        $this->assertDebuggingCalledCount(2);
         $return = external_api::clean_returnvalue(core_message_external::block_contacts_returns(), $return);
         $this->assertCount(1, $return);
         $return = array_pop($return);
@@ -518,27 +508,22 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
 
         // Removing a non-contact.
         $return = core_message_external::unblock_contacts(array($user2->id));
-        $this->assertDebuggingCalled();
         $this->assertNull($return);
 
         // Removing one contact.
         $return = core_message_external::unblock_contacts(array($user3->id));
-        $this->assertDebuggingCalled();
         $this->assertNull($return);
 
         // Removing multiple contacts.
         $return = core_message_external::unblock_contacts(array($user4->id, $user5->id));
-        $this->assertDebuggingCalledCount(2);
         $this->assertNull($return);
 
         // Removing contact from unexisting user.
         $return = core_message_external::unblock_contacts(array(99999));
-        $this->assertDebuggingCalled();
         $this->assertNull($return);
 
         // Removing mixed valid and invalid data.
         $return = core_message_external::unblock_contacts(array($user6->id, 99999));
-        $this->assertDebuggingCalledCount(2);
         $this->assertNull($return);
 
         // Try to unblock a contact of another user contact list, should throw an exception.
@@ -1392,7 +1377,6 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
         $this->assertCount(1, $contacts['online']);
         $this->assertCount(3, $contacts['strangers']);
         core_message_external::block_contacts(array($user_blocked->id));
-        $this->assertDebuggingCalled();
         $contacts = core_message_external::get_contacts();
         $contacts = external_api::clean_returnvalue(core_message_external::get_contacts_returns(), $contacts);
         $this->assertCount(3, $contacts['offline']);
@@ -1822,7 +1806,6 @@ class core_message_externallib_testcase extends externallib_advanced_testcase {
 
         // Block the $userblocked and retrieve again the list.
         core_message_external::block_contacts(array($userblocked->id));
-        $this->assertDebuggingCalled();
         $blockedusers = core_message_external::get_blocked_users($user1->id);
         $blockedusers = external_api::clean_returnvalue(core_message_external::get_blocked_users_returns(), $blockedusers);
         $this->assertCount(1, $blockedusers['users']);

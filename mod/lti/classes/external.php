@@ -102,7 +102,23 @@ class mod_lti_external extends external_api {
                 'id' => new external_value(PARAM_INT, 'Tool proxy id'),
                 'name' => new external_value(PARAM_TEXT, 'Tool proxy name'),
                 'regurl' => new external_value(PARAM_URL, 'Tool proxy registration URL'),
-                'state' => new external_value(PARAM_INT, 'Tool proxy state'),
+                'urls' => new external_single_structure(
+                    array(
+                        'icon' => new external_value(PARAM_URL, 'Tool type icon URL'),
+                        'edit' => new external_value(PARAM_URL, 'Tool type edit URL'),
+                        'course' => new external_value(PARAM_URL, 'Tool type edit URL', VALUE_OPTIONAL)
+                    )
+                ),
+                'state' => new external_single_structure(
+                    array(
+                        'text' => new external_value(PARAM_TEXT, 'Tool type state name string'),
+                        'pending' => new external_value(PARAM_BOOL, 'Is the state pending'),
+                        'configured' => new external_value(PARAM_BOOL, 'Is the state configured'),
+                        'rejected' => new external_value(PARAM_BOOL, 'Is the state rejected'),
+                        'accepted' => new external_value(PARAM_BOOL, 'Is the state accepted'),
+                        'unknown' => new external_value(PARAM_BOOL, 'Is the state unknown'),
+                    )
+                ),
                 'guid' => new external_value(PARAM_TEXT, 'Tool proxy globally unique identifier'),
                 'secret' => new external_value(PARAM_TEXT, 'Tool proxy shared secret'),
                 'vendorcode' => new external_value(PARAM_TEXT, 'Tool proxy consumer code'),
@@ -164,7 +180,7 @@ class mod_lti_external extends external_api {
      */
     public static function get_tool_proxies_returns() {
         return new external_multiple_structure(
-            self::tool_type_return_structure()
+            self::tool_proxy_return_structure()
         );
     }
 

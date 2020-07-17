@@ -3960,6 +3960,54 @@ function get_tool_type_state_info(stdClass $type) {
 }
 
 /**
+ * Returns information on the current state of the tool proxy.
+ *
+ * @param stdClass $proxy The tool proxy
+ *
+ * @return array An array with a text description of the state, and boolean for
+ * whether it is in each state: pending, configured, rejected, accepted,
+ * unknown.
+ */
+function get_tool_proxy_state_info(stdClass $proxy) {
+    $isconfigured = false;
+    $ispending = false;
+    $isrejected = false;
+    $isaccepted = false;
+    $isunknown = false;
+    switch ($proxy->state) {
+        case LTI_TOOL_PROXY_STATE_CONFIGURED:
+            $state = get_string('configured', 'mod_lti');
+            $isconfigured = true;
+            break;
+        case LTI_TOOL_PROXY_STATE_PENDING:
+            $state = get_string('pending', 'mod_lti');
+            $ispending = true;
+            break;
+        case LTI_TOOL_PROXY_STATE_REJECTED:
+            $state = get_string('rejected', 'mod_lti');
+            $isrejected = true;
+            break;
+        case LTI_TOOL_PROXY_STATE_ACCEPTED:
+            $state = get_string('accepted', 'mod_lti');
+            $isaccepted = true;
+            break;
+        default:
+            $state = get_string('unknownstate', 'mod_lti');
+            $isunknown = true;
+            break;
+    }
+
+    return array(
+        'text' => $state,
+        'pending' => $ispending,
+        'configured' => $isconfigured,
+        'rejected' => $isrejected,
+        'accepted' => $isaccepted,
+        'unknown' => $isunknown
+    );
+}
+
+/**
  * Returns information on the configuration of the tool type
  *
  * @param stdClass $type The tool type
@@ -4092,20 +4140,17 @@ function serialise_tool_proxy(stdClass $proxy) {
     return array(
         'id' => $proxy->id,
         'name' => $proxy->name,
-        'description' => get_string('activatetoadddescription', 'mod_lti'),
+        'regurl' => $proxy->regurl,
         'urls' => get_tool_proxy_urls($proxy),
-        'state' => array(
-            'text' => get_string('pending', 'mod_lti'),
-            'pending' => true,
-            'configured' => false,
-            'rejected' => false,
-            'unknown' => false
-        ),
-        'hascapabilitygroups' => true,
-        'capabilitygroups' => array(),
-        'courseid' => 0,
-        'instanceids' => array(),
-        'instancecount' => 0
+        'state' => get_tool_proxy_state_info($proxy),
+        'guid' => $proxy->guid,
+        'secret' => $proxy->secret,
+        'vendorcode' => $proxy->vendorcode,
+        'capabilityoffered' => $proxy->capabilityoffered,
+        'serviceoffered' => $proxy->serviceoffered,
+        'toolproxy' => $proxy->toolproxy,
+        'timecreated' => $proxy->timecreated,
+        'timemodified' => $proxy->timemodified
     );
 }
 

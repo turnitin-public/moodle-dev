@@ -49,14 +49,41 @@ class recentlyaccesseditems_item_exporter extends \core\external\exporter {
      * @return array Additional properties with values
      */
     protected function get_other_values(renderer_base $output) {
-        global $OUTPUT;
+        global $CFG, $OUTPUT;
+        require_once($CFG->libdir.'/modinfolib.php');
 
-        return array(
+        $modinfo = get_fast_modinfo($this->data->courseid);
+
+        $iconurl = null;
+        if (array_key_exists($this->data->modname, $modinfo->instances)) {
+            foreach ($modinfo->instances[$this->data->modname] as $instance) {
+                if ($instance->id === $this->data->cmid) {
+                    $iconurl = $instance->get_icon_url();
+                    break;
+                }
+            }
+
+        }
+        $out = array(
                 'viewurl' => (new moodle_url('/mod/'.$this->data->modname.'/view.php',
                         array('id' => $this->data->cmid)))->out(false),
                 'courseviewurl' => (new moodle_url('/course/view.php', array('id' => $this->data->courseid)))->out(false),
-                'icon' => $OUTPUT->image_icon('icon', get_string('pluginname', $this->data->modname), $this->data->modname)
         );
+
+        if ($iconurl) {
+            $out['icon'] = \html_writer::img(
+                $iconurl,
+                $this->data->modname,
+                ['title' => $this->data->modname, 'class' => 'icon']
+            );
+        } else {
+            $out['icon'] = $OUTPUT->image_icon(
+                'icon',
+                get_string('pluginname', $this->data->modname),
+                $this->data->modname
+            );
+        }
+        return $out;
     }
 
     /**

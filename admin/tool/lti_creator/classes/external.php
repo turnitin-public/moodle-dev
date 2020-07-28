@@ -32,7 +32,7 @@ require_once("$CFG->libdir/externallib.php");
  * @copyright  2020 Jake Dallimore
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class external extends external_api {
+class external extends \external_api {
 
     /**
      * Parameter description for get_tool_instance().
@@ -50,11 +50,24 @@ class external extends external_api {
      * @param string $modname
      */
     public static function get_tool_instance(string $modname) {
-        // TODO: Create the activity instance.
+        global $DB;
 
+        $manager = new api();
+        $course = $manager->get_course();
+
+        // TODO: Create the activity instance.
+        $module = $manager->create_assignment_activity($course->id, 2);
+        $modulecontext = $module->gradingman->get_context();
         // TODO: Create the lti_enrol instance, using the activity created above.
+        $instanceid = $manager->create_lti_enrolment_instance($course, $modulecontext);
+
+        $record = $DB->get_record('enrol_lti_tools', ['enrolid' => $instanceid]);
 
         // TODO: return url, secret. I've noted that consumerkey could be generated and used, but that's out of scope right now.
+        return [
+            'url' => new \moodle_url('enrol/lti/tool.php', ['id' => $record->id]),
+            'secret' => $record->secret
+        ];
     }
 
     /**

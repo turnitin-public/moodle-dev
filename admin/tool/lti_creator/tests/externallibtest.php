@@ -13,18 +13,27 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-
 /**
- * Version file for tool_lti_creator
+ * External learning plans webservice API tests.
  *
- * @package     tool_lti_creator
- * @copyright   2020 Jake Dallimore <jrhdallimore@gmail.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package tool_lti_creator
+ * @copyright 2020 Adrian Greeve
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
+global $CFG;
+require_once($CFG->dirroot . '/webservice/tests/helpers.php');
 
-$plugin->component  = 'tool_lti_creator';
-$plugin->version    = 2020072701;
-$plugin->requires   = 2020060900;
-$plugin->maturity   = MATURITY_ALPHA;
+
+class tool_lti_creator_external_testcase extends externallib_advanced_testcase {
+
+    public function test_mything() {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $this->setAdminUser();
+        $return = \tool_lti_creator\external::get_tool_instance('assign');
+        print_object($return['url']);
+        print_object($return['secret']);
+    }
+}

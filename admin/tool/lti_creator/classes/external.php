@@ -41,8 +41,8 @@ class external extends \external_api {
      * @return external_function_parameters
      */
     public static function get_tool_instance_parameters() {
-        return new external_function_parameters([
-            'modulename' => new external_value(PARAM_TEXT, 'The name of the module to return', VALUE_REQUIRED)
+        return new \external_function_parameters([
+            'modulename' => new \external_value(PARAM_TEXT, 'The name of the module to return', VALUE_REQUIRED)
         ]);
     }
 
@@ -50,7 +50,7 @@ class external extends \external_api {
      * @param string $modname
      */
     public static function get_tool_instance(string $modname) {
-        global $DB;
+        global $DB, $CFG;
 
         $manager = new api();
         $course = $manager->get_course();
@@ -64,8 +64,9 @@ class external extends \external_api {
         $record = $DB->get_record('enrol_lti_tools', ['enrolid' => $instanceid]);
 
         // TODO: return url, secret. I've noted that consumerkey could be generated and used, but that's out of scope right now.
+        $url = new \moodle_url('enrol/lti/tool.php', ['id' => $record->id]);
         return [
-            'url' => new \moodle_url('enrol/lti/tool.php', ['id' => $record->id]),
+            'url' => $CFG->wwwroot . '/' . $url->out(false),
             'secret' => $record->secret
         ];
     }
@@ -77,9 +78,9 @@ class external extends \external_api {
      * @return external_description
      */
     public static function get_tool_instance_returns() {
-        return new external_single_structure([
+        return new \external_single_structure([
             'url' => new \external_value(PARAM_URL, 'The launch URL of the tool'),
-            'secret' => new external_value(PARAM_TEXT, 'The shared secret, needed to consume the created tool'),
+            'secret' => new \external_value(PARAM_TEXT, 'The shared secret, needed to consume the created tool'),
         ]);
     }
 }

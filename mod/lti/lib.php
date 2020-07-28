@@ -318,7 +318,8 @@ function lti_get_course_content_items(\core_course\local\entity\content_item $de
         999, // Random large id so we don't clash.
         'A module on another moodle site',
         new \core_course\local\entity\string_title("A module on another site"),
-        new moodle_url("/mod/lti/create_remote.php?course=2"),
+        //new moodle_url("/mod/lti/create_remote.php?course=4"),
+        new moodle_url('/mod/lti/create_remote.php?' . $defaultmodulecontentitem->get_link()->get_query_string()),
         $defaultmodulecontentitem->get_icon(),
         $defaultmodulecontentitem->get_help(),
         $defaultmodulecontentitem->get_archetype(),

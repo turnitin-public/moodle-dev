@@ -61,7 +61,9 @@ class api {
             'markingallocation' => 0
         ];
 
-        return create_module($moduleinfo);
+        global $CFG;
+        require_once($CFG->dirroot . '/course/lib.php');
+        return \create_module($moduleinfo);
     }
 
     public function create_lti_enrolment_instance(\stdClass $course, $modulecontext) {
@@ -90,7 +92,7 @@ class api {
             'type' => 'lti',
             'returnurl' => new \moodle_url('enrol/instances.php', ['id' => $course->id])
         ];
-        $plugin = enrol_get_plugin('lti');
+        $plugin = \enrol_get_plugin('lti');
         $instanceid = $plugin->add_instance($course, $ltienroldata);
         return $instanceid;
     }

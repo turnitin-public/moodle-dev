@@ -18,31 +18,33 @@
  * Page which:
  * - calls the remote api asking for a tool instance to be created
  * - creates the local external_tool instance with the return data
- * - redirects to 'somewhere suitable'
+ * - redirects to course home
  *
  * @package    mod_lti
  * @copyright  2020 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-defined('MOODLE_INTERNAL') || die();
 require_once("../../config.php");
 require_once($CFG->libdir . "/filelib.php");
 
-$providerurl = ''; // URL of the provider site, e.g. 'your.moodle'
-$token = ''; // WS token for a user on the provider site.
-$wspath = 'moodle/webservice/rest/server.php';
+$course = required_param('id', PARAM_INT);
+$section = required_param('section', PARAM_INT);
+require_login($course);
+
+$providerurl = $CFG->lticreatorurl ?? ''; // URL of the provider site, e.g. 'your.moodle'
+$token = $CFG->lticreatortoken ?? ''; // WS token for a user on the provider site.
+if (empty($providerurl) || empty($token)) {
+    throw new coding_exception('CFG->lticreatorurl and CFG->lticreatortoken must both be set.');
+}
+$wspath = 'webservice/rest/server.php';
 $function = 'tool_lti_creator_get_tool_instance';
 
 $PAGE->set_url('/mod/lti/create_remote.php');
-$course = required_param('course', PARAM_INT);
-$section = required_param('section', PARAM_INT);
-require_login($course);
 
 // Call the provider site, asking for creation of a tool instance for consumption.
 $wsendpoint = $providerurl.'/'.$wspath.'?wstoken='.$token.'&wsfunction='.$function.'&moodlewsrestformat=json';
 $curl = new curl();
-$encodedresponse = $curl->post($wsendpoint, ['modname' => 'assign']);
+$encodedresponse = $curl->get($wsendpoint, ['modulename' => 'assign']);
 $response = json_decode($encodedresponse);
 
 // Now, create the external_tool instance locally in the course we're in.
@@ -66,10 +68,10 @@ $data = (object) [
     'blindmarking' => 0,
     'markingworkflow' => 0,
     'markingallocation' => 0,
-    'toolurl' => $response['url'],
-    'password' => $response['secret'],
+    'toolurl' => $response->url,
+    'password' => $response->secret,
     'resourcekey' => 'clientkey123'
 ];
 $lti = create_module($data);
 
-redirect('/course/view.php?id='.$course);
+redirect($CFG->wwwroot . '/course/view.php?id='.$course);

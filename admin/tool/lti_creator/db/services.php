@@ -13,18 +13,23 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-
 /**
- * Version file for tool_lti_creator
+ * Services provided by the tool.
  *
- * @package     tool_lti_creator
- * @copyright   2020 Jake Dallimore <jrhdallimore@gmail.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package    tool_lti_creator
+ * @category   external
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-defined('MOODLE_INTERNAL') || die();
-
-$plugin->component  = 'tool_lti_creator';
-$plugin->version    = 2020072702;
-$plugin->requires   = 2020060900;
-$plugin->maturity   = MATURITY_ALPHA;
+defined('MOODLE_INTERNAL') || die;
+$functions = [
+    'tool_lti_creator_get_tool_instance' => [
+        'classname'     => 'tool_lti_creator\external',
+        'methodname'    => 'get_tool_instance',
+        'classpath'     => '',
+        'description'   => 'Get a new instance of a module, created as a tool provider',
+        'type'          => 'write',
+        'capabilities'  => '',
+        'ajax'          => true,
+        'loginrequired' => true,
+    ]
+];

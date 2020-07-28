@@ -311,6 +311,20 @@ function lti_get_course_content_items(\core_course\local\entity\content_item $de
             $defaultmodulecontentitem->get_component_name()
         );
     }
+
+    // Add a custom instance, which redirects to some custom LTI page.
+    // The custom page will call a remote web service, receive tool config data
+    $types[] = new \core_course\local\entity\content_item(
+        999, // Random large id so we don't clash.
+        'A module on another moodle site',
+        new \core_course\local\entity\string_title("A module on another site"),
+        new moodle_url("/mod/lti/create_remote.php?course=2"),
+        $defaultmodulecontentitem->get_icon(),
+        $defaultmodulecontentitem->get_help(),
+        $defaultmodulecontentitem->get_archetype(),
+        $defaultmodulecontentitem->get_component_name()
+    );
+
     return $types;
 }
 

@@ -23,6 +23,80 @@
  */
 
 require_once(__DIR__ . '/../../config.php');
+use \IMSGlobal\LTI13;
+
+$id_token = optional_param('id_token', null, PARAM_RAW);
+
+// LTI 1.3 launch - hacked for now.
+if ($id_token) {
+    class issuer_database implements LTI13\Database {
+
+        // TODO: Fix this hard coding.
+        //  How is the record of the issuer created? Do we need to register a consumer with the tool?
+        //  The spec doesn't dictate how it's stored, but the question of workflow still remains.
+        // Note: [R] denotes required by the IMS tool test suite, as part of setting up an LTI1.3 test tool.
+        private $reginfo = [
+            'auth_login_url' => 'https://7b4337d9d893.au.ngrok.io/master/mod/lti/auth.php', // [R] Platform OIDC login endpoint.
+            'auth_token_url' => 'https://7b4337d9d893.au.ngrok.io/master/mod/lti/token.php', // [R] Platform service authorisation endpoint.
+            'client_id' => 'EGD6ZpQOq3nx6T4', // [R] the client_id of the platform or platform instance.
+            'key_set_url' => 'https://7b4337d9d893.au.ngrok.io/master/mod/lti/certs.php', // [R] The platform's JWKS endpoint.
+            'kid' => '', // key used to identify the key in the jwks file.  E.g. ['key' => file_get_contents(private.key)]
+            'issuer' => 'https://7b4337d9d893.au.ngrok.io/master', // [R] Registered platform URL, which will be checked.
+            'private_key' => '', // Tool private key.
+        ];
+
+        // 5 things the TOOL PROVIDER needs from the 'view configuration details'
+        // modal in the manage tools section of the consumer:
+        // - [Set] Platform ID ('issuer' in the above reginfo)
+        // - [Set] Client ID ('client_id' in the above reginfo)
+        // - [Set] Public keyset URL ('key_set_url' in the above reginfo)
+        // - [Set] Access token URL ('auth_token_url' in the above reginfo)
+        // - [Set] Auth request URL ('auth_login_url' in the above reginfo)
+        // TODO: Hard code these for now. This is the tool, so we must have these pre-configured.
+
+        // Things the TOOL_CONSUMER needs to have set from the tool, once setup.
+
+        public function find_registration_by_issuer($iss) {
+
+            $this->reginfo = (object) $this->reginfo;
+
+            return LTI13\LTI_Registration::new()
+                ->set_auth_login_url($this->reginfo->auth_login_url)
+                ->set_auth_token_url($this->reginfo->auth_token_url)
+                ->set_client_id($this->reginfo->client_id)
+                ->set_key_set_url($this->reginfo->key_set_url)
+                ->set_kid($this->reginfo->kid)
+                ->set_issuer($this->reginfo->issuer)
+                ->set_tool_private_key($this->reginfo->private_key);
+        }
+
+        public function find_deployment($iss, $deployment_id) {
+            return LTI13\LTI_Deployment::new()
+                ->set_deployment_id($deployment_id);
+        }
+    }
+
+    // As per the OIDC spec, the auth response must contain state, and it must match the value sent in the auth request.
+    // The IMS library takes care of this for us.
+    $state = required_param('state', PARAM_ALPHANUMEXT);
+    // This next bit just confirms the IMS library is doing so.
+    // TODO: remove this code eventually - it's test code only.
+    //$_COOKIE['lti1p3_' . $state] = 'abc'; // Hacking this will cause the IMS lib validation to fail - confirmed.
+
+    $launch = LTI13\LTI_Message_Launch::new(new issuer_database())
+        ->validate();
+    if ($launch) {
+        echo "<pre>";
+        echo "Welcome, ". $launch->get_launch_data()['name'] . " (generated on the tool.php page, from OIDC data, before redirect)<br>";
+        echo "</pre>";
+    }
+
+    // TODO: this is where the LTi1.1 code does all the enrolment checks, etc and redirects the logged in user to the course.
+    // TODO: get the tool record from the DB, etc.
+    global $SESSION;
+    $SESSION->ltilaunchid = $launch->get_launch_id();
+    redirect(new moodle_url('/mod/tooltest/view.php', ['id' => 92, 'launchid' => $launch->get_launch_id()]));
+}
 
 $toolid = required_param('id', PARAM_INT);
 

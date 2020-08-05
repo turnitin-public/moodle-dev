@@ -21,11 +21,39 @@
  * @copyright  2016 Mark Nelson <markn@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-require_once(__DIR__ . '/../../config.php');
 use \IMSGlobal\LTI13;
 
+require_once(__DIR__ . '/../../config.php');
+
+$toolid = required_param('id', PARAM_INT);
 $id_token = optional_param('id_token', null, PARAM_RAW);
+
+$PAGE->set_context(context_system::instance());
+$url = new moodle_url('/enrol/lti/tool.php');
+$PAGE->set_url($url);
+$PAGE->set_pagelayout('popup');
+$PAGE->set_title(get_string('opentool', 'enrol_lti'));
+
+// Get the tool.
+$tool = \enrol_lti\helper::get_lti_tool($toolid);
+
+// Check if the authentication plugin is disabled.
+if (!is_enabled_auth('lti')) {
+    print_error('pluginnotenabled', 'auth', '', get_string('pluginname', 'auth_lti'));
+    exit();
+}
+
+// Check if the enrolment plugin is disabled.
+if (!enrol_is_enabled('lti')) {
+    print_error('enrolisdisabled', 'enrol_lti');
+    exit();
+}
+
+// Check if the enrolment instance is disabled.
+if ($tool->status != ENROL_INSTANCE_ENABLED) {
+    print_error('enrolisdisabled', 'enrol_lti');
+    exit();
+}
 
 // LTI 1.3 launch - hacked for now.
 if ($id_token) {
@@ -85,46 +113,35 @@ if ($id_token) {
 
     $launch = LTI13\LTI_Message_Launch::new(new issuer_database())
         ->validate();
-    if ($launch) {
+    if ($launch->is_deep_link_launch()) {
+        // Present a configuration page.
+        // TODO: create a way for plugins to specify a page that contains the below content.
+        global $CFG;
+        echo '
+        <div>
+        <h1>Configure the tool:</h1>
+            <ul>
+                <li><a href="'.$CFG->wwwroot.'/mod/tooltest/configure.php?launchid='.urlencode($launch->get_launch_id()).'&toolid='.$toolid.'&type=easy">Easy</a></li>
+                <li><a href="'.$CFG->wwwroot.'/mod/tooltest/configure.php?launchid='.urlencode($launch->get_launch_id()).'&toolid='.$toolid.'&type=hard">Hard</a></li>
+            </ul>
+        </div>';
+        die;
+
+    } else {
         echo "<pre>";
         echo "Welcome, ". $launch->get_launch_data()['name'] . " (generated on the tool.php page, from OIDC data, before redirect)<br>";
         echo "</pre>";
+
+        // TODO: this is where the LTi1.1 code does all the enrolment checks, etc and redirects the logged in user to the course.
+        // TODO: the below assumes module context for now - see enrol/classes/tooL_provider.php for complete source.
+        $context = context::instance_by_id($tool->contextid);
+
+        // If we've got custom data, from a deep launch, use it.
+        $data = $launch->get_launch_data();
+        $type = $data['https://purl.imsglobal.org/spec/lti/claim/custom']['type'] ?? 'easy';
+
+        redirect(new moodle_url('/mod/tooltest/view.php', ['id' => $context->instanceid, 'type' => $type]));
     }
-
-    // TODO: this is where the LTi1.1 code does all the enrolment checks, etc and redirects the logged in user to the course.
-    // TODO: get the tool record from the DB, etc.
-    global $SESSION;
-    $SESSION->ltilaunchid = $launch->get_launch_id();
-    redirect(new moodle_url('/mod/tooltest/view.php', ['id' => 92, 'launchid' => $launch->get_launch_id()]));
-}
-
-$toolid = required_param('id', PARAM_INT);
-
-$PAGE->set_context(context_system::instance());
-$url = new moodle_url('/enrol/lti/tool.php');
-$PAGE->set_url($url);
-$PAGE->set_pagelayout('popup');
-$PAGE->set_title(get_string('opentool', 'enrol_lti'));
-
-// Get the tool.
-$tool = \enrol_lti\helper::get_lti_tool($toolid);
-
-// Check if the authentication plugin is disabled.
-if (!is_enabled_auth('lti')) {
-    print_error('pluginnotenabled', 'auth', '', get_string('pluginname', 'auth_lti'));
-    exit();
-}
-
-// Check if the enrolment plugin is disabled.
-if (!enrol_is_enabled('lti')) {
-    print_error('enrolisdisabled', 'enrol_lti');
-    exit();
-}
-
-// Check if the enrolment instance is disabled.
-if ($tool->status != ENROL_INSTANCE_ENABLED) {
-    print_error('enrolisdisabled', 'enrol_lti');
-    exit();
 }
 
 $consumerkey = required_param('oauth_consumer_key', PARAM_TEXT);

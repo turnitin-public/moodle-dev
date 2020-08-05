@@ -142,6 +142,13 @@ class enrol_lti_plugin extends enrol_plugin {
             $tool->$field = $value;
         }
 
+        // Create a private key if one does not already exist.
+        // TODO: we'd also want this verify/set to be done as part of form validation,
+        //  so we can catch openssl config problems when saving the enrolment method and report to the user.
+        global $CFG;
+        require_once($CFG->dirroot . '/enrol/lti/upgradelib.php');
+        enrol_lti_verify_private_key($tool); // Won't report errors (validation is the place for that). This just tries to set.
+
         return $DB->update_record('enrol_lti_tools', $tool);
     }
 

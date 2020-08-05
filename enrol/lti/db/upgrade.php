@@ -37,7 +37,11 @@
  * @return boolean
  */
 function xmldb_enrol_lti_upgrade($oldversion) {
-    global $CFG;
+    global $CFG, $DB, $OUTPUT;
+
+    require_once($CFG->libdir.'/db/upgradelib.php'); // Core Upgrade-related functions.
+
+    $dbman = $DB->get_manager();
 
     // Automatically generated Moodle v3.5.0 release upgrade line.
     // Put any upgrade step following this.
@@ -53,6 +57,51 @@ function xmldb_enrol_lti_upgrade($oldversion) {
 
     // Automatically generated Moodle v3.9.0 release upgrade line.
     // Put any upgrade step following this.
+
+    if ($oldversion < 2021052501) {
+        /*// Define table enrol_lti_tools to be updated.
+        $table = new xmldb_table('enrol_lti_tools');
+
+        // Define field privatekey to be added to enrol_lti_tools.
+        $field = new xmldb_field('privatekey', XMLDB_TYPE_TEXT, null, null, null, null, null, 'secret');
+
+        // Conditionally launch add field privatekey.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+            $DB->set_field_select('lti_types', 'ltiversion', 'LTI-1p0', 'toolproxyid IS NULL');
+            $DB->set_field_select('lti_types', 'ltiversion', 'LTI-2p0', 'toolproxyid IS NOT NULL');
+        }
+
+        // Set a private key for all existing published as LTI tools.
+        $recordset = $DB->get_recordset('enrol_lti_tools');
+        foreach ($recordset as $record) {
+            $warning = enrol_lti_verify_private_key($record);
+            if (!empty($warning)) {
+                break;
+                echo $OUTPUT->notification($warning, 'notifyproblem');
+            }
+        }
+        $recordset->close();
+        */
+
+        // TODO: above code might be useful, but just throwing the key/kid into config for now.
+
+        // Now, set a private key for all existing instances.
+        require_once($CFG->dirroot . '/enrol/lti/upgradelib.php');
+
+        $recordset = $DB->get_recordset('enrol_lti_tools');
+        foreach ($recordset as $record) {
+            $warning = enrol_lti_verify_private_key($record);
+            if (!empty($warning)) {
+                echo $OUTPUT->notification($warning, 'notifyproblem');
+                break;
+            }
+        }
+        $recordset->close();
+
+        // Lti savepoint reached.
+        upgrade_plugin_savepoint(true, 2021052501, 'enrol', 'lti');
+    }
 
     return true;
 }

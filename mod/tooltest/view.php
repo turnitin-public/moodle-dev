@@ -26,8 +26,10 @@ require(__DIR__.'/../../config.php');
 require_once(__DIR__.'/lib.php');
 global $DB, $OUTPUT, $USER, $PAGE;
 
+// TODO: Is reidrecting like this, from the tool.php registered OIDC page, with unsigned params, safe?
 // The course module ID.
 $id = optional_param('id', 0, PARAM_INT);
+$type = optional_param('type', 'easy', PARAM_TEXT);
 
 if ($id) {
     $cm             = get_coursemodule_from_id('tooltest', $id, 0, false, MUST_EXIST);
@@ -63,6 +65,13 @@ echo "<b>Welcome, $USER->firstname $USER->lastname (from the tool's view page)</
 
     <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
     <div id="mycanvas"></div>
+
+    <script>
+        <?php
+            echo 'var iconset = "'.$type.'";';
+        ?>
+    </script>
+
     <script type="text/javascript">
 
         var config = {
@@ -100,7 +109,11 @@ echo "<b>Welcome, $USER->firstname $USER->lastname (from the tool's view page)</
         {
             this.load.image('sky', 'assets/sky.png');
             this.load.image('ground', 'assets/platform.png');
-            this.load.image('star', 'assets/star.png');
+            if (iconset == 'hard') {
+                this.load.image('star', 'assets/bomb.png');
+            } else {
+                this.load.image('star', 'assets/star.png');
+            }
             this.load.image('bomb', 'assets/bomb.png');
             this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
         }

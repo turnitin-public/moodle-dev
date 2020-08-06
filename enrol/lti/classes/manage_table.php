@@ -129,7 +129,9 @@ class manage_table extends \table_sql {
                     [ "label" => $cartridgeurllabel, "text" => $cartridgeurl, "id" => "cartridgeurl", "hidelabel" => false ],
                     [ "label" => $secretlabel, "text" => $secret, "id" => "secret", "hidelabel" => false ],
                     [ "label" => $launchurllabel, "text" => $launchurl, "id" => "launchurl", "hidelabel" => false ],
-                ]
+                ],
+                "platform_registry" => (new \moodle_url('/enrol/lti/tool_registrations.php', ['toolid' => $tool->id,
+                    'courseid' => $this->courseid]))->out(false)
             ];
 
         $return = $OUTPUT->render_from_template("enrol_lti/copy_grid", $data);

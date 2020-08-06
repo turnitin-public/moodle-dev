@@ -58,67 +58,25 @@ $targetlinkuri = required_param('target_link_uri', PARAM_URL); // The took launc
 $ltimessagehint = optional_param('lti_message_hint', null, PARAM_RAW);
 
 // See https://github.com/IMSGlobal/lti-1-3-php-library for details on the below class implementation.
-
-class issuer_database implements LTI13\Database {
-
-    // TODO: Fix this hard coding.
-    //  How is the record of the issuer created? Do we need to register a consumer with the tool?
-    //  The spec doesn't dictate how it's stored, but the question of workflow still remains.
-    // Note: [R] denotes required by the IMS tool test suite, as part of setting up an LTI1.3 test tool.
-    private $reginfo = [
-        'auth_login_url' => 'https://7b4337d9d893.au.ngrok.io/master/mod/lti/auth.php', // [R] Platform OIDC login endpoint.
-        'auth_token_url' => 'https://7b4337d9d893.au.ngrok.io/master/mod/lti/token.php', // [R] Platform service authorisation endpoint.
-        'client_id' => 'EGD6ZpQOq3nx6T4', // [R] the client_id of the platform or platform instance.
-        'key_set_url' => 'https://7b4337d9d893.au.ngrok.io/master/mod/lti/certs.php', // [R] The platform's JWKS endpoint.
-        'kid' => '', // key used to identify the key in the jwks file.  E.g. ['key' => file_get_contents(private.key)]
-        'issuer' => 'https://7b4337d9d893.au.ngrok.io/master', // [R] Registered platform URL, which will be checked.
-        'private_key' => '', // Tool private key.
-    ];
-
-    // Moodle-to-Moodle process:
-    // 4 Things the TOOL_CONSUMER (PLATFORM) needs from the tool to begin with:
-    // - Launch URL
-    // - Keyset URL
-    // - OIDC login URL (to initiate the third party OIDC login)
-    // - (OIDC) Redirect URL (the URI to post the auth response to during OIDC auth flow)
-
-    // Then, set up the TOOL_CONSUMER on the Moodle site (admin > manage tools)
-
-    // 5 things the TOOL PROVIDER (TOOL) needs from the platform (via 'view configuration details' modal in the
-    // manage tools section:
-    // - [Set] Platform ID ('issuer' in the above reginfo)
-    // - [Set] Client ID ('client_id' in the above reginfo)
-    // - [Set] Public keyset URL ('key_set_url' in the above reginfo)
-    // - [Set] Access token URL ('auth_token_url' in the above reginfo)
-    // - [Set] Auth request URL ('auth_login_url' in the above reginfo)
-    // TODO: Hard code these for now. This is the tool, so we must have these pre-configured.
-
-    public function find_registration_by_issuer($iss) {
-
-        $this->reginfo = (object) $this->reginfo;
-
-        return LTI13\LTI_Registration::new()
-            ->set_auth_login_url($this->reginfo->auth_login_url)
-            ->set_auth_token_url($this->reginfo->auth_token_url)
-            ->set_client_id($this->reginfo->client_id)
-            ->set_key_set_url($this->reginfo->key_set_url)
-            ->set_kid($this->reginfo->kid)
-            ->set_issuer($this->reginfo->issuer)
-            ->set_tool_private_key($this->reginfo->private_key);
-    }
-
-    public function find_deployment($iss, $deployment_id) {
-        return LTI13\LTI_Deployment::new()
-            ->set_deployment_id($deployment_id);
-    }
-}
+require_once('issuer_database.php');
 
 //print_r($targetlinkuri);
 
-//TODO: Is this redirect location right?
+//TODO: Is this redirect location right? (previously $targetlinkuri).
+//global $CFG;
+//$toolid = (new moodle_url($targetlinkuri))->get_param('id');
+//$redirecturi = $CFG->wwwroot . '/enrol/lti/oidcredirect.php?id=' . $toolid;
 
+// Here, we're acknowledging that 'target_link_uri' (where the tool should go after OIDC flow completion)
+// is THE SAME URI our 'redirect_uri' in the auth response. These can be different, and are in the IMS validation suite.
+// This way, we don't need that extra redirect like:
+// auth.php (platform) -> oidcredirect.php (tool, registered oidc login endpoint) -> tool.php (tool - and the target_link_uri) -> view.php (to render).
+// Instead, we have:
+// auth.php (platform) -> tool.php (tool, registered oidc login endpoint) -> view.php (to render).
+// TODO: validate the targetlinkuri to stem open redirects.
+$redirecturi = $targetlinkuri;
 // Now, do the OIDC login.
 LTI13\LTI_OIDC_Login::new(new issuer_database())
-    ->do_oidc_login_redirect($targetlinkuri)
+    ->do_oidc_login_redirect($redirecturi)
     ->do_redirect();
 

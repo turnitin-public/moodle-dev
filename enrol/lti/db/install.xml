@@ -183,5 +183,21 @@
         <KEY NAME="consumerid" TYPE="foreign" FIELDS="consumerid" REFTABLE="enrol_lti_lti2_consumer" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
+    <TABLE NAME="enrol_lti_platform_registry" COMMENT="Records which platforms have been registered with a tool">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="toolid" TYPE="int" LENGTH="11" NOTNULL="true" SEQUENCE="false" COMMENT="The ID of the tool to which this registration belongs"/>
+        <FIELD NAME="platformid" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="clientid" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="authenticationrequesturl" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="The authorisation endpoint of the platform"/>
+        <FIELD NAME="jwksurl" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="The JSON Web Key Set URL for the platform"/>
+        <FIELD NAME="accesstokenurl" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="toolid" TYPE="foreign" FIELDS="toolid" REFTABLE="enrol_lti_tools" REFFIELDS="id"/>
+        <KEY NAME="toolid_platformid" TYPE="unique" FIELDS="toolid, platformid" COMMENT="A platform can only be registered against a tool once."/>
+      </KEYS>
+    </TABLE>
   </TABLES>
 </XMLDB>

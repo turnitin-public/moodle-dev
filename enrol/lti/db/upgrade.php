@@ -103,5 +103,32 @@ function xmldb_enrol_lti_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2021052501, 'enrol', 'lti');
     }
 
+    if ($oldversion < 2021052502) {
+        // Define table enrol_lti_platform_registry to be created.
+        $table = new xmldb_table('enrol_lti_platform_registry');
+
+        // Adding fields to table enrol_lti_platform_registry.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('toolid', XMLDB_TYPE_INTEGER, '11', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('platformid', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('clientid', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('authenticationrequesturl', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('jwksurl', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('accesstokenurl', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table enrol_lti_platform_registry.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('toolid', XMLDB_KEY_FOREIGN, ['toolid'], 'enrol_lti_tools', ['id']);
+        $table->add_key('toolid_platformid', XMLDB_KEY_UNIQUE, ['toolid', 'platformid']);
+
+        // Conditionally launch create table for enrol_lti_platform_registry.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Lti savepoint reached.
+        upgrade_plugin_savepoint(true, 2021052502, 'enrol', 'lti');
+    }
+
     return true;
 }

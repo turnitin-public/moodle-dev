@@ -14,14 +14,78 @@
     You should have received a copy of the GNU General Public License
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
-
+<div id="lti_platform_registrations">
 {{#registrations}}
     <div>
-        <div>PlatformId: {{platformid}}</div>
-        <div>ClientId: {{clientid}}</div>
-        <span><a href="#">Edit</a></span>
-        &nbsp;
-        <span><a href="#">Delete</a></span>
+        <div class="row m-b-1">
+            <div class="col-sm-3 text-sm-right">Platform Id:</div>
+            <div class="col">
+                <input type="text" style="width:300px" id="lti_platform_registry_platformid_{{id}}" value="{{platformid}}" title="Platform Id" readonly>
+                <a href="#" role="button" aria-label="{{#str}} copy, core {{/str}}" id="platformid_{{id}}" title="Copy to clipboard">
+                    {{#pix}} t/copy, core {{/pix}}
+                </a>
+            </div>
+        </div>
+        <div class="row m-b-1">
+            <div class="col-sm-3 text-sm-right">Client Id:</div>
+            <div class="col">
+                <input type="text" style="min-width:300px" id="lti_platform_registry_clientid_{{id}}" value="{{clientid}}" title="Client Id" readonly>
+                <a href="#" role="button" aria-label="{{#str}} copy, core {{/str}}" id="clientid_{{id}}" title="Copy to clipboard">
+                    {{#pix}} t/copy, core {{/pix}}
+                </a>
+            </div>
+        </div>
+        <div class="row m-b-1">
+            <div class="col-sm-3 text-sm-right">Authentication request URL:</div>
+            <div class="col">
+                <input type="text" style="width:300px" id="lti_platform_registry_authenticationrequesturl_{{id}}" value="{{authenticationrequesturl}}" title="Authentication request URL" readonly>
+                <a href="#" role="button" aria-label="{{#str}} copy, core {{/str}}" id="authenticationrequesturl_{{id}}" title="Copy to clipboard">
+                    {{#pix}} t/copy, core {{/pix}}
+                </a>
+            </div>
+        </div>
+        <div class="row m-b-1">
+            <div class="col-sm-3 text-sm-right">JWKS URL:</div>
+            <div class="col">
+                <input type="text" style="width:300px" id="lti_platform_registry_jwksurl_{{id}}" value="{{jwksurl}}" title="JWKS URL" readonly>
+                <a href="#" role="button" aria-label="{{#str}} copy, core {{/str}}" id="jwksurl_{{id}}" title="Copy to clipboard">
+                    {{#pix}} t/copy, core {{/pix}}
+                </a>
+            </div>
+        </div>
+        <div class="row m-b-1">
+            <div class="col-sm-3 text-sm-right">Access token URL:</div>
+            <div class="col">
+                <input type="text" style="width:300px" id="lti_platform_registry_accesstokenurl_{{id}}" value="{{accesstokenurl}}" title="Access Token URL" readonly>
+                <a href="#" role="button" aria-label="{{#str}} copy, core {{/str}}" id="accesstokenurl_{{id}}" title="Copy to clipboard">
+                    {{#pix}} t/copy, core {{/pix}}
+                </a>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-3"></div>
+            <div class="col">
+                <span><a href="{{editurl}}">Edit</a></span>
+                &nbsp;
+                <span><a href="{{deleteurl}}">Delete</a></span>
+            </div>
+        </div>
         <hr>
     </div>
 {{/registrations}}
+{{^registrations}}
+    <div>
+        No registered platforms.
+    </div>
+    <br>
+{{/registrations}}
+<div>
+    <a class="btn btn-primary" href="{{addurl}}">Register a platform</a>
+    <a class="btn btn-secondary" href="{{cancelurl}}">Cancel</a>
+</div>
+</div>
+{{#js}}
+    require(['enrol_lti/platform_registry'], function(Registry) {
+        Registry.init();
+    });
+{{/js}}

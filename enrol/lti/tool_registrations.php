@@ -21,6 +21,7 @@
  * @copyright  2020 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+use enrol_lti\form\platform_registration_form;
 
 require_once(__DIR__ . '/../../config.php');
 global $CFG, $OUTPUT, $PAGE, $DB;
@@ -28,49 +29,149 @@ require_once($CFG->dirroot . '/enrol/lti/lib.php');
 
 $courseid = required_param('courseid', PARAM_INT);
 $toolid = required_param('toolid', PARAM_INT);
+$action = optional_param('action', null, PARAM_ALPHA);
+
 $context = context_course::instance($courseid);
 
 require_login($courseid);
 require_capability('moodle/course:enrolreview', $context);
 
+// TODO make sure to confirm sesskey where necessary.
+
 // Gets all platform registrations for the current tool.
 function get_tool_platforms(int $toolid) {
     global $DB;
-    $regs = $DB->get_records('enrol_lti_platform_registry');
+    return $DB->get_records('enrol_lti_platform_registry', ['toolid' => $toolid]);
 }
 
 // Returns the template-ready context based on the platforms we have to show.
-function format($platforms) {
-    // TODO format real input data and remove below junk.
-
-    return [
-        'registrations' => [
-            [
-                'platformid' => 'http://test.com',
-                'clientid' => '1234abcd',
-            ],
-            [
-                'platformid' => 'http://example.org',
-                'clientid' => 'qwetyy',
-            ]
-        ]
+function format(array $platforms, int $toolid, int $courseid) {
+    $data = [
+        'registrations' => [],
+        'addurl' => (new moodle_url('/enrol/lti/tool_registrations.php', ['action' => 'add', 'toolid' => $toolid,
+            'courseid' => $courseid, 'id' => 2]))->out(false),
+        'cancelurl' => (new moodle_url('/enrol/lti/index.php', ['courseid' => $courseid]))->out(false)
     ];
+
+    foreach ($platforms as $id => $record) {
+        $data['registrations'][] = [
+            'id' => $record->id,
+            'platformid' => $record->platformid,
+            'clientid' => $record->clientid,
+            'authenticationrequesturl' => $record->authenticationrequesturl,
+            'jwksurl' => $record->jwksurl,
+            'accesstokenurl' => $record->accesstokenurl,
+            'editurl' => (new moodle_url('/enrol/lti/tool_registrations.php', ['action' => 'edit', 'toolid' => $toolid,
+                'courseid' => $courseid, 'id' => $id]))->out(false),
+            'deleteurl' => (new moodle_url('/enrol/lti/tool_registrations.php', ['action' => 'delete',
+                'toolid' => $toolid, 'courseid' => $courseid, 'id' => $id]))->out(false)
+        ];
+    }
+
+    return $data;
 }
 
+// Handle create/edit.
+if ($action === 'add') {
 
-$pageurl = new moodle_url('/enrol/lti/tool_registrations.php', ['toolid' => $toolid, 'courseid' => $courseid]);
-$PAGE->set_url($pageurl);
-$PAGE->set_title("Tool registered platforms");
-$PAGE->set_heading("Registered platforms");
-$PAGE->set_pagelayout('admin');
+    $action = (new moodle_url('/enrol/lti/tool_registrations.php', ['toolid' => $toolid, 'courseid' => $courseid, 'action' => 'add']))
+        ->out(false);
+    $mform = new platform_registration_form($action);
 
-$renderer = $PAGE->get_renderer('core');
-$templatecontext = format(get_tool_platforms($toolid));
+    if ($data = $mform->get_data()) {
+        // Handle submit.
+        $DB->insert_record('enrol_lti_platform_registry', $data);
+    } else if (!$mform->is_cancelled()) {
+        // Show the form.
+        $PAGE->set_pagelayout('admin');
+        $pageurl = new moodle_url('/enrol/lti/tool_registrations.php', ['toolid' => $toolid, 'courseid' => $courseid, 'action' => 'add']);
+        $PAGE->set_url($pageurl);
 
-echo $OUTPUT->header();
-echo $OUTPUT->heading("Platforms");
+        echo $OUTPUT->header();
+        echo $OUTPUT->heading("Add platform registration for tool");
+        $mform->set_data(['toolid' => $toolid]);
+        $mform->display();
+        echo $OUTPUT->footer();
+        die();
+    }
 
-echo $renderer->render_from_template('enrol_lti/platform_registry', $templatecontext);
-echo $OUTPUT->footer();
+    // Go back to the list page when done.
+    // TODO notification when creating a new item.
+    redirect(new moodle_url('/enrol/lti/tool_registrations.php', ['toolid' => $toolid, 'courseid' => $courseid]));
+} else if ($action === 'edit') {
+
+    $id = optional_param('id', null, PARAM_INT);
+
+    $action = (new moodle_url('/enrol/lti/tool_registrations.php', ['toolid' => $toolid, 'courseid' => $courseid,
+        'id' => $id, 'action' => 'edit']))->out(false);
+    $mform = new platform_registration_form($action);
+
+    if ($data = $mform->get_data()) {
+        require_sesskey();
+        $DB->update_record('enrol_lti_platform_registry', $data);
+    } else if (!$mform->is_cancelled()) {
+
+        $data = $DB->get_record('enrol_lti_platform_registry', ['id' => $id]);
+
+        $mform->set_data($data);
+
+        $PAGE->set_pagelayout('admin');
+        $pageurl = new moodle_url('/enrol/lti/tool_registrations.php', ['toolid' => $toolid, 'courseid' => $courseid,
+            'id' => $id, 'action' => 'edit']);
+        $PAGE->set_url($pageurl);
+
+        echo $OUTPUT->header();
+        echo $OUTPUT->heading("Edit platform registration for tool");
+        $mform->display();
+        echo $OUTPUT->footer();
+        die();
+    }
+    redirect(new moodle_url('/enrol/lti/tool_registrations.php', ['courseid' => $courseid, 'toolid' => $toolid]));
+
+} else if ($action === 'delete') {
+    $id = optional_param('id', null, PARAM_INT);
+    if (!optional_param('confirm', false, PARAM_BOOL)) {
+        $continueparams = ['action' => 'delete', 'toolid' => $toolid, 'courseid' => $courseid, 'id' => $id,
+            'sesskey' => sesskey(), 'confirm' => true];
+        $continueurl = new moodle_url('/enrol/lti/tool_registrations.php', $continueparams);
+        $cancelurl = new moodle_url('/enrol/lti/tool_registrations.php', ['toolid' => $toolid, 'courseid' => $courseid]);
+
+        $PAGE->set_pagelayout('admin');
+        $pageurl = new moodle_url('/enrol/lti/tool_registrations.php', ['toolid' => $toolid, 'courseid' => $courseid, 'action' => 'delete']);
+        $PAGE->set_url($pageurl);
+
+        echo $OUTPUT->header();
+
+        $reg = $DB->get_record('enrol_lti_platform_registry', ['id' => $id]);
+
+        echo $OUTPUT->confirm("Are you sure you want to delete the platform registration for the platform '".$reg->platformid."'?", $continueurl, $cancelurl);
+        echo $OUTPUT->footer();
+    } else {
+        require_sesskey();
+        $DB->delete_records('enrol_lti_platform_registry', ['id' => $id]);
+        //redirect($PAGE->url, get_string('issuerdeleted', 'tool_oauth2'), null, \core\output\notification::NOTIFY_SUCCESS);
+        redirect(new moodle_url('/enrol/lti/tool_registrations.php', ['toolid' => $toolid, 'courseid' => $courseid]),
+            "Platform registration deleted", null,  \core\output\notification::NOTIFY_SUCCESS);
+    }
+} else {
+
+    // List the registered platforms.
+    $pageurl = new moodle_url('/enrol/lti/tool_registrations.php', ['toolid' => $toolid, 'courseid' => $courseid]);
+    $PAGE->set_url($pageurl);
+    $tool = \enrol_lti\helper::get_lti_tool($toolid);
+
+    $PAGE->set_title($tool->name. ": registered platforms");
+    $PAGE->set_heading($tool->name . ": registered platforms");
+    $PAGE->set_pagelayout('admin');
+
+    $renderer = $PAGE->get_renderer('core');
+    $templatecontext = format(get_tool_platforms($toolid), $toolid, $courseid);
+
+    echo $OUTPUT->header();
+    echo $OUTPUT->heading("Platforms");
+
+    echo $renderer->render_from_template('enrol_lti/platform_registry', $templatecontext);
+    echo $OUTPUT->footer();
+}
 
 

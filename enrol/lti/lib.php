@@ -416,9 +416,17 @@ function enrol_lti_extend_navigation_course($navigation, $course, $context) {
         if ($ltiplugin->can_add_instance($course->id)) {
             $url = new moodle_url('/enrol/lti/index.php', array('courseid' => $course->id));
             $settingsnode = navigation_node::create(get_string('sharedexternaltools', 'enrol_lti'), $url,
-                navigation_node::TYPE_SETTING, null, null, new pix_icon('i/settings', ''));
+                navigation_node::TYPE_SETTING, null, 'publishedtools', new pix_icon('i/settings', ''));
+
+            // LTI 1.3 platform registry node.
+            //$url = new moodle_url('/enrol/lti/tool_registrations.php');
+            //$settingsnode->add_node(navigation_node::create("Platform registrations", $url, navigation_node::TYPE_CUSTOM, null, null, new pix_icon('i/settings', '')));
 
             $navigation->add_node($settingsnode);
+
+            //$url = new moodle_url('/enrol/lti/tool_registrations.php', ['toolid' => 1, 'courseid' => 4]);
+            //$navigation->get('publishedtools')->add("Platform registrations", $url,
+            //    navigation_node::TYPE_SETTING, null, 'platformregs');
         }
     }
 }

@@ -53,6 +53,10 @@ $iss = required_param('iss', PARAM_URL); // Issuer URI of the calling platform.
 $loginhint = required_param('login_hint', PARAM_INT); // Platform ID for the person to login.
 $targetlinkuri = required_param('target_link_uri', PARAM_URL); // The took launch URL.
 
+// We also need the tool id inside the targetlinkuri, as this lets us find the correct registration.
+$toolid = (new moodle_url($targetlinkuri))->get_param('id');
+$toolid = validate_param($toolid, PARAM_INT);
+
 // Optional lti_message_hint. See https://www.imsglobal.org/spec/lti/v1p3#additional-login-parameters-0.
 // If found, this must be returned unmodified to the platform.
 $ltimessagehint = optional_param('lti_message_hint', null, PARAM_RAW);
@@ -76,7 +80,7 @@ require_once('issuer_database.php');
 // TODO: validate the targetlinkuri to stem open redirects.
 $redirecturi = $targetlinkuri;
 // Now, do the OIDC login.
-LTI13\LTI_OIDC_Login::new(new issuer_database())
+LTI13\LTI_OIDC_Login::new(new issuer_database($toolid))
     ->do_oidc_login_redirect($redirecturi)
     ->do_redirect();
 

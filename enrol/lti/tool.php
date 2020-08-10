@@ -66,7 +66,7 @@ if ($id_token) {
     // TODO: remove this code eventually - it's test code only.
     //$_COOKIE['lti1p3_' . $state] = 'abc'; // Hacking this will cause the IMS lib validation to fail - confirmed.
 
-    $launch = LTI13\LTI_Message_Launch::new(new issuer_database())
+    $launch = LTI13\LTI_Message_Launch::new(new issuer_database($toolid))
         ->validate();
     if ($launch->is_deep_link_launch()) {
         // Present a configuration page.

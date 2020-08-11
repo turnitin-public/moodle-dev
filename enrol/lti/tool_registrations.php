@@ -71,6 +71,26 @@ function format(array $platforms, int $toolid, int $courseid) {
     return $data;
 }
 
+// Create the tool/platform-regn specific private key.
+function create_private_key() {
+    // Create the private key.
+    $kid = bin2hex(openssl_random_pseudo_bytes(10));
+    $config = array(
+        "digest_alg" => "sha256",
+        "private_key_bits" => 2048,
+        "private_key_type" => OPENSSL_KEYTYPE_RSA,
+    );
+    $res = openssl_pkey_new($config);
+    openssl_pkey_export($res, $privatekey);
+
+    // TODO: also needs handling in form validation.
+    if (empty($privatekey)) {
+        throw new coding_exception('problem with openssl config, cant create private key');
+    }
+
+    return [$kid, $privatekey];
+}
+
 // Handle create/edit.
 if ($action === 'add') {
 
@@ -80,6 +100,12 @@ if ($action === 'add') {
 
     if ($data = $mform->get_data()) {
         // Handle submit.
+
+        // Generate a private key for this platform registration. A contract per platform.
+        [$kid, $privatekey] = create_private_key();
+        $data->privatekey = $privatekey;
+        $data->kid = $kid;
+
         $DB->insert_record('enrol_lti_platform_registry', $data);
     } else if (!$mform->is_cancelled()) {
         // Show the form.

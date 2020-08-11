@@ -31,14 +31,19 @@ $toolid = required_param('id', PARAM_INT);
 
 $jwks = array('keys' => array());
 
-$privatekey = get_config('enrol_lti', 'privatekey_'.$toolid);
+global $DB;
+
+// TODO this should probably support multiple.
+$reg = $DB->get_record('enrol_lti_platform_registry', ['toolid' => $toolid]);
+
+$privatekey = $reg->privatekey;//get_config('enrol_lti', 'privatekey_'.$toolid);
 $res = openssl_pkey_get_private($privatekey);
 $details = openssl_pkey_get_details($res);
 
 $jwk = array();
 $jwk['kty'] = 'RSA';
 $jwk['alg'] = 'RS256';
-$jwk['kid'] = get_config('enrol_lti', 'kid_'.$toolid);
+$jwk['kid'] = $reg->kid;//get_config('enrol_lti', 'kid_'.$toolid);
 $jwk['e'] = rtrim(strtr(base64_encode($details['rsa']['e']), '+/', '-_'), '=');
 $jwk['n'] = rtrim(strtr(base64_encode($details['rsa']['n']), '+/', '-_'), '=');
 $jwk['use'] = 'sig';

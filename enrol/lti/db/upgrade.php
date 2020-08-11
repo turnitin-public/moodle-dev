@@ -87,7 +87,7 @@ function xmldb_enrol_lti_upgrade($oldversion) {
         // TODO: above code might be useful, but just throwing the key/kid into config for now.
 
         // Now, set a private key for all existing instances.
-        require_once($CFG->dirroot . '/enrol/lti/upgradelib.php');
+        /*require_once($CFG->dirroot . '/enrol/lti/upgradelib.php');
 
         $recordset = $DB->get_recordset('enrol_lti_tools');
         foreach ($recordset as $record) {
@@ -97,7 +97,7 @@ function xmldb_enrol_lti_upgrade($oldversion) {
                 break;
             }
         }
-        $recordset->close();
+        $recordset->close();*/
 
         // Lti savepoint reached.
         upgrade_plugin_savepoint(true, 2021052501, 'enrol', 'lti');
@@ -115,6 +115,8 @@ function xmldb_enrol_lti_upgrade($oldversion) {
         $table->add_field('authenticationrequesturl', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
         $table->add_field('jwksurl', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
         $table->add_field('accesstokenurl', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('privatekey', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('kid', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
 
         // Adding keys to table enrol_lti_platform_registry.
         $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);

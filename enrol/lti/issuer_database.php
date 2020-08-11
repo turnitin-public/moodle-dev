@@ -35,8 +35,8 @@ class issuer_database implements LTI13\Database {
         // TODO: We need to be sure we're getting back a registration for the tool in question, since we can have many.
         $records = $DB->get_records('enrol_lti_platform_registry', ['toolid' => $this->toolid]);
 
-        $privatekey = get_config('enrol_lti', 'privatekey_'.$this->toolid);
-        $kid = get_config('enrol_lti', 'kid_'.$this->toolid);
+        //$privatekey = get_config('enrol_lti', 'privatekey_'.$this->toolid);
+        //$kid = get_config('enrol_lti', 'kid_'.$this->toolid);
 
         foreach ($records as $id =>  $reg) {
             $this->reginfo[$reg->platformid] = [
@@ -45,8 +45,8 @@ class issuer_database implements LTI13\Database {
                 'auth_token_url' => $reg->accesstokenurl,
                 'client_id' => $reg->clientid,
                 'key_set_url' => $reg->jwksurl,
-                'private_key' => $privatekey,
-                'kid' => $kid,
+                'private_key' => $reg->privatekey,
+                'kid' => $reg->kid,
             ];
         }
     }

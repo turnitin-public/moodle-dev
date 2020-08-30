@@ -78,7 +78,7 @@ class platform_registration_form extends \moodleform {
 
         $buttonarray = [];
         $buttonarray[] = $mform->createElement('submit', 'submitbutton', get_string('savechanges'));
-        $buttonarray[] = $mform->createElement('cancel', 'cancelbutton', get_string('cancel'));
+        $buttonarray[] = $mform->createElement('cancel');
         $mform->addGroup($buttonarray, 'buttonar', '', ' ', false);
     }
 
@@ -88,12 +88,14 @@ class platform_registration_form extends \moodleform {
         foreach ($data as $key => $val) {
             if (isset($this->_form->_types[$key]) && $this->_form->_types[$key] == 'url') {
                 if (!(bool) preg_match('/^[a-z]+:\/\/([^:@\s]+:[^@\s]+@)?[^ @]+(:[0-9]+)?(\/[^#]*)?(#.*)?$/i', $val)) {
+                    // TODO: lang strings.
                     $errors[$key] = "Invalid URL. Have you included http:// or https://?";
                 }
             }
         }
 
         // TODO: Validate the uniqueness of the issuer so we don't hit a db error when trying to insert a duplicate.
+        //  Actaully, we may want to allow duplicates so we can run multiple configs for the same platform.
 
         return $errors;
     }

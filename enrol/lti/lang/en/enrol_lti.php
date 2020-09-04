@@ -47,6 +47,14 @@ $string['invalidrequest'] = 'Invalid request';
 $string['invalidtoolconsumer'] = 'Invalid tool consumer.';
 $string['jwksurl'] = 'JWKS URL';
 $string['loginurl'] = 'Initiate login URL';
+$string['ltilegacy'] = 'Legacy LTI (1.1/2.0)';
+$string['lti13'] = 'LTI 1.3 / LTI Advantage';
+$string['ltiversion'] = 'LTI version';
+$string['ltiversion_help'] = 'The version of LTI which will be used to access the published content. 
+
+LTI 1.3 allows content to be published to pre-registered platforms without the need to make changes on the platform whenever new content is published. The security contract is between the platform and the tool.
+
+Legacy versions (1.1 and 2.0), require that a new tool registration is created on the consumer for each piece of newly published content because each piece of published content has its own security contract with the consumer site and must be set up on a case by case basis.';
 $string['maxenrolled'] = 'Maximum enrolled users';
 $string['maxenrolled_help'] = 'The maximum number of remote users who can access the tool. If set to zero, the number of enrolled users is unlimited.';
 $string['maxenrolledreached'] = 'The maximum number of remote users allowed to access the tool has been reached.';
@@ -67,6 +75,11 @@ $string['launchurl'] = 'Launch URL';
 $string['lti:config'] = 'Configure \'Publish as LTI tool\' instances';
 $string['lti:unenrol'] = 'Unenrol users from the course';
 $string['opentool'] = 'Open tool';
+$string['publishtoplatform'] = 'Publish to platform';
+$string['publishtoplatform_help'] = 'Select which registered platforms the content will be made available to. 
+
+To register a new platform, please contact the site administrator.';
+$string['publishtoplatformerror'] = 'Please select the platforms you wish to make this content available to.';
 $string['pluginname'] = 'Publish as LTI tool';
 $string['pluginname_desc'] = 'The \'Publish as LTI tool\' plugin, together with the LTI authentication plugin, allows remote users to access selected courses and activities. In other words, Moodle functions as an LTI tool provider.';
 $string['privacy:metadata:enrol_lti_users'] = 'The list of users enrolled via an LTI provider';

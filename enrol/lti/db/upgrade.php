@@ -96,5 +96,22 @@ function xmldb_enrol_lti_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2021052502, 'enrol', 'lti');
     }
 
+    if ($oldversion < 2021052503) {
+        // Add a new column 'ltiversion' to the enrol_lti_tools table.
+        $table = new xmldb_table('enrol_lti_tools');
+
+        // Define field ltiversion to be added to enrol_lti_tools.
+        $field = new xmldb_field('ltiversion', XMLDB_TYPE_CHAR, 15, null, XMLDB_NOTNULL, null, null, 'contextid');
+
+        // Conditionally launch add field ltiversion, setting it to the legacy value for all published content.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+            $DB->set_field('enrol_lti_tools', 'ltiversion', 'LTI-1p0/LTI-2p0');
+        }
+
+        // Lti savepoint reached.
+        upgrade_plugin_savepoint(true, 2021052503, 'enrol', 'lti');
+    }
+
     return true;
 }

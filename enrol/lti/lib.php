@@ -213,7 +213,28 @@ class enrol_lti_plugin extends enrol_plugin {
     public function edit_instance_form($instance, MoodleQuickForm $mform, $context) {
         global $DB;
 
-        $nameattribs = array('size' => '20', 'maxlength' => '255');
+        /*$registrations = $DB->get_records_menu('enrol_lti_platform_registry', null, 'name', 'id,name');
+
+        if (empty($registrations)) {
+            global $OUTPUT;
+            $notify = $notify = new \core\output\notification("There are currently no registered platforms. To publish over LTI 1.3, you first need to register a platform through site administration.", \core\output\notification::NOTIFY_WARNING);
+            $notify->set_show_closebutton(false);
+            $mform->addElement('static', 'noplatformswarning', '', $OUTPUT->render($notify));
+        }*/
+
+        $versionoptions = [
+            'LTI-1p3' => get_string('lti13', 'enrol_lti'),
+            'LTI-1p0/LTI-2p0' => get_string('ltilegacy', 'enrol_lti')
+        ];
+        $mform->addElement('select', 'ltiversion', get_string('ltiversion', 'enrol_lti'), $versionoptions);
+        /*if (!empty($registrations)) {
+            $mform->setDefault('ltiversion', '1p3');
+        } else {
+            $mform->setDefault('ltiversion', '1p1/2p0');
+        }*/
+        $mform->addHelpButton('ltiversion', 'ltiversion', 'enrol_lti');
+
+            $nameattribs = array('size' => '20', 'maxlength' => '255');
         $mform->addElement('text', 'name', get_string('custominstancename', 'enrol'), $nameattribs);
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'server');
@@ -228,6 +249,13 @@ class enrol_lti_plugin extends enrol_plugin {
 
         $mform->addElement('select', 'contextid', get_string('tooltobeprovided', 'enrol_lti'), $tools);
         $mform->setDefault('contextid', $context->id);
+
+        // Platform to publish to.
+        /*$mform->addElement('autocomplete', 'platformselect', get_string('publishtoplatform', 'enrol_lti'), $registrations, ['multiple' => 'multiple']);
+        $mform->hideIf('platformselect', 'ltiversion', 'neq', '1p3');
+        //TODO Lang strings
+        $mform->addHelpButton('platformselect', 'publishtoplatform', 'enrol_lti');
+        */
 
         $mform->addElement('duration', 'enrolperiod', get_string('enrolperiod', 'enrol_lti'),
             array('optional' => true, 'defaultunit' => DAYSECS));
@@ -265,7 +293,9 @@ class enrol_lti_plugin extends enrol_plugin {
         $mform->setType('secret', PARAM_ALPHANUM);
         $mform->setDefault('secret', random_string(32));
         $mform->addHelpButton('secret', 'secret', 'enrol_lti');
-        $mform->addRule('secret', get_string('required'), 'required');
+        //$mform->addRule('secret', get_string('required'), 'required',  null, 'client');
+
+        $mform->hideIf('secret', 'ltiversion', 'eq', 'LTI-1p3');
 
         $mform->addElement('selectyesno', 'gradesync', get_string('gradesync', 'enrol_lti'));
         $mform->setDefault('gradesync', 1);

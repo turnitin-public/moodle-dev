@@ -69,12 +69,14 @@ class manage_table extends \table_sql {
 
         $this->define_columns(array(
             'name',
+            'ltiversion',
             'launch',
             'registration',
             'edit'
         ));
         $this->define_headers(array(
             get_string('name'),
+            get_string('ltiversion', 'enrol_lti'),
             get_string('launchdetails', 'enrol_lti'),
             get_string('registrationurl', 'enrol_lti'),
             get_string('edit')
@@ -104,6 +106,16 @@ class manage_table extends \table_sql {
         $name = helper::get_name($tool);
 
         return $this->get_display_text($tool, $name);
+    }
+
+    public function col_ltiversion($tool) {
+
+        $versionoptions = [
+            'LTI-1p3' => get_string('lti13', 'enrol_lti'),
+            'LTI-1p0/LTI-2p0' => get_string('ltilegacy', 'enrol_lti')
+        ];
+        $version = $versionoptions[$tool->ltiversion];
+        return $version;
     }
 
     /**

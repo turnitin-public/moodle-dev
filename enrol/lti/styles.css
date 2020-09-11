@@ -1,0 +1,68 @@
+/* enrol_lti styles */
+/*
+#contentgrid tr:focus {
+    background-color: #bbdaff;
+    outline: solid 1px #0a78d1;
+}
+*/
+
+/*
+#contentgrid tr td[aria-expanded="false"] {
+    background: url([[pix:t/collapsed]]) 2px center no-repeat;
+}
+
+#contentgrid tr td[aria-expanded="true"] {
+    background: url([[pix:t/expanded]]) 2px center no-repeat;
+}
+*/
+
+/* Collapse/expand icons */
+#treegrid tr > td:first-child::before {
+    font-family: monospace;
+    content: " ";
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    transition: transform 0.3s;
+    /*transform-origin: 5px 5px;*/
+}
+
+#treegrid tr[aria-expanded] > td:first-child::before,
+#treegrid td[aria-expanded]:first-child::before {
+    cursor: pointer;
+
+    /* Load both right away so there is no lag when we need the other */
+    background-image: url([[pix:t/collapsed]]);
+    background-repeat: no-repeat;
+}
+
+
+#treegrid tr[aria-expanded="true"] > td:first-child::before,
+#treegrid td[aria-expanded="true"]:first-child::before {
+    transform: rotate(90deg);
+}
+
+#treegrid tr[aria-expanded]:focus > td:first-child::before,
+#treegrid tr[aria-expanded] > td:focus:first-child::before,
+#treegrid tr:focus > td[aria-expanded]:first-child::before,
+#treegrid tr > td[aria-expanded]:focus:first-child::before {
+    background-image: url([[pix:t/collapsed]]);
+}
+/*
+#contentgrid tr td.collapsed:first-child::before {
+    background: url([[pix:t/collapsed]]) 2px center no-repeat;
+    cursor: pointer;
+}
+
+#contentgrid tr td.expanded:first-child::before {
+    background: url([[pix:t/expanded]]) 2px center no-repeat;
+    cursor: pointer;
+}*/
+
+#treegrid tr[aria-level="1"] > td:first-child {
+    padding-left: 1.5rem;
+}
+
+#treegrid tr[aria-level="2"] > td:first-child {
+    padding-left: 2rem;
+}

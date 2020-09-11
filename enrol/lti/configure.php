@@ -30,43 +30,48 @@ require_once(__DIR__.'/lib.php');
 global $CFG, $DB;
 require_login(null, false);
 
+confirm_sesskey();
 $launchid = required_param('launchid', PARAM_TEXT);
-$enrolid = required_param('enrolid', PARAM_INT);
 $launch = LTI13\LTI_Message_Launch::from_cache($launchid, new issuer_database());
-
 // TODO: If we were to use a non-session cache for launch data (e.g. a file which shared by all users) we'd want to
 //  check that the launchid is the same launchid as in the user session. We don't want to be able to affect other users
 //  launch data.
-
 if (!$launch->is_deep_link_launch()) {
     throw new coding_exception('Configuration can only be accessed as part of a content selection deep link launch.');
 }
-
-// Get the name of the course or module to which the enrolment method provides access.
-$sql = 'SELECT courseid, contextid
-          FROM {enrol} e
-          JOIN {enrol_lti_tools} et ON (e.id = et.enrolid)
-         WHERE et.id = :enrolid';
-$instance = $DB->get_record_sql($sql, ['enrolid' => $enrolid]);
-
-$modinfo = get_fast_modinfo($instance->courseid);
-$coursecontext = context_course::instance($instance->courseid);
-if ($coursecontext->id == $instance->contextid) {
-    $name = ($modinfo->get_course())->shortname;
-} else {
-    $mods = $modinfo->get_cms();
-    foreach ($mods as $mod) {
-        if ($mod->context->id == $instance->contextid) {
-            $name = $mod->name;
-        }
-    }
+$modules = $_POST['modules'];
+if (!is_array($modules)) {
+    throw new coding_exception('modules must be an array');
 }
 
-$resource = LTI13\LTI_Deep_Link_Resource::new()
-    ->set_url($CFG->wwwroot . '/enrol/lti/launch.php')
-    ->set_custom_params(['id' => $enrolid])
-    ->set_title($name);
+[$insql, $inparams] = $DB->get_in_or_equal($modules);
+// Get the name of the course or module to which the enrolment method provides access.
+$sql = "SELECT elt.id, courseid, contextid
+          FROM {enrol} e
+          JOIN {enrol_lti_tools} elt ON (e.id = elt.enrolid)
+         WHERE elt.id $insql";
+$instances = $DB->get_records_sql($sql, $inparams);
+
+$resources = [];
+foreach ($instances as $instance) {
+    $modinfo = get_fast_modinfo($instance->courseid);
+    $coursecontext = context_course::instance($instance->courseid);
+    if ($coursecontext->id == $instance->contextid) {
+        $name = ($modinfo->get_course())->shortname;
+    } else {
+        $mods = $modinfo->get_cms();
+        foreach ($mods as $mod) {
+            if ($mod->context->id == $instance->contextid) {
+                $name = $mod->name;
+            }
+        }
+    }
+
+    $resources[] = LTI13\LTI_Deep_Link_Resource::new()
+        ->set_url($CFG->wwwroot . '/enrol/lti/launch.php')
+        ->set_custom_params(['id' => $instance->id])
+        ->set_title($name);
+}
 
 $dl = $launch->get_deep_link();
-
-$dl->output_response_form([$resource]);
+$dl->output_response_form($resources);

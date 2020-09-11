@@ -75,34 +75,72 @@ if (!enrol_is_enabled('lti')) {
 $PAGE->set_url('/enrol/lti/launch_deeplink.php?launchid='.urlencode($launch->get_launch_id()));
 require_login();
 
-// Show content available for selection for the logged in user.
+
+
+// comment out the above and uncomment this to let the page load without requiring a deep link launch.
+/*$launchid= 1;
+$PAGE->set_context(context_system::instance());
+$PAGE->set_url('/enrol/lti/launch_deeplink.php?launchid='.$launchid);
+*/
+
+// Render the list of courses having published content.
+// The user will be able to expand a course to select published modules but the expansion will be an ajax action.
 [$insql, $inparams] = $DB->get_in_or_equal(['LTI-1p3']);
-$sql = "SELECT elt.id AS enrol_lti_id, e.id AS enrol_id, e.name AS name
+$sql = "SELECT DISTINCT c.id, c.fullname
+          FROM {enrol_lti_tools} elt
+          JOIN {enrol} e
+            ON (e.id = elt.enrolid)
+          JOIN {course} c
+            ON (c.id = e.courseid)
+         WHERE elt.ltiversion $insql";
+$courses = $DB->get_records_sql($sql, $inparams);
+
+$formattedcourses = array_map(function($course) {
+    $course->fullname = format_string($course->fullname);
+    return $course;
+}, $courses);
+
+usort($formattedcourses, function($a, $b) {
+   return $a->fullname > $b->fullname;
+});
+
+$context = [
+    'action' => $CFG->wwwroot . '/enrol/lti/configure.php',
+    'launchid' => $launch->get_launch_id(),
+    'hascontent' => !empty($formattedcourses),
+    'sesskey' => sesskey(),
+    'courses' => $formattedcourses
+];
+
+// TODO: eventually, only one course worth of modules will be rendered on load so this will need to be changed.
+//  The others will be lazy loaded via treegrid interaction.
+// For now, grab the published modules for each course, adding the module name to the template context.
+[$insql, $inparams] = $DB->get_in_or_equal(['LTI-1p3']);
+$sql = "SELECT elt.id AS enrol_lti_id, e.id AS enrol_id, e.name AS name, e.courseid AS courseid, elt.contextid
           FROM {enrol} e
           JOIN {enrol_lti_tools} elt
             ON (e.id = elt.enrolid)
-         WHERE elt.ltiversion $insql";
+         WHERE elt.ltiversion $insql
+      ORDER BY courseid";
+$contentitems = $DB->get_records_sql($sql, $inparams);
 
-$content = $DB->get_records_sql($sql, $inparams);
-
-echo $OUTPUT->header();
-
-// TODO template this.
-echo '<div>
-<h1>Published content</h1>
-';
-if (!empty($content)) {
-    echo '<ul>';
-    foreach ($content as $item) {
-        echo '
-        <li>
-        <a href="'.$CFG->wwwroot.'/enrol/lti/configure.php?launchid='.urlencode($launch->get_launch_id()).'&enrolid='.$item->enrol_lti_id.'">'.$item->name.'</a>
-        </li>';
+foreach ($contentitems as $contentitem) {
+    foreach ($context['courses'] as $index => $course) {
+        if ($course->id == $contentitem->courseid) {
+            $mods = get_fast_modinfo($contentitem->courseid)->get_cms();
+            foreach ($mods as $mod) {
+                if ($mod->context->id == $contentitem->contextid) {
+                    $context['courses'][$index]->modules[] = [
+                        'name' => $mod->name,
+                        'id' => $contentitem->enrol_lti_id
+                    ];
+                }
+            }
+        }
     }
-    echo '</ul>';
 }
 
-echo '
-</div>';
-
+$renderer = $PAGE->get_renderer('core');
+echo $OUTPUT->header();
+echo $renderer->render_from_template('enrol_lti/content_select', $context);
 echo $OUTPUT->footer();

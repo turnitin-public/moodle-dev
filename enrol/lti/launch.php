@@ -75,6 +75,10 @@ if ($toolrecord->status != ENROL_INSTANCE_ENABLED) {
 $context = context::instance_by_id($toolrecord->contextid);
 
 // TODO: this is where the LTI 1.1 code does all the enrolment checks, etc, making sure the user is enrolled and signed in.
+$messagelaunch = new \enrol_lti\local\ltiadvantage\message_launch($launch, $toolrecord);
+$messagelaunch->launch();
+
+
 
 // TODO In 1.1, this code lives in tool_provider->onLaunch(), but we need a 1.3 suitable location for this.
 if ($context->contextlevel == CONTEXT_COURSE) {

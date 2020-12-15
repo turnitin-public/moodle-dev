@@ -627,6 +627,24 @@ class repository_onedrive extends repository {
     }
 
     /**
+     * Take the slash-separated path and urlencode each of its component parts to match the legacy behaviour.
+     *
+     * This method deliberately uses urlencode and not rawurlencode to ensure spaces are encoded as '+' to match the way
+     * that legacy folder names were encoded.
+     *
+     * @param string $path the path to operate on.
+     * @return string the $path, slash-separated, with all components urlencoded.
+     */
+    protected function create_legacy_path(string $path): string {
+        $components = preg_split('/\//', $path);
+
+        $components = array_map(function($component) {
+            return urlencode(urldecode($component));
+        }, $components);
+        return implode('/', $components);
+    }
+
+    /**
      * See if a folder exists within a folder
      *
      * @param \repository_onedrive\rest $client Authenticated client.
@@ -915,13 +933,13 @@ class repository_onedrive extends repository {
                 $foldername .= '_ctx_'.$context->id;
             }
 
-            $foldername = urlencode(clean_param($foldername, PARAM_PATH));
+            $foldername = clean_param($foldername, PARAM_PATH);
             $allfolders[] = $foldername;
         }
 
-        $allfolders[] = urlencode(clean_param($component, PARAM_PATH));
-        $allfolders[] = urlencode(clean_param($filearea, PARAM_PATH));
-        $allfolders[] = urlencode(clean_param($itemid, PARAM_PATH));
+        $allfolders[] = clean_param($component, PARAM_PATH);
+        $allfolders[] = clean_param($filearea, PARAM_PATH);
+        $allfolders[] = clean_param($itemid, PARAM_PATH);
 
         // Variable $allfolders now has the complete path we want to store the file in.
         // Create each folder in $allfolders under the system account.
@@ -929,10 +947,14 @@ class repository_onedrive extends repository {
             if ($fullpath) {
                 $fullpath .= '/';
             }
-            $fullpath .= $foldername;
+
+            // Given the MS Graph API receives the folder name in the URL's path, not as a query param,
+            // it's required to encode spaces as '%20', not '+'. Use rawurlencode for this.
+            $fullpath .= rawurlencode($foldername);
 
             $folderid = $cache->get($fullpath);
             if (empty($folderid)) {
+                // Try to find the folder - supports finding names containing multibyte characters or spaces.
                 $folderid = $this->get_file_id_by_path($systemservice, $fullpath);
             }
             if ($folderid !== false) {
@@ -945,9 +967,12 @@ class repository_onedrive extends repository {
             }
         }
 
-        // Delete any existing file at this path.
-        $path = $fullpath . '/' . urlencode(clean_param($source->name, PARAM_PATH));
-        $this->delete_file_by_path($systemservice, $path);
+        // Delete any existing file by the same name at this path.
+        $filepath = $fullpath . '/' . rawurlencode(clean_param($source->name, PARAM_PATH));
+        $this->delete_file_by_path($systemservice, $filepath);
+
+        // Also clean any existing file with the same name at the legacy destination, if applicable.
+        $this->delete_file_by_path($systemservice, rawurlencode($this->create_legacy_path($filepath)));
 
         // Upload the file.
         $safefilename = clean_param($source->name, PARAM_PATH);

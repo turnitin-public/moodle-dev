@@ -140,11 +140,6 @@ if (($launchcontainer == LTI_LAUNCH_CONTAINER_WINDOW) &&
     echo html_writer::link($url, get_string("basiclti_in_new_window_open", "lti"), array('target' => '_blank'));
     echo html_writer::end_tag('p');
 } else {
-    $content = '';
-    if ($config->lti_ltiversion === LTI_VERSION_1P3) {
-        $content = lti_initiate_login($cm->course, $id, $lti, $config);
-    }
-
     // Build the allowed URL, since we know what it will be from $lti->toolurl,
     // If the specified toolurl is invalid the iframe won't load, but we still want to avoid parse related errors here.
     // So we set an empty default allowed url, and only build a real one if the parse is successful.
@@ -171,7 +166,7 @@ if (($launchcontainer == LTI_LAUNCH_CONTAINER_WINDOW) &&
         "encrypted-media $ltiallow; " .
         "autoplay $ltiallow";
     $attributes['allowfullscreen'] = 1;
-    $iframehtml = html_writer::tag('iframe', $content, $attributes);
+    $iframehtml = html_writer::tag('iframe', '', $attributes);
     echo $iframehtml;
 
 

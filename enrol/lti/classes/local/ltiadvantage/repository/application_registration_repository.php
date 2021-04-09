@@ -133,6 +133,28 @@ class application_registration_repository {
     }
 
     /**
+     * Find an application_registration corresponding to the local id of a given tool deployment.
+     *
+     * @param int $deploymentid the local id of the tool deployment object.
+     * @return application_registration|null the application_registration instance or null if not found.
+     */
+    public function find_by_deployment(int $deploymentid): ?application_registration {
+        global $DB;
+        try {
+            $sql = "SELECT a.id, a.name, a.platformid, a.clientid, a.authenticationrequesturl, a.jwksurl,
+                           a.accesstokenurl, a.timecreated, a.timemodified
+                      FROM {enrol_lti_app_registration} a
+                      JOIN {enrol_lti_deployment} d
+                        ON (d.platformid = a.id)
+                     WHERE d.id = :id";
+            $record = $DB->get_record_sql($sql, ['id' => $deploymentid], MUST_EXIST);
+            return $this->application_registration_from_record($record);
+        } catch (\dml_missing_record_exception $e) {
+            return null;
+        }
+    }
+
+    /**
      * Save an application_registration instance to the store.
      *
      * @param application_registration $appregistration the application registration instance.

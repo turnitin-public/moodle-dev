@@ -23,6 +23,7 @@
  */
 namespace enrol_lti\local\ltiadvantage\repository;
 use enrol_lti\local\ltiadvantage\entity\application_registration;
+use enrol_lti\local\ltiadvantage\entity\deployment;
 
 /**
  * Tests for the application_registration_repository.
@@ -224,5 +225,30 @@ class application_registration_repository_test extends \advanced_testcase {
 
         // Deletion of nonexistent registration will not result in errors.
         $this->assertNull($repository->delete('000000'));
+    }
+
+    /**
+     * Verify that application registrations can be found through their linked deployments.
+     */
+    public function test_find_by_deployment() {
+        $appregrepo = new application_registration_repository();
+        $deploymentrepo = new deployment_repository();
+
+        // Deployment linked to a registration.
+        $testregistration = $this->generate_application_registration();
+        $createdregistration = $appregrepo->save($testregistration);
+        $deployment1 = $createdregistration->add_tool_deployment('Deployment 1', '12345');
+        $createddeployment = $deploymentrepo->save($deployment1);
+
+        // Deployment not linked to a registration.
+        $deployment2 = deployment::create('000', '56789', 'unlinked deployment');
+        $createddeployment2 = $deploymentrepo->save($deployment2);
+
+        // Should be able to find the registration from the linked deployment.
+        $foundreg = $appregrepo->find_by_deployment($createddeployment->get_id());
+        $this->assertEquals($createdregistration, $foundreg);
+
+        // But not for the deployment which isn't linked.
+        $this->assertNull($appregrepo->find_by_deployment($createddeployment2->get_id()));
     }
 }

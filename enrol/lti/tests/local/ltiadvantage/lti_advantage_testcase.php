@@ -55,20 +55,26 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
 
     /**
      * Get a mock LTI_Message_Launch object, as if a user had launched from a resource link in the platform.
+     *
      * @param \stdClass $resource the resource record, allowing the mock to generate a link to this.
      * @param array $mockuser the user on the platform who is performing the launch.
+     * @param string|null $resourcelinkid the id of resource link in the platform, if desired.
      * @return LTI_Message_Launch the mock launch object with test launch data.
      */
-    protected function get_mock_launch(\stdClass $resource, array $mockuser): LTI_Message_Launch {
+    protected function get_mock_launch(\stdClass $resource, array $mockuser,
+            ?string $resourcelinkid = null): LTI_Message_Launch {
+
         $mocklaunch = $this->getMockBuilder(LTI_Message_Launch::class)
             ->onlyMethods(['get_launch_data'])
             ->disableOriginalConstructor()
             ->getMock();
         $mocklaunch->expects($this->any())
             ->method('get_launch_data')
-            ->will($this->returnCallback(function() use ($resource, $mockuser) {
+            ->will($this->returnCallback(function() use ($resource, $mockuser, $resourcelinkid) {
                 // This simulates the data in the jwt['body'] of a real resource link launch.
                 // Real launches would of course have this data and authenticity of the user verified.
+                $rltitle = $resourcelinkid ? "Resource link $resourcelinkid in platform" : "Resource link in platform";
+                $rlid = $resourcelinkid ?: '12345';
                 return [
                     'iss' => 'https://lms.example.org', // Must match registration in create_test_environment.
                     'aud' => '123', // Must match registration in create_test_environment.
@@ -78,8 +84,8 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
                         'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'
                     ],
                     'https://purl.imsglobal.org/spec/lti/claim/resource_link' => [
-                        'title' => 'Name of resource link in platform',
-                        'id' => '12345', // Arbitrary, will be mapped to the user during resource link launch.
+                        'title' => $rltitle,
+                        'id' => $rlid, // Arbitrary, will be mapped to the user during resource link launch.
                     ],
                     "https://purl.imsglobal.org/spec/lti/claim/context" => [
                         "id" => "context-id-12345",
@@ -185,8 +191,9 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
      *
      * @param \stdClass $resource the published course or module.
      * @param array $user a mock platform user who is performing the launch.
+     * @param string|null $resourcelinkid the resource link id to launch with or omitted for a default.
      */
-    protected function fake_user_launch(\stdClass $resource, array $user) {
+    protected function fake_user_launch(\stdClass $resource, array $user, string $resourcelinkid = null) {
         $launchservice = new tool_launch_service(
             new deployment_repository(),
             new application_registration_repository(),
@@ -194,9 +201,9 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
             new user_repository(),
             new context_repository()
         );
-        $mocklaunch = $this->get_mock_launch($resource, $user);
+        $mocklaunch = $this->get_mock_launch($resource, $user, $resourcelinkid);
 
-        $launchservice->user_launches_tool($mocklaunch, $resource);
+        $launchservice->user_launches_tool($mocklaunch);
     }
 
     /**

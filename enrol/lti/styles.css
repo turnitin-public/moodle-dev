@@ -1,0 +1,30 @@
+/* enrol_lti styles */
+
+/* Collapse/expand icons */
+#treegrid tr > td:first-child::before {
+    font-family: monospace;
+    content: " ";
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    transition: transform 0.3s;
+}
+
+#treegrid tr[aria-expanded] > td:first-child::before,
+#treegrid td[aria-expanded]:first-child::before {
+    background-image: url([[pix:t/collapsed]]);
+    background-repeat: no-repeat;
+}
+
+#treegrid tr[aria-expanded="true"] > td:first-child::before,
+#treegrid td[aria-expanded="true"]:first-child::before {
+    transform: rotate(90deg);
+}
+
+#treegrid tr[aria-level="1"] > td:first-child {
+    padding-left: 1.5rem;
+}
+
+#treegrid tr[aria-level="2"] > td:first-child {
+    padding-left: 2rem;
+}

@@ -1,0 +1,124 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template enrol_lti/content_select
+
+    Template which displays a list of published courses and activities.
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * none
+
+    Context variables required for this template:
+    * hascontent
+    * action
+    * launchid
+    * sesskey
+    * courses
+
+    Example context (json):
+    {
+        "hascontent": true,
+        "action": "https://example.com/enrol/lti/configure.php",
+        "launchid": "123-456-789",
+        "sesskey": "123456789",
+        "courses": [
+            {
+                "id": 24,
+                "fullname": "Introduction to chemistry",
+                "shared_course": false,
+                "modules": [
+                    {
+                        "id": 45,
+                        "name": "Quiz 1",
+                        "lineitem": true
+                    }
+                ]
+            },
+            {
+                "id": 67,
+                "fullname": "Programming 101",
+                "shared_course": true
+            }
+        ]
+    }
+}}
+<div id="lti_content_select">
+    <h1>Published Content</h1>
+    {{#hascontent}}
+        <form action="{{action}}" method="POST">
+            <input type="hidden" name="launchid" value="{{launchid}}">
+            <input type="hidden" name="sesskey" value="{{sesskey}}">
+            <table id="treegrid" class="table" role="treegrid" aria-label="Published content selection form">
+                <colgroup>
+                    <col class="w-50">
+                    <col class="w-25">
+                    <col class="w-25">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th class="header" scope="col"></th>
+                        <th class="header" scope="col">Add to course</th>
+                        <th class="header" scope="col">Add to gradebook</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#courses}}
+                        <tr role="row" aria-level="1">
+                            <td role="gridcell" class="expanded" aria-expanded="true">
+                                {{fullname}}
+                            </td>
+                            <td role="gridcell">
+                                {{#shared_course}}
+                                    <input type="checkbox" name="modules[]" value="{{id}}">
+                                {{/shared_course}}
+                            </td>
+                            <td role="gridcell">
+                                {{#shared_course}}
+                                    <input type="checkbox" name="grades[]" value="{{id}}">
+                                {{/shared_course}}
+                            </td>
+                        </tr>
+                        {{#modules}}
+                            <tr role="row" aria-level="2" class="">
+                                <td role="gridcell">{{name}}</td>
+                                <td role="gridcell"><input type="checkbox" name="modules[]" value="{{id}}"></td>
+                                {{#lineitem}}
+                                <td role="gridcell"><input type="checkbox" name="grades[]" value="{{id}}"></td>
+                                {{/lineitem}}
+                                {{^lineitem}}
+                                <td role="gridcell">-</td>
+                                {{/lineitem}}
+                            </tr>
+                        {{/modules}}
+                    {{/courses}}
+                </tbody>
+            </table>
+            <input type="submit" class="btn btn-primary" value="Add content">
+        </form>
+    {{/hascontent}}
+    {{^hascontent}}
+        No published content was found.
+    {{/hascontent}}
+</div>
+{{#js}}
+    require(['enrol_lti/content_select'], function(ContentSelect) {
+        ContentSelect.init();
+    });
+{{/js}}

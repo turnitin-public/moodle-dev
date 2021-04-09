@@ -37,7 +37,8 @@
  * @return boolean
  */
 function xmldb_enrol_lti_upgrade($oldversion) {
-    global $CFG;
+    global $CFG, $OUTPUT, $DB;
+    $dbman = $DB->get_manager();
 
     // Automatically generated Moodle v3.6.0 release upgrade line.
     // Put any upgrade step following this.
@@ -51,5 +52,206 @@ function xmldb_enrol_lti_upgrade($oldversion) {
     // Automatically generated Moodle v3.9.0 release upgrade line.
     // Put any upgrade step following this.
 
+    if ($oldversion < 2021052501) {
+        // LTI 1.3: Set a private key for this site (which is acting as a tool in LTI 1.3).
+        require_once($CFG->dirroot . '/enrol/lti/upgradelib.php');
+
+        $warning = enrol_lti_verify_private_key();
+        if (!empty($warning)) {
+            echo $OUTPUT->notification($warning, 'notifyproblem');
+        }
+
+        // Lti savepoint reached.
+        upgrade_plugin_savepoint(true, 2021052501, 'enrol', 'lti');
+    }
+
+    if ($oldversion < 2021052502) {
+        // Define table enrol_lti_app_registration to be created.
+        $table = new xmldb_table('enrol_lti_app_registration');
+
+        // Adding fields to table enrol_lti_app_registration.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('name', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('platformid', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('clientid', XMLDB_TYPE_CHAR, '1333', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('authenticationrequesturl', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('jwksurl', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('accesstokenurl', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table enrol_lti_app_registration.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+
+        // Add unique index on platformid (issuer).
+        $table->add_index('platformid', XMLDB_INDEX_UNIQUE, ['platformid']);
+
+        // Conditionally launch create table for enrol_lti_app_registration.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Lti savepoint reached.
+        upgrade_plugin_savepoint(true, 2021052502, 'enrol', 'lti');
+    }
+
+    if ($oldversion < 2021052503) {
+        // Add a new column 'ltiversion' to the enrol_lti_tools table.
+        $table = new xmldb_table('enrol_lti_tools');
+
+        // Define field ltiversion to be added to enrol_lti_tools.
+        $field = new xmldb_field('ltiversion', XMLDB_TYPE_CHAR, 15, null, XMLDB_NOTNULL, null, "LTI-1p3", 'contextid');
+
+        // Conditionally launch add field ltiversion, setting it to the legacy value for all published content.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+            $DB->set_field('enrol_lti_tools', 'ltiversion', 'LTI-1p0/LTI-2p0');
+        }
+
+        // Define field uuid to be added to enrol_lti_tools.
+        $field = new xmldb_field('uuid', XMLDB_TYPE_CHAR, 36, null, null, null, null, 'ltiversion');
+
+        // Conditionally launch add field uuid, setting it to null for existing rows.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+            $key = new xmldb_key('uuid', XMLDB_KEY_UNIQUE, ['uuid']);
+            $dbman->add_key($table, $key);
+        }
+
+        // Lti savepoint reached.
+        upgrade_plugin_savepoint(true, 2021052503, 'enrol', 'lti');
+    }
+
+    if ($oldversion < 2021052504) {
+        // Add a new column 'deploymentid' to the enrol_lti_users table.
+        $table = new xmldb_table('enrol_lti_users');
+
+        // Define field deploymentid to be added to enrol_lti_users.
+        $field = new xmldb_field('deploymentid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'sourceid');
+
+        // Conditionally launch add field deploymentid.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Lti savepoint reached.
+        upgrade_plugin_savepoint(true, 2021052504, 'enrol', 'lti');
+    }
+
+    if ($oldversion < 2021052505) {
+        // Define table enrol_lti_deployment to be created.
+        $table = new xmldb_table('enrol_lti_deployment');
+
+        // Adding fields to table enrol_lti_deployment.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('name', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('deploymentid', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('platformid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table enrol_lti_deployment.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('platformid', XMLDB_KEY_FOREIGN, ['platformid'], 'enrol_lti_app_registration', ['id']);
+
+        // Add unique index on platformid (issuer), deploymentid.
+        $table->add_index('platformid-deploymentid', XMLDB_INDEX_UNIQUE, ['platformid', 'deploymentid']);
+
+        // Conditionally launch create table for enrol_lti_deployment.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Lti savepoint reached.
+        upgrade_plugin_savepoint(true, 2021052505, 'enrol', 'lti');
+    }
+
+    if ($oldversion < 2021052506) {
+        // Define table enrol_lti_resource_link to be created.
+        $table = new xmldb_table('enrol_lti_resource_link');
+
+        // Adding fields to table enrol_lti_resource_link.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('resourcelinkid', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('resourceid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('deploymentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('contextid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('lineitemsservice', XMLDB_TYPE_CHAR, '1333', null, null, null, null);
+        $table->add_field('lineitemservice', XMLDB_TYPE_CHAR, '1333', null, null, null, null);
+        $table->add_field('lineitemscope', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('resultscope', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('scorescope', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('contextmembershipsurl', XMLDB_TYPE_CHAR, '1333', null, null, null, null);
+        $table->add_field('nrpsserviceversions', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table enrol_lti_resource_link.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('deploymentid', XMLDB_KEY_FOREIGN, ['deploymentid'], 'enrol_lti_deployment', ['id']);
+        $table->add_key('contextid', XMLDB_KEY_FOREIGN, ['contextid'], 'enrol_lti_context', ['id']);
+
+        // Add unique index on resourcelinkid, deploymentid.
+        $table->add_index('resourcelinkdid-deploymentid', XMLDB_INDEX_UNIQUE, ['resourcelinkid', 'deploymentid']);
+
+        // Conditionally launch create table for enrol_lti_resource_link.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Lti savepoint reached.
+        upgrade_plugin_savepoint(true, 2021052506, 'enrol', 'lti');
+    }
+
+    if ($oldversion < 2021052507) {
+        // Define table enrol_lti_context to be created.
+        $table = new xmldb_table('enrol_lti_context');
+
+        // Adding fields to table enrol_lti_context.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('contextid', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('deploymentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('type', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table enrol_lti_context.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('deploymentid', XMLDB_KEY_FOREIGN, ['deploymentid'], 'enrol_lti_deployment', ['id']);
+
+        // Add unique index on deploymentid, contextid.
+        $table->add_index('deploymentid-contextid', XMLDB_INDEX_UNIQUE, ['deploymentid', 'contextid']);
+
+        // Conditionally launch create table for enrol_lti_context.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2021052507, 'enrol', 'lti');
+    }
+
+    if ($oldversion < 2021052508) {
+        // Define table enrol_lti_user_resource_link to be created.
+        $table = new xmldb_table('enrol_lti_user_resource_link');
+
+        // Adding fields to table enrol_lti_user_resource_link.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('resourcelinkid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table enrol_lti_user_resource_link.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'enrol_lti_users', ['id']);
+        $table->add_key('resourcelinkid', XMLDB_KEY_FOREIGN, ['resourcelinkid'], 'enrol_lti_resource_link', ['id']);
+
+        // Add unique index on userid, resourcelinkid.
+        $table->add_index('userid-resourcelinkid', XMLDB_INDEX_UNIQUE, ['userid', 'resourcelinkid']);
+
+        // Conditionally launch create table for enrol_lti_user_resource_link.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        upgrade_plugin_savepoint(true, 2021052508, 'enrol', 'lti');
+    }
     return true;
 }

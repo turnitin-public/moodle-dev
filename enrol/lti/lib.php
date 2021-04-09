@@ -23,6 +23,7 @@
  */
 
 use enrol_lti\data_connector;
+use enrol_lti\local\ltiadvantage\repository\resource_link_repository;
 use IMSGlobal\LTI\ToolProvider\ToolConsumer;
 
 defined('MOODLE_INTERNAL') || die();
@@ -109,6 +110,11 @@ class enrol_lti_plugin extends enrol_plugin {
             $data->$field = $value;
         }
 
+        // LTI Advantage: make a unique identifier for the published resource.
+        if (empty($data->ltiversion) || $data->ltiversion == 'LTI-1p3') {
+            $data->uuid = \core\uuid::generate();
+        }
+
         $DB->insert_record('enrol_lti_tools', $data);
 
         return $instanceid;
@@ -156,6 +162,10 @@ class enrol_lti_plugin extends enrol_plugin {
 
         // Get the tool associated with this instance.
         $tool = $DB->get_record('enrol_lti_tools', array('enrolid' => $instance->id), 'id', MUST_EXIST);
+
+        // LTI Advantage: delete any resource_link and user_resource_link mappings.
+        $resourcelinkrepo = new resource_link_repository();
+        $resourcelinkrepo->delete_by_resource($tool->id);
 
         // Delete any users associated with this tool.
         $DB->delete_records('enrol_lti_users', array('toolid' => $tool->id));
@@ -213,7 +223,14 @@ class enrol_lti_plugin extends enrol_plugin {
     public function edit_instance_form($instance, MoodleQuickForm $mform, $context) {
         global $DB;
 
-        $nameattribs = array('size' => '20', 'maxlength' => '255');
+        $versionoptions = [
+            'LTI-1p3' => get_string('lti13', 'enrol_lti'),
+            'LTI-1p0/LTI-2p0' => get_string('ltilegacy', 'enrol_lti')
+        ];
+        $mform->addElement('select', 'ltiversion', get_string('ltiversion', 'enrol_lti'), $versionoptions);
+        $mform->addHelpButton('ltiversion', 'ltiversion', 'enrol_lti');
+
+            $nameattribs = array('size' => '20', 'maxlength' => '255');
         $mform->addElement('text', 'name', get_string('custominstancename', 'enrol'), $nameattribs);
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'server');
@@ -265,7 +282,7 @@ class enrol_lti_plugin extends enrol_plugin {
         $mform->setType('secret', PARAM_ALPHANUM);
         $mform->setDefault('secret', random_string(32));
         $mform->addHelpButton('secret', 'secret', 'enrol_lti');
-        $mform->addRule('secret', get_string('required'), 'required');
+        $mform->hideIf('secret', 'ltiversion', 'eq', 'LTI-1p3');
 
         $mform->addElement('selectyesno', 'gradesync', get_string('gradesync', 'enrol_lti'));
         $mform->setDefault('gradesync', 1);
@@ -357,6 +374,11 @@ class enrol_lti_plugin extends enrol_plugin {
 
         $errors = array();
 
+        // Secret must be set.
+        if (empty($data['secret'])) {
+            $errors['secret'] = get_string('required');
+        }
+
         if (!empty($data['enrolenddate']) && $data['enrolenddate'] < $data['enrolstartdate']) {
             $errors['enrolenddate'] = get_string('enrolenddateerror', 'enrol_lti');
         }
@@ -409,8 +431,7 @@ function enrol_lti_extend_navigation_course($navigation, $course, $context) {
         if ($ltiplugin->can_add_instance($course->id)) {
             $url = new moodle_url('/enrol/lti/index.php', array('courseid' => $course->id));
             $settingsnode = navigation_node::create(get_string('sharedexternaltools', 'enrol_lti'), $url,
-                navigation_node::TYPE_SETTING, null, null, new pix_icon('i/settings', ''));
-
+                navigation_node::TYPE_SETTING, null, 'publishedtools', new pix_icon('i/settings', ''));
             $navigation->add_node($settingsnode);
         }
     }

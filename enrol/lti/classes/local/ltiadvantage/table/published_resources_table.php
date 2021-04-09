@@ -15,14 +15,16 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Displays enrolment LTI instances.
+ * Displays enrolment LTI instances representing resources published over LTI Advantage.
  *
  * @package    enrol_lti
- * @copyright  2016 Mark Nelson <markn@moodle.com>
+ * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace enrol_lti;
+namespace enrol_lti\local\ltiadvantage\table;
+
+use enrol_lti\helper;
 
 defined('MOODLE_INTERNAL') || die;
 
@@ -31,13 +33,12 @@ global $CFG;
 require_once($CFG->libdir . '/tablelib.php');
 
 /**
- * Handles displaying enrolment LTI instances.
+ * Class which displays a list of resources (enrolment methods) published over LTI Advantage.
  *
- * @package    enrol_lti
- * @copyright  2016 Mark Nelson <markn@moodle.com>
+ * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class manage_table extends \table_sql {
+class published_resources_table extends \table_sql {
 
     /**
      * @var \enrol_plugin $ltiplugin
@@ -70,13 +71,11 @@ class manage_table extends \table_sql {
         $this->define_columns(array(
             'name',
             'launch',
-            'registration',
             'edit'
         ));
         $this->define_headers(array(
             get_string('name'),
-            get_string('launchdetails', 'enrol_lti'),
-            get_string('registrationurl', 'enrol_lti'),
+            get_string('lti13launchdetails', 'enrol_lti'),
             get_string('edit')
         ));
         $this->collapsible(false);
@@ -89,9 +88,8 @@ class manage_table extends \table_sql {
         $this->courseid = $courseid;
 
         // Set help icons.
-        $launchicon = new \help_icon('launchdetails', 'enrol_lti');
-        $regicon = new \help_icon('registrationurl', 'enrol_lti');
-        $this->define_help_for_headers(['1' => $launchicon, '2' => $regicon]);
+        $launchicon = new \help_icon('lti13launchdetails', 'enrol_lti');
+        $this->define_help_for_headers(['1' => $launchicon]);
     }
 
     /**
@@ -115,49 +113,21 @@ class manage_table extends \table_sql {
     public function col_launch($tool) {
         global $OUTPUT;
 
-        $url = helper::get_cartridge_url($tool);
-
-        $cartridgeurllabel = get_string('cartridgeurl', 'enrol_lti');
-        $cartridgeurl = $url;
-        $secretlabel = get_string('secret', 'enrol_lti');
-        $secret = $tool->secret;
-        $launchurl = helper::get_launch_url($tool->id);
+        $customparamslabel = get_string('customproperties', 'enrol_lti');
+        $customparams = "id={$tool->uuid}";
+        $launchurl = new \moodle_url('enrol/lti/launch.php');
         $launchurllabel = get_string('launchurl', 'enrol_lti');
 
         $data = [
                 "rows" => [
-                    [ "label" => $cartridgeurllabel, "text" => $cartridgeurl, "id" => "cartridgeurl", "hidelabel" => false ],
-                    [ "label" => $secretlabel, "text" => $secret, "id" => "secret", "hidelabel" => false ],
                     [ "label" => $launchurllabel, "text" => $launchurl, "id" => "launchurl", "hidelabel" => false ],
+                    ["label" => $customparamslabel, "text" => $customparams, "id" => "customparams",
+                        "hidelabel" => false ]
                 ]
             ];
 
         $return = $OUTPUT->render_from_template("enrol_lti/copy_grid", $data);
 
-        return $return;
-    }
-
-    /**
-     * Generate the Registration column.
-     *
-     * @param \stdClass $tool instance data.
-     * @return string
-     */
-    public function col_registration($tool) {
-        global $OUTPUT;
-
-        $url = helper::get_proxy_url($tool);
-
-        $toolurllabel = get_string("registrationurl", "enrol_lti");
-        $toolurl = $url;
-
-        $data = [
-                "rows" => [
-                    [ "label" => $toolurllabel, "text" => $toolurl, "id" => "toolurl" , "hidelabel" => true],
-                ]
-            ];
-
-        $return = $OUTPUT->render_from_template("enrol_lti/copy_grid", $data);
         return $return;
     }
 
@@ -223,9 +193,9 @@ class manage_table extends \table_sql {
      * @param bool $useinitialsbar do you want to use the initials bar.
      */
     public function query_db($pagesize, $useinitialsbar = true) {
-        $total = \enrol_lti\helper::count_lti_tools(['courseid' => $this->courseid, 'ltiversion' => 'LTI-1p0/LTI-2p0']);
+        $total = helper::count_lti_tools(['courseid' => $this->courseid, 'ltiversion' => 'LTI-1p3']);
         $this->pagesize($pagesize, $total);
-        $tools = \enrol_lti\helper::get_lti_tools(['courseid' => $this->courseid, 'ltiversion' => 'LTI-1p0/LTI-2p0'],
+        $tools = helper::get_lti_tools(['courseid' => $this->courseid, 'ltiversion' => 'LTI-1p3'],
             $this->get_page_start(), $this->get_page_size());
         $this->rawdata = $tools;
         // Set initial bars.

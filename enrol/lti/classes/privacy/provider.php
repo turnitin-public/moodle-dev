@@ -62,6 +62,14 @@ class provider implements
             ],
             'privacy:metadata:enrol_lti_users'
         );
+        $items->add_database_table(
+            'enrol_lti_user_resource_link',
+            [
+                'userid' => 'privacy:metadata:enrol_lti_user_resource_link:userid',
+                'resourcelinkid' => 'privacy:metadata:enrol_lti_user_resource_link:resourcelinkid',
+            ],
+            'privacy:metadata:enrol_lti_user_resource_link'
+        );
 
         return $items;
     }

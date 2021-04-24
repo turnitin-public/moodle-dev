@@ -919,15 +919,9 @@ function glossary_get_available_formats() {
                 $pluginformats[] = $format;
 
                 // If the format doesn't exist in the table.
-                $foundrecords = array_filter(
-                    $formatrecords,
-                    function ($f) use (&$format) {
-                        return $f->name == $format;
-                    }
-                );
+                $rec = glossary_get_format($format, $formatrecords);
 
-                $rec = null;
-                if (count($foundrecords) == 0) {
+                if (!$rec) {
                     // Insert the record in glossary_formats.
                     $gf = new stdClass();
                     $gf->name = $format;
@@ -936,8 +930,6 @@ function glossary_get_available_formats() {
                     $id = $DB->insert_record('glossary_formats', $gf);
                     $rec = $DB->get_record('glossary_formats', array('id' => $id));
                     array_push($formatrecords, $rec);
-                } else {
-                    $rec = array_pop($foundrecords);
                 }
 
                 if (empty($rec->showtabs)) {
@@ -970,6 +962,22 @@ function glossary_get_available_formats() {
     }
 
     return $formatrecords;
+}
+
+/**
+ * Search the supplied array of glossary formats for a matching name
+ *
+ * @param string $name the glossary format name to search for
+ * @param array $allformats array of glossary formats to search
+ * @return array
+ */
+function glossary_get_format($name, $allformats) {
+    foreach ($allformats as $format) {
+        if ($format->name == $name) {
+            return $format;
+        }
+    }
+    return null;
 }
 
 /**

@@ -33,6 +33,7 @@ use enrol_lti\local\ltiadvantage\repository\context_repository;
 use enrol_lti\local\ltiadvantage\repository\user_repository;
 use enrol_lti\local\ltiadvantage\repository\deployment_repository;
 use enrol_lti\local\ltiadvantage\repository\resource_link_repository;
+
 require_once(__DIR__ . '/../lti_advantage_testcase.php');
 
 /**
@@ -70,19 +71,28 @@ class tool_deployment_service_testcase extends \lti_advantage_testcase {
     }
 
     /**
+     * Helper to get a tool_deployment_service instance.
+     *
+     * @return tool_deployment_service the instance.
+     */
+    protected function get_tool_deployment_service(): tool_deployment_service {
+        return new tool_deployment_service(
+            new application_registration_repository(),
+            new deployment_repository(),
+            new resource_link_repository(),
+            new context_repository(),
+            new user_repository()
+        );
+    }
+
+    /**
      * Test the use case "As an admin, I can register an application as an LTI consumer (platform)".
      */
     public function test_add_tool_deployment() {
         $testreg = $this->generate_application_registration();
         $deploymentrepo = new deployment_repository();
 
-        $service = new tool_deployment_service(
-            new application_registration_repository(),
-            $deploymentrepo,
-            new resource_link_repository(),
-            new context_repository(),
-            new user_repository()
-        );
+        $service = $this->get_tool_deployment_service();
         $createddeployment = $service->add_tool_deployment(
             (object) [
                 'registration_id' => $testreg->get_id(),
@@ -106,7 +116,11 @@ class tool_deployment_service_testcase extends \lti_advantage_testcase {
         $resourcelinkrepo = new resource_link_repository();
         $userrepo = new user_repository();
         [$course, $resource] = $this->create_test_environment();
-        $this->fake_user_launch($resource, $this->create_mock_platform_user());
+
+        // Launch the tool for a user.
+        $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0]);
+        $launchservice = $this->get_tool_launch_service();
+        $launchservice->user_launches_tool($mocklaunch);
 
         // Check all the expected data exists for the deployment after setup.
         $registrations = $registrationrepo->find_all();
@@ -132,13 +146,7 @@ class tool_deployment_service_testcase extends \lti_advantage_testcase {
         $this->assertCount(1, $enrolledusers);
 
         // Now delete the deployment using the service.
-        $service = new tool_deployment_service(
-            new application_registration_repository(),
-            $deploymentrepo,
-            $resourcelinkrepo,
-            $contextrepo,
-            $userrepo
-        );
+        $service = $this->get_tool_deployment_service();
         $service->delete_tool_deployment($deployment->get_id());
 
         // Verify that the context, resourcelink, user and deployment instances are all deleted but the registration

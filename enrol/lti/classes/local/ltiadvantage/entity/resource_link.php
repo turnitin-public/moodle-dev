@@ -205,10 +205,10 @@ class resource_link {
      * This is useful for associating the user with the resource link and resource I.e. the user was created when
      * launching a specific resource link.
      *
+     * @param string $issuer the issuer from which the user originates.
      * @param string $sourceid the id of the user on the platform.
      * @param string $firsname the user's first name.
      * @param string $lastname the user's last name.
-     * @param string $username the user's username.
      * @param string $lang the user's lang code.
      * @param string $email the user's email address.
      * @param string $city the user's city.
@@ -217,8 +217,9 @@ class resource_link {
      * @param string $timezone the user's timezone.
      * @param int|null $maildisplay the user's maildisplay, which can be omitted to use sensible defaults.
      * @return user the user instance.
+     * @throws \coding_exception if trying to add a user to an as-yet-unsaved resource_link instance.
      */
-    public function add_user(string $sourceid, string $firsname, string $lastname, string $username, string $lang,
+    public function add_user(string $issuer, string $sourceid, string $firsname, string $lastname, string $lang,
             string $email, string $city, string $country, string $institution, string $timezone,
             ?int $maildisplay = null): user {
 
@@ -226,8 +227,8 @@ class resource_link {
             throw new \coding_exception('Can\'t add user to a resource_link that hasn\'t first been saved');
         }
 
-        return user::create_from_resource_link($this->get_id(), $this->get_resourceid(), $this->get_deploymentid(),
-            $sourceid, $firsname, $lastname, $username, $lang, $email, $city, $country, $institution, $timezone,
-            $maildisplay);
+        return user::create_from_resource_link($this->get_id(), $this->get_resourceid(), $issuer,
+            $this->get_deploymentid(), $sourceid, $firsname, $lastname, $lang, $email, $city, $country, $institution,
+            $timezone, $maildisplay);
     }
 }

@@ -148,6 +148,11 @@ class enrol_lti_plugin extends enrol_plugin {
             $tool->$field = $value;
         }
 
+        // LTI Advantage: make a unique identifier for the published resource.
+        if ($tool->ltiversion == 'LTI-1p3' && empty($tool->uuid)) {
+            $tool->uuid = \core\uuid::generate();
+        }
+
         return $DB->update_record('enrol_lti_tools', $tool);
     }
 

@@ -40,17 +40,23 @@ use IMSGlobal\LTI13\LTI_Message_Launch;
 abstract class lti_advantage_testcase extends \advanced_testcase {
 
     /**
-     * Create the minimal user data to perform a mock launch.
+     * Get a list of users ready for use with mock launches by providing an array of user ids.
      *
-     * @return string[] the user data.
+     * @param array $ids the platform user_ids for the users.
+     * @return array the users list.
      */
-    protected function create_mock_platform_user() {
-        return [
-            'user_id' => 'user-123',
-            'given_name' => 'John',
-            'family_name' => 'Smith',
-            'email' => 'john.smith@lms.example.org'
-        ];
+    protected function get_mock_launch_users_with_ids(array $ids): array {
+        $users = [];
+        foreach ($ids as $id) {
+            $user = [
+                'user_id' => $id,
+                'given_name' => 'Firstname' . $id,
+                'family_name' => 'Surname' . $id,
+                'email' => "firstname.surname{$id}@lms.example.org"
+            ];
+            $users[] = $user;
+        }
+        return $users;
     }
 
     /**
@@ -59,10 +65,11 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
      * @param \stdClass $resource the resource record, allowing the mock to generate a link to this.
      * @param array $mockuser the user on the platform who is performing the launch.
      * @param string|null $resourcelinkid the id of resource link in the platform, if desired.
+     * @param array|null $migrationclaiminfo contains consumer key, secret and any fields which are sent in the claim.
      * @return LTI_Message_Launch the mock launch object with test launch data.
      */
     protected function get_mock_launch(\stdClass $resource, array $mockuser,
-            ?string $resourcelinkid = null): LTI_Message_Launch {
+            ?string $resourcelinkid = null, ?array $migrationclaiminfo = null): LTI_Message_Launch {
 
         $mocklaunch = $this->getMockBuilder(LTI_Message_Launch::class)
             ->onlyMethods(['get_launch_data'])
@@ -70,15 +77,17 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
             ->getMock();
         $mocklaunch->expects($this->any())
             ->method('get_launch_data')
-            ->will($this->returnCallback(function() use ($resource, $mockuser, $resourcelinkid) {
+            ->will($this->returnCallback(function() use ($resource, $mockuser, $resourcelinkid, $migrationclaiminfo) {
                 // This simulates the data in the jwt['body'] of a real resource link launch.
                 // Real launches would of course have this data and authenticity of the user verified.
                 $rltitle = $resourcelinkid ? "Resource link $resourcelinkid in platform" : "Resource link in platform";
                 $rlid = $resourcelinkid ?: '12345';
-                return [
+                $data = [
                     'iss' => 'https://lms.example.org', // Must match registration in create_test_environment.
                     'aud' => '123', // Must match registration in create_test_environment.
                     'sub' => $mockuser['user_id'], // User id on the platform site.
+                    'exp' => time() + 60,
+                    'nonce' => 'some-nonce-value-123',
                     'https://purl.imsglobal.org/spec/lti/claim/deployment_id' => '1', // Must match registration.
                     'https://purl.imsglobal.org/spec/lti/claim/roles' => [
                         'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'
@@ -107,6 +116,36 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
                         'service_versions' => ['2.0']
                     ]
                 ];
+
+                if ($migrationclaiminfo) {
+                    $base = [
+                        $migrationclaiminfo['consumer_key'],
+                        $data['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
+                        $data['iss'],
+                        $data['aud'],
+                        $data['exp'],
+                        $data['nonce']
+                    ];
+                    $basestring = implode('&', $base);
+
+                    $data['https://purl.imsglobal.org/spec/lti/claim/lti1p1'] = [
+                        'oauth_consumer_key' => $migrationclaiminfo['consumer_key'],
+                    ];
+
+                    if (isset($migrationclaiminfo['signing_secret'])) {
+                        $sig = base64_encode(hash_hmac('sha256', $basestring, $migrationclaiminfo['signing_secret']));
+                        $data['https://purl.imsglobal.org/spec/lti/claim/lti1p1']['oauth_consumer_key_sign'] = $sig;
+                    }
+
+                    $claimprops = ['user_id', 'context_id', 'tool_consumer_instance_guid', 'resource_link_id'];
+                    foreach ($claimprops as $prop) {
+                        if (!empty($migrationclaiminfo[$prop])) {
+                            $data['https://purl.imsglobal.org/spec/lti/claim/lti1p1'][$prop] =
+                                $migrationclaiminfo[$prop];
+                        }
+                    }
+                }
+                return $data;
             }));
 
         return $mocklaunch;
@@ -187,26 +226,6 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
     }
 
     /**
-     * Fake a user launch for the given published resource.
-     *
-     * @param \stdClass $resource the published course or module.
-     * @param array $user a mock platform user who is performing the launch.
-     * @param string|null $resourcelinkid the resource link id to launch with or omitted for a default.
-     */
-    protected function fake_user_launch(\stdClass $resource, array $user, string $resourcelinkid = null) {
-        $launchservice = new tool_launch_service(
-            new deployment_repository(),
-            new application_registration_repository(),
-            new resource_link_repository(),
-            new user_repository(),
-            new context_repository()
-        );
-        $mocklaunch = $this->get_mock_launch($resource, $user, $resourcelinkid);
-
-        $launchservice->user_launches_tool($mocklaunch);
-    }
-
-    /**
      * Enable auth_lti plugin.
      */
     protected function enable_auth() {
@@ -225,5 +244,75 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
         $enabled['lti'] = true;
         $enabled = array_keys($enabled);
         set_config('enrol_plugins_enabled', implode(',', $enabled));
+    }
+
+    /**
+     * Helper to get a tool_launch_service instance.
+     *
+     * @return tool_launch_service the instance.
+     */
+    protected function get_tool_launch_service(): tool_launch_service {
+        return new tool_launch_service(
+            new deployment_repository(),
+            new application_registration_repository(),
+            new resource_link_repository(),
+            new user_repository(),
+            new context_repository()
+        );
+    }
+
+    /**
+     * Set up data representing a several published legacy tools, including tool records, tool consumer maps and a user.
+     *
+     * @param stdClass $course the course in which to create the tools.
+     * @param array $legacydata array containing user id, consumer key and tool secrets for creation of records.
+     * @return array array containing [tool1record, tool2record, consumerrecord, userrecord].
+     */
+    protected function setup_legacy_data(\stdClass $course, array $legacydata): array {
+        // Legacy data: create a consumer record.
+        global $DB;
+        $generator = $this->getDataGenerator();
+        $now = time();
+        $consumerrecord = (object) [
+            'name' => 'consumer name',
+            'consumerkey256' => $legacydata['consumer_key'],
+            'secret' => '0987654321fff',
+            'protected' => true,
+            'enabled' => true,
+            'created' => $now,
+            'updated' => $now,
+        ];
+        $consumerrecord->id = $DB->insert_record('enrol_lti_lti2_consumer', $consumerrecord);
+
+        // Legacy data: create some modules and publish them as tools, using different secrets, over LTI 1.1.
+        $tools = [];
+        $toolconsumermaprecords = [];
+        foreach ($legacydata['tools'] as $tool) {
+            $mod = $generator->create_module('assign', ['course' => $course->id]);
+            $tooldata = [
+                'cmid' => $mod->cmid,
+                'courseid' => $course->id,
+                'membersyncmode' => helper::MEMBER_SYNC_ENROL_AND_UNENROL,
+                'membersync' => false,
+                'ltiversion' => 'LTI-1p0/LTI-2p0',
+                'secret' => $tool['secret']
+            ];
+            $legacytool = $generator->create_lti_tool((object)$tooldata);
+            $tools[] = $legacytool;
+            $toolconsumermaprecords[] = ['toolid' => $legacytool->id, 'consumerid' => $consumerrecord->id];
+        }
+
+        // Legacy data: create the tool consumer map, which is created during launches.
+        $DB->insert_records('enrol_lti_tool_consumer_map', $toolconsumermaprecords);
+
+        // Legacy data: create the user who launched the tools over LTI 1.1.
+        $legacyusers = [];
+        foreach ($legacydata['users'] as $legacyuser) {
+            $legacyusers[] = $generator->create_user([
+                'username' => helper::create_username($consumerrecord->consumerkey256, $legacyuser['user_id'])
+            ]);
+        }
+
+        return [$tools, $consumerrecord, $legacyusers ?? null];
     }
 }

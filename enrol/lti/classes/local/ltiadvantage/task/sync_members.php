@@ -287,6 +287,7 @@ class sync_members extends scheduled_task {
                 $founduser->get_institution(),
                 $founduser->get_timezone(),
                 $founduser->get_maildisplay(),
+                null,
                 $founduser->get_lastgrade(),
                 null,
                 $founduser->get_localid(),
@@ -307,7 +308,8 @@ class sync_members extends scheduled_task {
                 $resource->country ?? '',
                 $resource->institution ?? '',
                 $resource->timezone ?? '',
-                $resource->maildisplay ?? null
+                $resource->maildisplay ?? null,
+                null
             );
         }
         $user->set_lastaccess(time());

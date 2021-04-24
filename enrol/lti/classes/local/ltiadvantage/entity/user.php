@@ -61,9 +61,6 @@ class user {
     /** @var string user last name. */
     private $lastname;
 
-    /** @var string username of the user. */
-    private $username;
-
     /** @var string email address of the user. */
     private $email;
 
@@ -88,7 +85,7 @@ class user {
     /** @var string auth type of the user. */
     private $auth;
 
-    /** @var mnethostid of the user. */
+    /** @var int mnethostid of the user. */
     private $mnethostid;
 
     /** @var int Whether the user is confirmed or not. */
@@ -103,15 +100,19 @@ class user {
     /** @var int|null the id of the resource_link instance, or null if the user doesn't originate from one. */
     private $resourcelinkid;
 
+    /** @var string issuer the issuer from which this user originates. */
+    private $issuer;
+
+
     /**
      * Private constructor.
      *
      * @param int $resourceid the id of the published resource to which this user belongs.
+     * @param string $issuer the issuer from which the user originates.
      * @param int $deploymentid the local id of the deployment instance to which this user belongs.
      * @param string $sourceid the id of the user in the platform site.
      * @param string $firstname user first name.
      * @param string $lastname user last name.
-     * @param string $username the user's username.
      * @param string $email the user's email.
      * @param string $lang the user's language code.
      * @param string $city the user's city.
@@ -125,22 +126,22 @@ class user {
      * @param int|null $localid the local id of the user, or null if it's a not-yet-persisted object.
      * @param int|null $id the id of this object instance, or null if it's a not-yet-persisted object.
      */
-    private function __construct(int $resourceid, int $deploymentid, string $sourceid, string $firstname,
-            string $lastname, string $username, string $email, string $lang, string $city, string $country,
-            string $institution, string $timezone, ?int $maildisplay, ?float $lastgrade, ?int $lastaccess,
-            ?int $resourcelinkid = null, ?int $localid = null, ?int $id = null) {
+    private function __construct(int $resourceid, string $issuer, int $deploymentid, string $sourceid, string $firstname,
+            string $lastname, string $email, string $lang, string $city, string $country, string $institution,
+            string $timezone, ?int $maildisplay, ?float $lastgrade, ?int $lastaccess, ?int $resourcelinkid = null,
+            ?int $localid = null, ?int $id = null) {
 
         global $CFG;
         $this->resourceid = $resourceid;
+        $this->issuer = $issuer;
         $this->deploymentid = $deploymentid;
         $this->sourceid = $sourceid;
         $this->firstname = $firstname;
         $this->lastname = $lastname;
-        $this->username = $username;
         $this->email = \core_user::clean_field($email, 'email');
         // If the email was stripped/not set then fill it with a default one.
         // This stops the user from being redirected to edit their profile page.
-        $this->email = $this->email ?: $this->username . "@example.com";
+        $this->email = $this->email ?: 'enrol_lti_13_' . sha1($issuer . '_' . $sourceid) . "@example.com";
         $this->lang = $lang;
         $this->city = $city;
         $this->country = $country;
@@ -170,11 +171,11 @@ class user {
      *
      * @param int $resourcelinkid the local id of the resource link instance to link to the user.
      * @param int $resourceid the id of the published resource to which this user belongs.
+     * @param string $issuer the issuer from which the user originates.
      * @param int $deploymentid the local id of the deployment instance to which this user belongs.
      * @param string $sourceid the id of the user in the platform site.
      * @param string $firstname user first name.
      * @param string $lastname user last name.
-     * @param string $username the user's username.
      * @param string $lang the user's language code.
      * @param string $email the user's email.
      * @param string $city the user's city.
@@ -182,19 +183,46 @@ class user {
      * @param string $institution the user's institution.
      * @param string $timezone the user's timezone.
      * @param int|null $maildisplay the user's maildisplay, or null to select defaults.
-     * @param float|null $lastgrade the user's last grade value.
-     * @param int|null $lastaccess the user's last access time, or null if they haven't accessed the resource.
-     * @param int|null $localid the local id of the user, or null if it's a not-yet-persisted object.
-     * @param int|null $id the id of this lti user instance, or null if it's a not-yet-persisted object.
      * @return user the user instance.
      */
-    public static function create_from_resource_link(int $resourcelinkid, int $resourceid, int $deploymentid,
-            string $sourceid, string $firstname, string $lastname, string $username, string $lang, string $email = '',
+    public static function create_from_resource_link(int $resourcelinkid, int $resourceid, string $issuer,
+            int $deploymentid, string $sourceid, string $firstname, string $lastname, string $lang, string $email = '',
             string $city = '', string $country = '', string $institution = '', string $timezone = '',
-            ?int $maildisplay = null, ?float $lastgrade = null, ?int $lastaccess = null, ?int $localid = null,
-            int $id = null): user {
+            ?int $maildisplay = null): user {
 
-        return new self($resourceid, $deploymentid, $sourceid, $firstname, $lastname, $username, $email, $lang, $city,
+        return new self($resourceid, $issuer, $deploymentid, $sourceid, $firstname, $lastname, $email, $lang, $city,
+            $country, $institution, $timezone, $maildisplay, null, null, $resourcelinkid);
+    }
+
+    /**
+     * Factory method for creating a user instance from the store.
+     *
+     * @param int $resourceid the id of the published resource to which this user belongs.
+     * @param string $issuer the issuer from which the user originates.
+     * @param int $deploymentid the local id of the deployment instance to which this user belongs.
+     * @param string $sourceid the id of the user in the platform site.
+     * @param string $firstname user first name.
+     * @param string $lastname user last name.
+     * @param string $email the user's email.
+     * @param string $lang the user's language code.
+     * @param string $city the user's city.
+     * @param string $country the user's country.
+     * @param string $institution the user's institution.
+     * @param string $timezone the user's timezone.
+     * @param int|null $maildisplay the user's maildisplay, or null to select defaults.
+     * @param float|null $lastgrade the user's last grade value.
+     * @param int|null $lastaccess the user's last access time, or null if they haven't accessed the resource.
+     * @param int|null $resourcelinkid the id of the resource link to link to the user, or null if not applicable.
+     * @param int|null $localid the local id of the user, or null if it's a not-yet-persisted object.
+     * @param int|null $id the id of this object instance, or null if it's a not-yet-persisted object.
+     * @return user the user instance.
+     */
+    public static function create_from_store(int $resourceid, string $issuer, int $deploymentid, string $sourceid,
+        string $firstname, string $lastname, string $email, string $lang, string $city, string $country,
+        string $institution, string $timezone, ?int $maildisplay, ?float $lastgrade, ?int $lastaccess,
+        ?int $resourcelinkid = null, ?int $localid = null, ?int $id = null): user {
+
+        return new self($resourceid, $issuer, $deploymentid, $sourceid, $firstname, $lastname, $email, $lang, $city,
             $country, $institution, $timezone, $maildisplay, $lastgrade, $lastaccess, $resourcelinkid, $localid, $id);
     }
 
@@ -202,11 +230,11 @@ class user {
      * Factory method for creating a user without a resource_link association.
      *
      * @param int $resourceid the id of the published resource to which this user belongs.
+     * @param string $issuer the issuer from which the user originates.
      * @param int $deploymentid the local id of the deployment instance to which this user belongs.
      * @param string $sourceid the id of the user in the platform site.
      * @param string $firstname user first name.
      * @param string $lastname user last name.
-     * @param string $username the user's username.
      * @param string $lang the user's language code.
      * @param string $email the user's email.
      * @param string $city the user's city.
@@ -220,12 +248,12 @@ class user {
      * @param int|null $id the id of this lti user instance, or null if it's a not-yet-persisted object.
      * @return user the user instance.
      */
-    public static function create(int $resourceid, int $deploymentid, string $sourceid, string $firstname,
-            string $lastname, string $username, string $lang, string $email = '', string $city = '',
-            string $country = '', string $institution = '', string $timezone = '', ?int $maildisplay = null,
-            ?float $lastgrade = null, ?int $lastaccess = null, ?int $localid = null, int $id = null): user {
+    public static function create(int $resourceid, string $issuer, int $deploymentid,  string $sourceid, string $firstname,
+            string $lastname, string $lang, string $email = '', string $city = '', string $country = '',
+            string $institution = '', string $timezone = '', ?int $maildisplay = null, ?float $lastgrade = null,
+            ?int $lastaccess = null, ?int $localid = null, int $id = null): user {
 
-        return new self($resourceid, $deploymentid, $sourceid, $firstname, $lastname, $username, $email, $lang, $city,
+        return new self($resourceid, $issuer, $deploymentid, $sourceid, $firstname, $lastname, $email, $lang, $city,
             $country, $institution, $timezone, $maildisplay, $lastgrade, $lastaccess, null, $localid, $id);
     }
 
@@ -266,6 +294,15 @@ class user {
     }
 
     /**
+     * Get the issuer from which this user originates.
+     *
+     * @return string the issuer url.
+     */
+    public function get_issuer(): string {
+        return $this->issuer;
+    }
+
+    /**
      * Get the id of the deployment instance to which this user belongs.
      *
      * @return int id of the deployment instance.
@@ -290,6 +327,15 @@ class user {
      */
     public function get_localid(): ?int {
         return $this->localid;
+    }
+
+    /**
+     * Set the localid used by this lti user.
+     *
+     * @param int $localid the id of the user record to use.
+     */
+    public function set_localid(int $localid): void {
+        $this->localid = $localid;
     }
 
     /**
@@ -326,15 +372,6 @@ class user {
      */
     public function set_lastname(string $lastname): void {
         $this->lastname = $lastname;
-    }
-
-    /**
-     * Get the username of this user.
-     *
-     * @return string the username.
-     */
-    public function get_username(): string {
-        return $this->username;
     }
 
     /**

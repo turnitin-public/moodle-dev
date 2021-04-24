@@ -65,7 +65,7 @@ class deployment_repository_testcase extends \advanced_testcase {
         return deployment::create(
             $appregistrationid,
             $deploymentid,
-            'Tool deployment on platform x'
+            'Tool deployment on platform x',
         );
     }
 
@@ -79,6 +79,7 @@ class deployment_repository_testcase extends \advanced_testcase {
         $this->assertEquals($expected->get_deploymentname(), $check->get_deploymentname());
         $this->assertEquals($expected->get_deploymentid(), $check->get_deploymentid());
         $this->assertEquals($expected->get_registrationid(), $check->get_registrationid());
+        $this->assertEquals($expected->get_legacy_consumer_key(), $check->get_legacy_consumer_key());
     }
 
     /**
@@ -93,6 +94,7 @@ class deployment_repository_testcase extends \advanced_testcase {
         $this->assertEquals($expected->get_deploymentname(), $checkrecord->name);
         $this->assertEquals($expected->get_deploymentid(), $checkrecord->deploymentid);
         $this->assertEquals($expected->get_registrationid(), $checkrecord->platformid);
+        $this->assertEquals($expected->get_legacy_consumer_key(), $checkrecord->legacyconsumerkey);
         $this->assertNotEmpty($checkrecord->timecreated);
         $this->assertNotEmpty($checkrecord->timemodified);
     }
@@ -103,6 +105,7 @@ class deployment_repository_testcase extends \advanced_testcase {
     public function test_save_new() {
         $deploymentrepo = new deployment_repository(new application_registration_repository());
         $deployment = $this->create_test_deployment();
+        $deployment->set_legacy_consumer_key('test-consumer-key');
         $saved = $deploymentrepo->save($deployment);
 
         $this->assertIsInt($saved->get_id());
@@ -118,16 +121,11 @@ class deployment_repository_testcase extends \advanced_testcase {
         $deployment = $this->create_test_deployment();
         $saved = $deploymentrepo->save($deployment);
 
-        $update = deployment::create(
-            $saved->get_registrationid(),
-            $saved->get_deploymentid(),
-            "Tool deployment name changed",
-            $saved->get_id()
-        );
-        $saved2 = $deploymentrepo->save($update);
+        $saved->set_legacy_consumer_key('added-consumer-key');
+        $saved2 = $deploymentrepo->save($saved);
 
-        $this->assertEquals($update->get_id(), $saved2->get_id());
-        $this->assert_same_deployment_values($update, $saved2);
+        $this->assertEquals($saved->get_id(), $saved2->get_id());
+        $this->assert_same_deployment_values($saved, $saved2);
         $this->assert_deployment_db_values($saved2);
     }
 

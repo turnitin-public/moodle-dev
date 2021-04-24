@@ -44,7 +44,8 @@ class deployment_repository {
         $record = (object) [
             'name' => $deployment->get_deploymentname(),
             'deploymentid' => $deployment->get_deploymentid(),
-            'platformid' => $deployment->get_registrationid()
+            'platformid' => $deployment->get_registrationid(),
+            'legacyconsumerkey' => $deployment->get_legacy_consumer_key()
         ];
         if ($id = $deployment->get_id()) {
             $record->id = $id;
@@ -78,7 +79,8 @@ class deployment_repository {
             $record->platformid,
             $record->deploymentid,
             $record->name,
-            $record->id
+            $record->id,
+            $record->legacyconsumerkey
         );
         return $deployment;
     }
@@ -176,7 +178,7 @@ class deployment_repository {
     public function find_by_registration(int $registrationid, string $deploymentid): ?deployment {
         global $DB;
         try {
-            $sql = "SELECT eld.id, eld.name, eld.deploymentid, eld.platformid
+            $sql = "SELECT eld.id, eld.name, eld.deploymentid, eld.platformid, eld.legacyconsumerkey
                       FROM {".$this->deploymenttable."} eld
                       JOIN {enrol_lti_app_registration} elar
                         ON (eld.platformid = elar.id)
@@ -199,7 +201,7 @@ class deployment_repository {
     public function find_all_by_registration(int $registrationid): ?array {
         global $DB;
 
-        $sql = "SELECT eld.id, eld.name, eld.deploymentid, eld.platformid
+        $sql = "SELECT eld.id, eld.name, eld.deploymentid, eld.platformid, eld.legacyconsumerkey
                   FROM {".$this->deploymenttable."} eld
                   JOIN {enrol_lti_app_registration} elar
                     ON (eld.platformid = elar.id)

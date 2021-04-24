@@ -50,6 +50,20 @@ class application_registration_service_testcase extends \lti_advantage_testcase 
     }
 
     /**
+     * Helper to get an application_registration_service instance.
+     * @return application_registration_service
+     */
+    protected function get_application_registration_service(): application_registration_service {
+        return new application_registration_service(
+            new application_registration_repository(),
+            new deployment_repository(),
+            new resource_link_repository(),
+            new context_repository(),
+            new user_repository()
+        );
+    }
+
+    /**
      * Test the use case "As an admin, I can register an application as an LTI consumer (platform)".
      */
     public function test_register_application() {
@@ -62,11 +76,10 @@ class application_registration_service_testcase extends \lti_advantage_testcase 
             'accesstokenurl' => new \moodle_url('https://example.org/accesstokenurl')
         ];
 
-        $regrepo = new application_registration_repository();
-        $service = new application_registration_service($regrepo, new deployment_repository(),
-            new resource_link_repository(), new context_repository(), new user_repository());
+        $service = $this->get_application_registration_service();
         $createdreg = $service->create_application_registration($reg);
 
+        $regrepo = new application_registration_repository();
         $this->assertTrue($regrepo->exists($createdreg->get_id()));
     }
 
@@ -83,9 +96,7 @@ class application_registration_service_testcase extends \lti_advantage_testcase 
             'accesstokenurl' => new \moodle_url('https://example.org/accesstokenurl')
         ];
 
-        $regrepo = new application_registration_repository();
-        $service = new application_registration_service($regrepo, new deployment_repository(),
-            new resource_link_repository(), new context_repository(), new user_repository());
+        $service = $this->get_application_registration_service();
         $createdreg = $service->create_application_registration($reg);
 
         $reg->id = $createdreg->get_id();
@@ -109,9 +120,7 @@ class application_registration_service_testcase extends \lti_advantage_testcase 
             'accesstokenurl' => new \moodle_url('https://example.org/accesstokenurl')
         ];
 
-        $regrepo = new application_registration_repository();
-        $service = new application_registration_service($regrepo, new deployment_repository(),
-            new resource_link_repository(), new context_repository(), new user_repository());
+        $service = $this->get_application_registration_service();
         $service->create_application_registration($reg);
 
         $reg->jwksurl = new \moodle_url('https://example.org/updated_jwksurl');
@@ -131,7 +140,11 @@ class application_registration_service_testcase extends \lti_advantage_testcase 
         $resourcelinkrepo = new resource_link_repository();
         $userrepo = new user_repository();
         [$course, $resource] = $this->create_test_environment();
-        $this->fake_user_launch($resource, $this->create_mock_platform_user());
+
+        // Launch the tool for a user.
+        $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0]);
+        $launchservice = $this->get_tool_launch_service();
+        $launchservice->user_launches_tool($mocklaunch);
 
         // Check all the expected data exists for the deployment after setup.
         $registrations = $registrationrepo->find_all();
@@ -157,13 +170,7 @@ class application_registration_service_testcase extends \lti_advantage_testcase 
         $this->assertCount(1, $enrolledusers);
 
         // Now delete the application_registration using the service.
-        $service = new application_registration_service(
-            new application_registration_repository(),
-            $deploymentrepo,
-            $resourcelinkrepo,
-            $contextrepo,
-            $userrepo
-        );
+        $service = $this->get_application_registration_service();
         $service->delete_application_registration($registration->get_id());
 
         // Verify that the context, resourcelink, user, deployment and registration instances are all deleted.

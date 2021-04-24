@@ -212,6 +212,7 @@
         <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="A short name identifying the tool deployment to users"/>
         <FIELD NAME="deploymentid" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="The id of the deployment, as defined in the platform"/>
         <FIELD NAME="platformid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The platformid to which this deployment belongs"/>
+        <FIELD NAME="legacyconsumerkey" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="The legacy consumer key mapped to this deployment, if the deployment represents a migrated tool."/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>
@@ -279,6 +280,24 @@
       <INDEXES>
         <INDEX NAME="ltiuserid-resourcelinkid" UNIQUE="true" FIELDS="ltiuserid, resourcelinkid"/>
       </INDEXES>
+    </TABLE>
+    <TABLE NAME="enrol_lti_adv_user" COMMENT="Holds information linking the platform identity to the local identity of a user for each lti advantage user.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The id of the user record holding information about this lti advantage user."/>
+        <FIELD NAME="issuer" TYPE="char" LENGTH="1333" NOTNULL="true" SEQUENCE="false" COMMENT="The issuer (iss) from which this user originates, as sent in the id_token in the OIDC authentication response."/>
+        <FIELD NAME="issuer256" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="SHA256 hash of the issuer (iss) for use in uniqueness constraints."/>
+        <FIELD NAME="sub" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="The subject (sub) identifying the user within the issuer (iss), as sent in the id_token in the OIDC authentication response."/>
+        <FIELD NAME="sub256" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="SHA256 hash of the subject (sub) for use in uniqueness constraints."/>
+        <FIELD NAME="legacymigrated" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Whether the user record was reused from lti 1p1/2p0."/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="issuer256_sub256" TYPE="unique" FIELDS="issuer256, sub256"/>
+      </KEYS>
     </TABLE>
   </TABLES>
 </XMLDB>

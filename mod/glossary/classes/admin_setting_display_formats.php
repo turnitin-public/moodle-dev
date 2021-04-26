@@ -115,7 +115,10 @@ class mod_glossary_admin_setting_display_formats extends admin_setting {
         $table->align = array('left', 'center');
         foreach ($formats as $formatname => $format) {
             $editicon = html_writer::link(
-                "$CFG->wwwroot/mod/glossary/formats.php?id=$format->id&amp;mode=edit",
+                new moodle_url(
+                    '/mod/glossary/formats.php',
+                    array('id' => $format->id, 'mode' => 'edit')
+                ),
                 $OUTPUT->pix_icon('t/edit', $stredit),
                 array('title' => $stredit));
 
@@ -128,7 +131,10 @@ class mod_glossary_admin_setting_display_formats extends admin_setting {
             }
 
             $visibleicon = html_writer::link(
-                "$CFG->wwwroot/mod/glossary/formats.php?id=$format->id&mode=visible&sesskey=".sesskey(),
+                new moodle_url(
+                    '/mod/glossary/formats.php',
+                    array('id' => $format->id, 'mode' => 'visible', 'sesskey' => sesskey())
+                ),
                 $OUTPUT->pix_icon($vicon, $vtitle),
                 array('title' => $vtitle)
             );

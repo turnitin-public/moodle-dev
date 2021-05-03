@@ -906,26 +906,32 @@ function glossary_scale_used_anywhere($scaleid) {
 function glossary_get_available_formats() {
     global $CFG, $DB;
 
-    //Get available formats (plugin) and insert (if necessary) them into glossary_formats
+    // Get available formats (plugin) and insert (if necessary) them into glossary_formats.
     $formats = get_list_of_plugins('mod/glossary/formats', 'TEMPLATE');
     $pluginformats = array();
+    $formatrecords = $DB->get_records("glossary_formats");
+
     foreach ($formats as $format) {
-        //If the format file exists
+        // If the format file exists.
         if (file_exists($CFG->dirroot.'/mod/glossary/formats/'.$format.'/'.$format.'_format.php')) {
             include_once($CFG->dirroot.'/mod/glossary/formats/'.$format.'/'.$format.'_format.php');
             //If the function exists
             if (function_exists('glossary_show_entry_'.$format)) {
-                //Acummulate it as a valid format
+                // Acummulate it as a valid format.
                 $pluginformats[] = $format;
-                //If the format doesn't exist in the table
-                if (!$rec = $DB->get_record('glossary_formats', array('name'=>$format))) {
-                    //Insert the record in glossary_formats
+
+                // If the format doesn't exist in the table.
+                $rec = glossary_get_format($format, $formatrecords);
+
+                if (!$rec) {
+                    // Insert the record in glossary_formats.
                     $gf = new stdClass();
                     $gf->name = $format;
                     $gf->popupformatname = $format;
                     $gf->visible = 1;
                     $id = $DB->insert_record('glossary_formats', $gf);
                     $rec = $DB->get_record('glossary_formats', array('id' => $id));
+                    array_push($formatrecords, $rec);
                 }
 
                 if (empty($rec->showtabs)) {
@@ -935,31 +941,45 @@ function glossary_get_available_formats() {
         }
     }
 
-    //Delete non_existent formats from glossary_formats table
-    $formats = $DB->get_records("glossary_formats");
-    foreach ($formats as $format) {
+    // Delete non_existent formats from glossary_formats table.
+    foreach ($formatrecords as $record) {
         $todelete = false;
-        //If the format in DB isn't a valid previously detected format then delete the record
-        if (!in_array($format->name,$pluginformats)) {
+        // If the format in DB isn't a valid previously detected format then delete the record.
+        if (!in_array($record->name, $pluginformats)) {
             $todelete = true;
         }
 
         if ($todelete) {
-            //Delete the format
-            $DB->delete_records('glossary_formats', array('name'=>$format->name));
-            //Reasign existing glossaries to default (dictionary) format
-            if ($glossaries = $DB->get_records('glossary', array('displayformat'=>$format->name))) {
+            // Delete the format.
+            $DB->delete_records('glossary_formats', array('id' => $record->id));
+            unset($formatrecords[$record->id]);
+
+            // Reassign existing glossaries to default (dictionary) format.
+            if ($glossaries = $DB->get_records('glossary', array('displayformat' => $record->name))) {
                 foreach($glossaries as $glossary) {
-                    $DB->set_field('glossary','displayformat','dictionary', array('id'=>$glossary->id));
+                    $DB->set_field('glossary', 'displayformat', 'dictionary', array('id' => $glossary->id));
                 }
             }
         }
     }
 
-    //Now everything is ready in glossary_formats table
-    $formats = $DB->get_records("glossary_formats");
+    return $formatrecords;
+}
 
-    return $formats;
+/**
+ * Search the supplied array of glossary formats for a matching name
+ *
+ * @param string $name the glossary format name to search for
+ * @param array $allformats array of glossary formats to search
+ * @return array
+ */
+function glossary_get_format($name, $allformats) {
+    foreach ($allformats as $format) {
+        if ($format->name == $name) {
+            return $format;
+        }
+    }
+    return null;
 }
 
 /**
@@ -2185,6 +2205,7 @@ function glossary_print_dynaentry($courseid, $entries, $displayformat = -1) {
     echo '<table class="glossarypopup" cellspacing="0"><tr>';
     echo '<td>';
     if ( $entries ) {
+        $formatrecords = glossary_get_available_formats();
         foreach ( $entries as $entry ) {
             if (! $glossary = $DB->get_record('glossary', array('id'=>$entry->glossaryid))) {
                 print_error('invalidid', 'glossary');
@@ -2203,8 +2224,8 @@ function glossary_print_dynaentry($courseid, $entries, $displayformat = -1) {
                 $dp = $displayformat;
             }
 
-            //Get popupformatname
-            $format = $DB->get_record('glossary_formats', array('name'=>$dp));
+            // Get popupformatname.
+            $format = $rec = glossary_get_format($dp, $formatrecords);
             $displayformat = $format->popupformatname;
 
             //Check displayformat variable and set to default if necessary
@@ -3100,7 +3121,8 @@ function glossary_supports($feature) {
 function glossary_extend_navigation($navigation, $course, $module, $cm) {
     global $CFG, $DB;
 
-    $displayformat = $DB->get_record('glossary_formats', array('name' => $module->displayformat));
+    $formatrecords = glossary_get_available_formats();
+    $displayformat = glossary_get_format($module->displayformat, $formatrecords);
     // Get visible tabs for the format and check if the menu needs to be displayed.
     $showtabs = glossary_get_visible_tabs($displayformat);
 

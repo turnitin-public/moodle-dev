@@ -52,9 +52,7 @@ class mod_glossary_external extends external_api {
         global $DB;
 
         $formats = array();
-
-        $allformats = glossary_get_available_formats();
-        $dp = glossary_get_format($format, $allformats);
+        $dp = $DB->get_record('glossary_formats', array('name' => $format), '*', IGNORE_MISSING);
         if ($dp) {
             $formats = glossary_get_visible_tabs($dp);
         }

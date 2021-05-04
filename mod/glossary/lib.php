@@ -921,7 +921,12 @@ function glossary_get_available_formats() {
                 $pluginformats[] = $format;
 
                 // If the format doesn't exist in the table.
-                $rec = glossary_get_format($format, $formatrecords);
+                $rec = null;
+                foreach ($formatrecords as $gformat) {
+                    if ($gformat->name == $format) {
+                        $rec = $gformat;
+                    }
+                }
 
                 if (!$rec) {
                     // Insert the record in glossary_formats.
@@ -964,22 +969,6 @@ function glossary_get_available_formats() {
     }
 
     return $formatrecords;
-}
-
-/**
- * Search the supplied array of glossary formats for a matching name
- *
- * @param string $name the glossary format name to search for
- * @param array $allformats array of glossary formats to search
- * @return array
- */
-function glossary_get_format($name, $allformats) {
-    foreach ($allformats as $format) {
-        if ($format->name == $name) {
-            return $format;
-        }
-    }
-    return null;
 }
 
 /**
@@ -2205,7 +2194,6 @@ function glossary_print_dynaentry($courseid, $entries, $displayformat = -1) {
     echo '<table class="glossarypopup" cellspacing="0"><tr>';
     echo '<td>';
     if ( $entries ) {
-        $formatrecords = glossary_get_available_formats();
         foreach ( $entries as $entry ) {
             if (! $glossary = $DB->get_record('glossary', array('id'=>$entry->glossaryid))) {
                 print_error('invalidid', 'glossary');
@@ -2224,8 +2212,8 @@ function glossary_print_dynaentry($courseid, $entries, $displayformat = -1) {
                 $dp = $displayformat;
             }
 
-            // Get popupformatname.
-            $format = $rec = glossary_get_format($dp, $formatrecords);
+            //Get popupformatname
+            $format = $DB->get_record('glossary_formats', array('name'=>$dp));
             $displayformat = $format->popupformatname;
 
             //Check displayformat variable and set to default if necessary
@@ -3121,8 +3109,7 @@ function glossary_supports($feature) {
 function glossary_extend_navigation($navigation, $course, $module, $cm) {
     global $CFG, $DB;
 
-    $formatrecords = glossary_get_available_formats();
-    $displayformat = glossary_get_format($module->displayformat, $formatrecords);
+    $displayformat = $DB->get_record('glossary_formats', array('name' => $module->displayformat));
     // Get visible tabs for the format and check if the menu needs to be displayed.
     $showtabs = glossary_get_visible_tabs($displayformat);
 

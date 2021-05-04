@@ -47,5 +47,7 @@ if ($ADMIN->fulltree) {
     $settings->add(new admin_setting_configcheckbox('glossary_fullmatch', get_string('fullmatch', 'glossary'),
                        get_string('cnffullmatch', 'glossary'), 0));
 
+    glossary_get_available_formats();
+
     $settings->add(new mod_glossary_admin_setting_display_formats());
 }

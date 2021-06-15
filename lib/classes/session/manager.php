@@ -273,6 +273,7 @@ class manager {
      */
     protected static function prepare_cookies() {
         global $CFG;
+        error_log('In prepare_cookies');
 
         $cookiesecure = is_moodle_cookie_secure();
 
@@ -337,6 +338,7 @@ class manager {
         session_name($sessionname);
 
         if (version_compare(PHP_VERSION, '7.3.0', '>=')) {
+            error_log('In 7.3+ handler');
             $sessionoptions = [
                 'lifetime' => 0,
                 'path' => $CFG->sessioncookiepath,
@@ -346,12 +348,14 @@ class manager {
             ];
 
             if (self::should_use_samesite_none()) {
+                error_log('adding samesite option');
                 // If $samesite is empty, we don't want there to be any SameSite attribute.
                 $sessionoptions['samesite'] = 'None';
             }
-
+            error_log('Calling session_set_cookie_params for 7.3+');
             session_set_cookie_params($sessionoptions);
         } else {
+            error_log('Fallback for < 7.3.0: calling session_set_cookie_params without options');
             // Once PHP 7.3 becomes our minimum, drop this in favour of the alternative call to session_set_cookie_params above,
             // as that does not require a hack to work with same site settings on cookies.
             session_set_cookie_params(0, $CFG->sessioncookiepath, $CFG->sessioncookiedomain, $cookiesecure, $CFG->cookiehttponly);
@@ -623,6 +627,7 @@ class manager {
      *  - If the samesite setting is None but the browser is not compatible with that setting.
      */
     private static function append_samesite_cookie_attribute() {
+        error_log('In append_samesite_cookie_attr');
         if (version_compare(PHP_VERSION, '7.3.0', '>=')) {
             // This hack is only necessary if we weren't able to set the samesite flag via the session_set_cookie_params API.
             return;
@@ -632,12 +637,15 @@ class manager {
             return;
         }
 
+        error_log('Appending samesite for < 7.3.0');
+
         $cookies = headers_list();
         header_remove('Set-Cookie');
         $setcookiesession = 'Set-Cookie: ' . session_name() . '=';
 
         foreach ($cookies as $cookie) {
             if (strpos($cookie, $setcookiesession) === 0) {
+                error_log('Set-cookie header found');
                 $cookie .= '; SameSite=None';
             }
             header($cookie, false);

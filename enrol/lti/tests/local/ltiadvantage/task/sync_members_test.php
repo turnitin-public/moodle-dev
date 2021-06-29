@@ -46,30 +46,39 @@ class sync_members_testcase extends \lti_advantage_testcase {
     }
 
     /**
-     * Generate a list of fake users for use with the mocked memberships service.
+     * Helper to get a list of mocked member entries for use in the mocked sync task.
      *
-     * @param int $numusers the number of fake users to generate.
+     * @param array $userids the array of lti user ids to use.
+     * @param array|null $legacyuserids legacy user ids for the lti11_legacy_user_id property, null if not desired.
      * @param bool $names whether to include names in the user data or not.
      * @param bool $emails whether to include email in the user data or not.
      * @param bool $linklevel whether to mock the user return data at link-level (true) or context-level (false).
      * @param bool $picture whether to mock a user's picture field in the return data.
      * @return array the array of users.
+     * @throws exception if the legacyuserids array doesn't contain the correct number of ids.
      */
-    protected function get_mock_users($numusers = 5, $names = true, $emails = true, bool $linklevel = true,
-            bool $picture = false) {
+    protected function get_mock_members_with_ids(array $userids, ?array $legacyuserids = null, $names = true,
+            $emails = true, bool $linklevel = true, bool $picture = false): array {
+
+        if (!is_null($legacyuserids) && count($legacyuserids) != count($userids)) {
+            throw new exception('legacyuserids must contain the same number of ids as $userids.');
+        }
 
         $users = [];
-        foreach (range(1, $numusers) as $usernum) {
-            $user = ['user_id' => $usernum];
+        foreach ($userids as $userid) {
+            $user = ['user_id' => (string) $userid];
             if ($picture) {
                 $user['picture'] = $this->getExternalTestFileUrl('/test.jpg', false);
             }
             if ($names) {
-                $user['given_name'] = 'Firstname' . $usernum;
-                $user['family_name'] = 'Surname' . $usernum;
+                $user['given_name'] = 'Firstname' . $userid;
+                $user['family_name'] = 'Surname' . $userid;
             }
             if ($emails) {
-                $user['email'] = "firstname.surname{$usernum}@lms.example.org";
+                $user['email'] = "firstname.surname{$userid}@lms.example.org";
+            }
+            if ($legacyuserids) {
+                $user['lti11_legacy_user_id'] = array_shift($legacyuserids);
             }
             if ($linklevel) {
                 // Link-level memberships also include a message property.
@@ -108,7 +117,7 @@ class sync_members_testcase extends \lti_advantage_testcase {
                         }
                     }
                 } else {
-                    return $this->get_mock_users(2);
+                    return $this->get_mock_members_with_ids(range(1, 2));
                 }
             }));
         return $mocktask;
@@ -131,7 +140,7 @@ class sync_members_testcase extends \lti_advantage_testcase {
         $mocktask->expects($this->any())
             ->method('get_context_level_members')
             ->will($this->returnCallback(function() {
-                return $this->get_mock_users(3, true, true, false);
+                return $this->get_mock_members_with_ids(range(1, 3), null, true, true, false);
             }));;
         return $mocktask;
     }
@@ -139,9 +148,9 @@ class sync_members_testcase extends \lti_advantage_testcase {
     /**
      * Gets a sync task, with the remote calls mocked to return the supplied users.
      *
-     * See get_mocked_users() for generating the users for input.
+     * See get_mock_members_with_ids() for generating the users for input.
      *
-     * @param array $users the list of members to include in the return of the mock task.
+     * @param array $users a list of users, the result of a call to get_mock_members_with_ids().
      * @return \PHPUnit\Framework\MockObject\MockObject the mock task.
      */
     protected function get_mock_task_with_users(array $users) {
@@ -162,7 +171,7 @@ class sync_members_testcase extends \lti_advantage_testcase {
     }
 
     /**
-     * Check that all the given ltiusers are also enrolled in the course.
+     * Check that all the given ltiusers are enrolled in the course.
      *
      * @param \stdClass $course the course instance.
      * @param user[] $ltiusers array of lti user instances.
@@ -184,10 +193,14 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * Test a resource-link-level membership sync, confirming that all relevant domain objects are updated properly.
      */
     public function test_resource_link_level_sync() {
-        $mockuser = $this->get_mock_users(1)[0];
         [$course, $resource] = $this->create_test_environment();
-        $this->fake_user_launch($resource, $mockuser);
 
+        // Launch the tool for a user.
+        $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0]);
+        $launchservice = $this->get_tool_launch_service();
+        $launchservice->user_launches_tool($mocklaunch);
+
+        // Sync members.
         $task = $this->get_mock_task_resource_link_level();
         ob_start();
         $task->execute();
@@ -204,22 +217,27 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * Test a resource-link-level membership sync when there are more than one resource links for the resource.
      */
     public function test_resource_link_level_sync_multiple_resource_links() {
-        $mockuser = $this->get_mock_users(1)[0];
         [$course, $resource] = $this->create_test_environment();
 
         // Launch twice - once from each resource link in the platform.
-        $this->fake_user_launch($resource, $mockuser, '123');
-        $this->fake_user_launch($resource, $mockuser, '456');
+        $launchservice = $this->get_tool_launch_service();
+        $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0], '123');
+        $launchservice->user_launches_tool($mocklaunch);
+        $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0], '456');
+        $launchservice->user_launches_tool($mocklaunch);
 
         // Now, grab the resource links.
         $rlrepo = new resource_link_repository();
         $reslinks = $rlrepo->find_by_resource($resource->id);
-        $mockusers1 = array_slice($this->get_mock_users(10), 0, 6);
-        $mockusers2 = array_slice($this->get_mock_users(10), 6);
+        $mockmembers = $this->get_mock_members_with_ids(range(1, 10));
+        $mockusers1 = array_slice($mockmembers, 0, 6);
+        $mockusers2 = array_slice($mockmembers, 6);
         $resourcelinks = [
             [$reslinks[0], $mockusers1],
             [$reslinks[1], $mockusers2]
         ];
+
+        // Sync the members, using the mock task set up to sync different sets of users for each resource link.
         $task = $this->get_mock_task_resource_link_level($resourcelinks);
         ob_start();
         $task->execute();
@@ -241,11 +259,15 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * Verify the task will update users' profile pictures if the 'picture' member field is provided.
      */
     public function test_user_profile_image_sync() {
-        $mockuser = $this->get_mock_users(1)[0];
         [$course, $resource] = $this->create_test_environment();
-        $this->fake_user_launch($resource, $mockuser);
 
-        $task = $this->get_mock_task_with_users($this->get_mock_users(1, true, true, true, true));
+        // Launch the tool for a user.
+        $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0]);
+        $launchservice = $this->get_tool_launch_service();
+        $launchservice->user_launches_tool($mocklaunch);
+
+        // Sync members.
+        $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(['1'], null, true, true, true, true));
         ob_start();
         $task->execute();
         ob_end_clean();
@@ -275,10 +297,14 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * Test a context-level membership sync, confirming that all relevant domain objects are updated properly.
      */
     public function test_context_level_sync() {
-        $mockuser = $this->get_mock_users(1)[0];
         [$course, $resource] = $this->create_test_environment();
-        $this->fake_user_launch($resource, $mockuser);
 
+        // Launch the tool for a user.
+        $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0]);
+        $launchservice = $this->get_tool_launch_service();
+        $launchservice->user_launches_tool($mocklaunch);
+
+        // Sync members.
         $task = $this->get_mock_task_context_level();
         ob_start();
         $task->execute();
@@ -295,17 +321,22 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * Test verifying the sync task handles the omission/inclusion of PII information for users.
      */
     public function test_sync_user_data() {
-        $mockuser = $this->get_mock_users(1)[0];
-        [$course, $resource] = $this->create_test_environment();
-        $this->fake_user_launch($resource, $mockuser);
+        [$course, $resource, $resource2, $resource3, $appreg] = $this->create_test_environment();
+        $userrepo = new user_repository();
 
-        $task = $this->get_mock_task_with_users($this->get_mock_users(5, false, false));
+        // Launch the tool for a user.
+        $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0]);
+        $launchservice = $this->get_tool_launch_service();
+        $launchservice->user_launches_tool($mocklaunch);
+
+        // Sync members.
+        $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(range(1, 5), null, false, false));
+
         ob_start();
         $task->execute();
         ob_end_clean();
 
         // Verify 5 users and their corresponding course enrolments exist.
-        $userrepo = new user_repository();
         $ltiusers = $userrepo->find_by_resource($resource->id);
         $this->assertCount(5, $ltiusers);
         $this->verify_course_enrolments($course, $ltiusers);
@@ -319,27 +350,29 @@ class sync_members_testcase extends \lti_advantage_testcase {
             // Lastname falls back to resource context id.
             $this->assertEquals($resource->contextid, $ltiuser->get_lastname());
 
-            // Email falls back.
-            $this->assertEquals($ltiuser->get_username() . '@example.com', $ltiuser->get_email());
+            // Email falls back to example.com.
+            $issuersubhash = sha1($appreg->get_platformid() . '_' . $ltiuser->get_sourceid());
+            $this->assertEquals("enrol_lti_13_{$issuersubhash}@example.com", $ltiuser->get_email());
         }
 
-        // Sync again, this time with user data user data.
-        $task = $this->get_mock_task_with_users($this->get_mock_users(5, true, true));
+        // Sync again, this time with user data included.
+        $mockmembers = $this->get_mock_members_with_ids(range(1, 5));
+        $task = $this->get_mock_task_with_users($mockmembers);
+
         ob_start();
         $task->execute();
         ob_end_clean();
 
-        $userrepo = new user_repository();
+        // User data was included in the response and should have been updated.
         $ltiusers = $userrepo->find_by_resource($resource->id);
         $this->assertCount(5, $ltiusers);
         $this->verify_course_enrolments($course, $ltiusers);
-
-        // User data was included in the response and should have been updated.
         foreach ($ltiusers as $ltiuser) {
-            // Firstname falls back to sourceid.
-            $this->assertEquals('Firstname'.$ltiuser->get_sourceid(), $ltiuser->get_firstname());
-            $this->assertEquals('Surname'.$ltiuser->get_sourceid(), $ltiuser->get_lastname());
-            $this->assertEquals("firstname.surname{$ltiuser->get_sourceid()}@lms.example.org", $ltiuser->get_email());
+            $mockmemberindex = array_search($ltiuser->get_sourceid(), array_column($mockmembers, 'user_id'));
+            $mockmember = $mockmembers[$mockmemberindex];
+            $this->assertEquals($mockmember['given_name'], $ltiuser->get_firstname());
+            $this->assertEquals($mockmember['family_name'], $ltiuser->get_lastname());
+            $this->assertEquals($mockmember['email'], $ltiuser->get_email());
         }
     }
 
@@ -347,11 +380,16 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * Test verifying the task won't sync members for shared resources having member sync disabled.
      */
     public function test_membership_sync_disabled() {
-        $mockuser = $this->get_mock_users(1)[0];
         [$course, $resource] = $this->create_test_environment(true, true, false);
-        $this->fake_user_launch($resource, $mockuser);
 
-        $task = $this->get_mock_task_with_users($this->get_mock_users(4));
+        // Launch the tool for a user.
+        $mockuser = $this->get_mock_launch_users_with_ids(['1'])[0];
+        $mocklaunch = $this->get_mock_launch($resource, $mockuser);
+        $launchservice = $this->get_tool_launch_service();
+        $launchservice->user_launches_tool($mocklaunch);
+
+        // Sync members.
+        $task = $this->get_mock_task_with_users($this->get_mock_launch_users_with_ids(range(1, 4)));
         ob_start();
         $task->execute();
         ob_end_clean();
@@ -361,6 +399,7 @@ class sync_members_testcase extends \lti_advantage_testcase {
         $userrepo = new user_repository();
         $ltiusers = $userrepo->find_by_resource($resource->id);
         $this->assertCount(1, $ltiusers);
+        $this->assertEquals($mockuser['user_id'], $ltiusers[0]->get_sourceid());
         $this->verify_course_enrolments($course, $ltiusers);
     }
 
@@ -368,103 +407,92 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * Test verifying the sync task for resources configured as 'helper::MEMBER_SYNC_ENROL_AND_UNENROL'.
      */
     public function test_sync_mode_enrol_and_unenrol() {
-        $mockuser = $this->get_mock_users(1)[0];
         [$course, $resource] = $this->create_test_environment();
-        $this->fake_user_launch($resource, $mockuser);
+        $userrepo = new user_repository();
 
-        $mockusers = $this->get_mock_users(6);
-        $task = $this->get_mock_task_with_users([
-            $mockusers[0],
-            $mockusers[1],
-            $mockusers[2]
-        ]);
+        // Launch the tool for a user.
+        $mockuser = $this->get_mock_launch_users_with_ids(['1'])[0];
+        $mocklaunch = $this->get_mock_launch($resource, $mockuser);
+        $launchservice = $this->get_tool_launch_service();
+        $launchservice->user_launches_tool($mocklaunch);
+
+        // Sync members.
+        $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(range(1, 3)));
 
         ob_start();
         $task->execute();
         ob_end_clean();
 
         // Verify 3 users and their corresponding course enrolments exist.
-        $userrepo = new user_repository();
         $ltiusers = $userrepo->find_by_resource($resource->id);
         $this->assertCount(3, $ltiusers);
         $this->verify_course_enrolments($course, $ltiusers);
 
         // Now, simulate a subsequent sync in which 1 existing user maintains access,
         // 2 existing users are unenrolled and 3 new users are enrolled.
-        $task2 = $this->get_mock_task_with_users([
-            $mockusers[0],
-            $mockusers[3],
-            $mockusers[4],
-            $mockusers[5]
-        ]);
-
+        $task2 = $this->get_mock_task_with_users($this->get_mock_members_with_ids(['1', '4', '5', '6']));
         ob_start();
         $task2->execute();
         ob_end_clean();
 
         // Verify the missing users have been unenrolled and new users enrolled.
-        $unenrolleduserids = [
-            $mockusers[1]['user_id'],
-            $mockusers[2]['user_id']
-        ];
         $ltiusers = $userrepo->find_by_resource($resource->id);
         $this->assertCount(4, $ltiusers);
+        $unenrolleduserids = ['2', '3'];
+        $enrolleduserids = ['1', '4', '5', '6'];
+        foreach ($ltiusers as $ltiuser) {
+            $this->assertNotContains($ltiuser->get_sourceid(), $unenrolleduserids);
+            $this->assertContains($ltiuser->get_sourceid(), $enrolleduserids);
+        }
         $this->verify_course_enrolments($course, $ltiusers);
-
-        $ltiuserids = array_map(function($user) {
-            return $user->get_sourceid();
-        }, $ltiusers);
-        $this->assertEmpty(array_intersect($unenrolleduserids, $ltiuserids));
     }
 
     /**
      * Confirm the sync task operation for resources configured as 'helper::MEMBER_SYNC_UNENROL_MISSING'.
      */
     public function test_sync_mode_unenrol_missing() {
-        $mockuser = $this->get_mock_users(1)[0];
         [$course, $resource] = $this->create_test_environment(true, true, true, helper::MEMBER_SYNC_UNENROL_MISSING);
-        $this->fake_user_launch($resource, $mockuser);
-
         $userrepo = new user_repository();
-        $ltiusers = $userrepo->find_by_resource($resource->id);
-        $this->assertCount(1, $ltiusers);
-        $this->verify_course_enrolments($course, $ltiusers);
 
-        $mockusers = $this->get_mock_users();
-        $task = $this->get_mock_task_with_users([
-            $mockusers[1],
-            $mockusers[2]
-        ]);
+        // Launch the tool for a user.
+        $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids([1])[0]);
+        $launchservice = $this->get_tool_launch_service();
+        $launchservice->user_launches_tool($mocklaunch);
+        $this->assertCount(1, $userrepo->find_by_resource($resource->id));
+
+        // Sync members using a payload which doesn't include the original launch user (User id = 1).
+        $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(range(2, 3)));
 
         ob_start();
         $task->execute();
         ob_end_clean();
 
+        // Verify the original user (launching user) has been unenrolled and that no new members have been enrolled.
         $ltiusers = $userrepo->find_by_resource($resource->id);
         $this->assertCount(0, $ltiusers);
-        $this->verify_course_enrolments($course, $ltiusers);
     }
 
     /**
      * Confirm the sync task operation for resources configured as 'helper::MEMBER_SYNC_ENROL_NEW'.
      */
     public function test_sync_mode_enrol_new() {
-        $mockuser = $this->get_mock_users(1)[0];
         [$course, $resource] = $this->create_test_environment(true, true, true, helper::MEMBER_SYNC_ENROL_NEW);
-        $this->fake_user_launch($resource, $mockuser);
+        $userrepo = new user_repository();
 
-        $mockusers = $this->get_mock_users();
-        $task = $this->get_mock_task_with_users([
-            $mockusers[1],
-            $mockusers[2]
-        ]);
+        // Launch the tool for a user.
+        $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids([1])[0]);
+        $launchservice = $this->get_tool_launch_service();
+        $launchservice->user_launches_tool($mocklaunch);
+        $this->assertCount(1, $userrepo->find_by_resource($resource->id));
+
+        // Sync members using a payload which includes two new members only (i.e. not the original launching user).
+        $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(range(2, 3)));
 
         ob_start();
         $task->execute();
         ob_end_clean();
 
         // Verify we now have 3 enrolments. The original user (who was not unenrolled) and the 2 new users.
-        $userrepo = new user_repository();
         $ltiusers = $userrepo->find_by_resource($resource->id);
         $this->assertCount(3, $ltiusers);
         $this->verify_course_enrolments($course, $ltiusers);
@@ -474,22 +502,17 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * Test confirming that no changes take place if the auth_lti plugin is not enabled.
      */
     public function test_sync_auth_disabled() {
-        $mockuser = $this->get_mock_users(1)[0];
         [$course, $resource] = $this->create_test_environment(false);
-        $this->fake_user_launch($resource, $mockuser);
-
         $userrepo = new user_repository();
-        $ltiusers = $userrepo->find_by_resource($resource->id);
-        $this->assertCount(1, $ltiusers);
-        $this->verify_course_enrolments($course, $ltiusers);
+
+        // Launch the tool for a user.
+        $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids([1])[0]);
+        $launchservice = $this->get_tool_launch_service();
+        $launchservice->user_launches_tool($mocklaunch);
+        $this->assertCount(1, $userrepo->find_by_resource($resource->id));
 
         // If the task were to run, this would trigger 1 unenrolment (the launching user) and 3 enrolments.
-        $mockusers = $this->get_mock_users(4);
-        $task = $this->get_mock_task_with_users([
-            $mockusers[1],
-            $mockusers[2],
-            $mockusers[3]
-        ]);
+        $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(range(2, 2)));
 
         ob_start();
         $task->execute();
@@ -498,31 +521,24 @@ class sync_members_testcase extends \lti_advantage_testcase {
 
         // Verify that the sync didn't take place.
         $this->assertStringContainsString("Skipping task - Authentication plugin 'LTI' is not enabled", $output);
-        $ltiusers = $userrepo->find_by_resource($resource->id);
-        $this->assertCount(1, $ltiusers);
-        $this->verify_course_enrolments($course, $ltiusers);
+        $this->assertCount(1, $userrepo->find_by_resource($resource->id));
     }
 
     /**
      * Test confirming that no sync takes place when the enrol_lti plugin is not enabled.
      */
     public function test_sync_enrol_disabled() {
-        $mockuser = $this->get_mock_users(1)[0];
         [$course, $resource] = $this->create_test_environment(true, false);
-        $this->fake_user_launch($resource, $mockuser);
-
         $userrepo = new user_repository();
-        $ltiusers = $userrepo->find_by_resource($resource->id);
-        $this->assertCount(1, $ltiusers);
-        $this->verify_course_enrolments($course, $ltiusers);
+
+        // Launch the tool for a user.
+        $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids([1])[0]);
+        $launchservice = $this->get_tool_launch_service();
+        $launchservice->user_launches_tool($mocklaunch);
+        $this->assertCount(1, $userrepo->find_by_resource($resource->id));
 
         // If the task were to run, this would trigger 1 unenrolment of the launching user and enrolment of 3 users.
-        $mockusers = $this->get_mock_users(4);
-        $task = $this->get_mock_task_with_users([
-            $mockusers[1],
-            $mockusers[2],
-            $mockusers[3]
-        ]);
+        $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(range(2, 2)));
 
         ob_start();
         $task->execute();
@@ -531,8 +547,275 @@ class sync_members_testcase extends \lti_advantage_testcase {
 
         // Verify that the sync didn't take place.
         $this->assertStringContainsString("Skipping task - The 'Publish as LTI tool' plugin is disabled", $output);
-        $ltiusers = $userrepo->find_by_resource($resource->id);
-        $this->assertCount(1, $ltiusers);
+        $this->assertCount(1, $userrepo->find_by_resource($resource->id));
+    }
+
+    /**
+     * Test the member sync for a range of scenarios including migrated tools, unlaunched tools.
+     * @dataProvider member_sync_data_provider
+     * @param array|null $legacydata array detailing what legacy information to create, or null if not required.
+     * @param array $launchdata array containing details of the launch, including user and migration claim.
+     * @param array|null $syncmembers the members to use in the mock sync.
+     * @param array $expected the array detailing expectations.
+     */
+    public function test_sync_user_migration(?array $legacydata, array $launchdata,
+            ?array $syncmembers, array $expected) {
+
+        // Set up the environment.
+        [$course, $resource] = $this->create_test_environment(true, true, true, helper::MEMBER_SYNC_ENROL_NEW);
+
+        // Set up legacy tool and user data.
+        [$legacytools, $legacyconsumerrecord, $legacyusers] = $this->setup_legacy_data($course, $legacydata);
+
+        // Mock the launch for the specified user.
+        $mocklaunch = $this->get_mock_launch($resource, $launchdata['user'], null, $launchdata['launch_migration_claim']);
+
+        // Perform the launch.
+        $this->get_tool_launch_service()->user_launches_tool($mocklaunch, $resource);
+
+        // Prepare the sync task, with a stubbed list of members.
+        $task = $this->get_mock_task_with_users($syncmembers);
+
+        // Run the member sync.
+        ob_start();
+        $task->execute();
+        ob_end_clean();
+
+        // Verify enrolments.
+        $ltiusers = (new user_repository())->find_by_resource($resource->id);
+        $this->assertCount(count($expected['enrolments']), $ltiusers);
         $this->verify_course_enrolments($course, $ltiusers);
+
+        // Verify migration process.
+        $legacyuserids = array_column($legacyusers, 'id');
+        foreach ($ltiusers as $ltiuser) {
+            $this->assertArrayHasKey($ltiuser->get_sourceid(), $expected['enrolments']);
+            if (!$expected['enrolments'][$ltiuser->get_sourceid()]['is_migrated']) {
+                // Those members who hadn't launched over 1p1 prior will have new lti user records created.
+                $this->assertNotContains((string)$ltiuser->get_localid(), $legacyuserids);
+            } else {
+                // Those members who were either already migrated during launch, or were migrated during the sync,
+                // will be mapped to their legacy user accounts.
+                $this->assertContains((string)$ltiuser->get_localid(), $legacyuserids);
+            }
+        }
+    }
+
+    /**
+     * Data provider for member syncs.
+     *
+     * @return array[] the array of test data.
+     */
+    public function member_sync_data_provider(): array {
+        return [
+            'Migrated tool, user ids changed, new and existing users present in sync' => [
+                'legacy_data' => [
+                    'users' => [
+                        ['user_id' => '1'],
+                        ['user_id' => '2'],
+                    ],
+                    'consumer_key' => 'CONSUMER_1',
+                    'tools' => [
+                        ['secret' => 'toolsecret1'],
+                        ['secret' => 'toolsecret2'],
+                    ]
+                ],
+                'launch_data' => [
+                    'user' => $this->get_mock_launch_users_with_ids(['1p3_1'])[0],
+                    'launch_migration_claim' => [
+                        'consumer_key' => 'CONSUMER_1',
+                        'signing_secret' => 'toolsecret1',
+                        'user_id' => '1',
+                        'context_id' => 'd345b',
+                        'tool_consumer_instance_guid' => '12345-123',
+                        'resource_link_id' => '4b6fa'
+                    ],
+                ],
+                'sync_members_data' => [
+                    $this->get_mock_members_with_ids(['1p3_1'], ['1'])[0],
+                    $this->get_mock_members_with_ids(['1p3_2'], ['2'])[0],
+                    $this->get_mock_members_with_ids(['1p3_3'], ['3'])[0],
+                    $this->get_mock_members_with_ids(['1p3_4'], ['4'])[0],
+                ],
+                'expected' => [
+                    'enrolments' => [
+                        '1p3_1' => [
+                            'is_migrated' => true,
+                        ],
+                        '1p3_2' => [
+                            'is_migrated' => true,
+                        ],
+                        '1p3_3' => [
+                            'is_migrated' => false,
+                        ],
+                        '1p3_4' => [
+                            'is_migrated' => false,
+                        ]
+                    ]
+                ]
+            ],
+            'Migrated tool, no change in user ids, new and existing users present in sync' => [
+                'legacy_data' => [
+                    'users' => [
+                        ['user_id' => '1'],
+                        ['user_id' => '2'],
+                    ],
+                    'consumer_key' => 'CONSUMER_1',
+                    'tools' => [
+                        ['secret' => 'toolsecret1'],
+                        ['secret' => 'toolsecret2'],
+                    ]
+                ],
+                'launch_data' => [
+                    'user' => $this->get_mock_launch_users_with_ids(['1'])[0],
+                    'launch_migration_claim' => [
+                        'consumer_key' => 'CONSUMER_1',
+                        'signing_secret' => 'toolsecret1',
+                        'context_id' => 'd345b',
+                        'tool_consumer_instance_guid' => '12345-123',
+                        'resource_link_id' => '4b6fa'
+                    ],
+                ],
+                'sync_members_data' => [
+                    $this->get_mock_members_with_ids(['1'], null)[0],
+                    $this->get_mock_members_with_ids(['2'], null)[0],
+                    $this->get_mock_members_with_ids(['3'], null)[0],
+                    $this->get_mock_members_with_ids(['4'], null)[0],
+                ],
+                'expected' => [
+                    'enrolments' => [
+                        '1' => [
+                            'is_migrated' => true,
+                        ],
+                        '2' => [
+                            'is_migrated' => true,
+                        ],
+                        '3' => [
+                            'is_migrated' => false,
+                        ],
+                        '4' => [
+                            'is_migrated' => false,
+                        ]
+                    ]
+                ]
+            ],
+            'New tool, no launch migration claim, change in user ids, new and existing users present in sync' => [
+                'legacy_data' => [
+                    'users' => [
+                        ['user_id' => '1'],
+                        ['user_id' => '2'],
+                    ],
+                    'consumer_key' => 'CONSUMER_1',
+                    'tools' => [
+                        ['secret' => 'toolsecret1'],
+                        ['secret' => 'toolsecret2'],
+                    ]
+                ],
+                'launch_data' => [
+                    'user' => $this->get_mock_launch_users_with_ids(['1p3_1'])[0],
+                    'launch_migration_claim' => null,
+                ],
+                'sync_members_data' => [
+                    $this->get_mock_members_with_ids(['1p3_1'], null)[0],
+                    $this->get_mock_members_with_ids(['1p3_2'], null)[0],
+                    $this->get_mock_members_with_ids(['1p3_3'], null)[0],
+                    $this->get_mock_members_with_ids(['1p3_4'], null)[0],
+                ],
+                'expected' => [
+                    'enrolments' => [
+                        '1p3_1' => [
+                            'is_migrated' => false,
+                        ],
+                        '1p3_2' => [
+                            'is_migrated' => false,
+                        ],
+                        '1p3_3' => [
+                            'is_migrated' => false,
+                        ],
+                        '1p3_4' => [
+                            'is_migrated' => false,
+                        ]
+                    ]
+                ]
+            ],
+            'New tool, no launch migration claim, no change in user ids, new and existing users present in sync' => [
+                'legacy_data' => [
+                    'users' => [
+                        ['user_id' => '1'],
+                        ['user_id' => '2'],
+                    ],
+                    'consumer_key' => 'CONSUMER_1',
+                    'tools' => [
+                        ['secret' => 'toolsecret1'],
+                        ['secret' => 'toolsecret2'],
+                    ]
+                ],
+                'launch_data' => [
+                    'user' => $this->get_mock_launch_users_with_ids(['1'])[0],
+                    'launch_migration_claim' => null,
+                ],
+                'sync_members_data' => [
+                    $this->get_mock_members_with_ids(['1'], null)[0],
+                    $this->get_mock_members_with_ids(['2'], null)[0],
+                    $this->get_mock_members_with_ids(['3'], null)[0],
+                    $this->get_mock_members_with_ids(['4'], null)[0],
+                ],
+                'expected' => [
+                    'enrolments' => [
+                        '1' => [
+                            'is_migrated' => false,
+                        ],
+                        '2' => [
+                            'is_migrated' => false,
+                        ],
+                        '3' => [
+                            'is_migrated' => false,
+                        ],
+                        '4' => [
+                            'is_migrated' => false,
+                        ]
+                    ]
+                ]
+            ],
+            'New tool, migration only via member sync, no launch claim, new and existing users present in sync' => [
+                'legacy_data' => [
+                    'users' => [
+                        ['user_id' => '1'],
+                        ['user_id' => '2'],
+                    ],
+                    'consumer_key' => 'CONSUMER_1',
+                    'tools' => [
+                        ['secret' => 'toolsecret1'],
+                        ['secret' => 'toolsecret2'],
+                    ]
+                ],
+                'launch_data' => [
+                    'user' => $this->get_mock_launch_users_with_ids(['1p3_1'])[0],
+                    'launch_migration_claim' => null,
+                ],
+                'sync_members_data' => [
+                    $this->get_mock_members_with_ids(['1p3_1'], ['1'])[0],
+                    $this->get_mock_members_with_ids(['1p3_2'], ['2'])[0],
+                    $this->get_mock_members_with_ids(['1p3_3'], ['3'])[0],
+                    $this->get_mock_members_with_ids(['1p3_4'], ['4'])[0],
+                ],
+                'expected' => [
+                    'enrolments' => [
+                        '1p3_1' => [
+                            'is_migrated' => false,
+                        ],
+                        '1p3_2' => [
+                            'is_migrated' => false,
+                        ],
+                        '1p3_3' => [
+                            'is_migrated' => false,
+                        ],
+                        '1p3_4' => [
+                            'is_migrated' => false,
+                        ]
+                    ]
+                ]
+            ]
+        ];
     }
 }

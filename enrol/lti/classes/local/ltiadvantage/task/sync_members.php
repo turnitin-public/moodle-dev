@@ -262,24 +262,17 @@ class sync_members extends scheduled_task {
      */
     protected function user_from_member(application_registration $appregistration, stdClass $resource,
             resource_link $resourcelink, array $member): user {
-        $deployment = $this->deploymentrepo->find($resourcelink->get_deploymentid());
-        $deploymentidentifiers = [
-            $appregistration->get_platformid(),
-            $appregistration->get_clientid(),
-            $deployment->get_deploymentid(),
-            $member['user_id']
-        ];
-        $identifierstr = implode('_', $deploymentidentifiers);
-        $username = 'enrol_lti_' . sha1($identifierstr);
 
-        if ($founduser = $this->userrepo->find_by_username($username, $resource->id)) {
+        if ($founduser = $this->userrepo->find_by_sub($member['user_id'], $appregistration->get_platformid(),
+                $resource->id)) {
+
             $user = user::create(
                 $resourcelink->get_resourceid(),
+                $appregistration->get_platformid(),
                 $founduser->get_deploymentid(),
                 $founduser->get_sourceid(),
                 $member['given_name'] ?? $member['user_id'],
                 $member['family_name'] ?? $resource->contextid,
-                $founduser->get_username(),
                 $founduser->get_lang(),
                 $member['email'] ?? '',
                 $founduser->get_city(),
@@ -287,7 +280,6 @@ class sync_members extends scheduled_task {
                 $founduser->get_institution(),
                 $founduser->get_timezone(),
                 $founduser->get_maildisplay(),
-                null,
                 $founduser->get_lastgrade(),
                 null,
                 $founduser->get_localid(),
@@ -297,19 +289,18 @@ class sync_members extends scheduled_task {
             // New user, so create them.
             $user = user::create(
                 $resourcelink->get_resourceid(),
+                $appregistration->get_platformid(),
                 $resourcelink->get_deploymentid(),
                 $member['user_id'],
                 $member['given_name'] ?? $member['user_id'],
                 $member['family_name'] ?? $resource->contextid,
-                $username,
                 $resource->lang,
                 $member['email'] ?? '',
                 $resource->city ?? '',
                 $resource->country ?? '',
                 $resource->institution ?? '',
                 $resource->timezone ?? '',
-                $resource->maildisplay ?? null,
-                null
+                $resource->maildisplay ?? null
             );
         }
         $user->set_lastaccess(time());
@@ -331,9 +322,26 @@ class sync_members extends scheduled_task {
         $enrolcount = 0;
         $userids = [];
 
+        // Get the verified legacy consumer key, if mapped, from the resource link's tool deployment.
+        // This will be used to locate legacy user accounts and link them to LTI 1.3 users.
+        $deployment = $this->deploymentrepo->find($resourcelink->get_deploymentid());
+        $legacyconsumerkey = $deployment->get_legacy_consumer_key();
+
         foreach ($members as $member) {
 
             $user = $this->user_from_member($appregistration, $resource, $resourcelink, $member);
+
+            // If the tool has been migrated, get the legacy user information.
+            // Only try to migrate users who don't already have a mapping.
+            if ($legacyconsumerkey && is_null($user->get_localid())) {
+                $legacyuserid = $member['lti11_legacy_user_id'] ?? $member['user_id'];
+                $legacyusername = helper::create_username($legacyconsumerkey, $legacyuserid);
+                global $DB;
+                $legacyuserid = $DB->get_field('user', 'id', ['username' => $legacyusername]);
+                if ($legacyuserid !== false) {
+                    $user->set_localid($legacyuserid);
+                }
+            }
 
             if ($this->should_sync_enrol($resource->membersyncmode)) {
 

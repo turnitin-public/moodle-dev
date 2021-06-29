@@ -34,6 +34,8 @@ use IMSGlobal\LTI\ToolProvider\User;
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once(__DIR__ . '/local/ltiadvantage/lti_advantage_testcase.php');
+
 /**
  * Tests for the enrol_lti_plugin class.
  *
@@ -41,7 +43,7 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright 2016 Jun Pataleta <jun@moodle.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class lib_test extends \advanced_testcase {
+class lib_test extends \lti_advantage_testcase {
 
     /**
      * Test set up.
@@ -119,6 +121,74 @@ class lib_test extends \advanced_testcase {
         $this->assertFalse($DB->record_exists('enrol_lti_users', [ 'toolid' => $tool->id ]));
         $this->assertFalse($DB->record_exists('enrol_lti_tools', [ 'id' => $tool->id ]));
         $this->assertFalse($DB->record_exists('enrol', [ 'id' => $instance->id ]));
+    }
+
+    /**
+     * Test confirming that relevant data is removed after enrol instance removal.
+     */
+    public function test_delete_instance_lti_advantage() {
+        // Setup.
+        [
+            $course,
+            $modresource,
+            $modresource2,
+            $courseresource,
+            $registration,
+            $deployment
+        ] = $this->create_test_environment();
+
+        // Generate the legacy data, on which the user migration is based.
+        $legacydata = [
+            'users' => [
+                ['user_id' => '123-abc'],
+                ['user_id' => '234-def'],
+            ],
+            'consumer_key' => 'CONSUMER_1',
+            'tools' => [
+                ['secret' => 'toolsecret1'],
+                ['secret' => 'toolsecret2'],
+            ]
+        ];
+        [$legacytools, $legacyconsumer, $legacyusers] = $this->setup_legacy_data($course, $legacydata);
+
+        // Launch the tool, including a change in user ids which will result in map records.
+        $mockuser = $this->get_mock_launch_users_with_ids(['1p3_1'])[0];
+        $migrationclaiminfo = [
+            'consumer_key' => 'CONSUMER_1',
+            'signing_secret' => 'toolsecret1',
+            'user_id' => '123-abc',
+            'context_id' => 'd345b',
+            'tool_consumer_instance_guid' => '12345-123',
+            'resource_link_id' => '4b6fa'
+        ];
+        $mocklaunch = $this->get_mock_launch($modresource, $mockuser, null, $migrationclaiminfo);
+        $launchservice = $this->get_tool_launch_service();
+        $launchservice->user_launches_tool($mocklaunch);
+
+        // Verify data exists.
+        global $DB;
+        $this->assertEquals(1, $DB->count_records('enrol_lti_adv_user'));
+        $this->assertEquals(1, $DB->count_records('enrol_lti_user_resource_link'));
+        $this->assertEquals(1, $DB->count_records('enrol_lti_resource_link'));
+        $this->assertEquals(1, $DB->count_records('enrol_lti_app_registration'));
+        $this->assertEquals(1, $DB->count_records('enrol_lti_deployment'));
+        $this->assertEquals(1, $DB->count_records('enrol_lti_context'));
+        $this->assertEquals(1, $DB->count_records('enrol_lti_users'));
+
+        // Now delete the enrol instance.
+        $enrollti = new enrol_lti_plugin();
+        $instance = $DB->get_record('enrol', ['id' => $modresource->enrolid]);
+        $enrollti->delete_instance($instance);
+
+        $this->assertEquals(0, $DB->count_records('enrol_lti_user_resource_link'));
+        $this->assertEquals(0, $DB->count_records('enrol_lti_resource_link'));
+        $this->assertEquals(0, $DB->count_records('enrol_lti_users'));
+
+        // App registration, Deployment, Context and the LTI Adv User tables are not affected by instance removal.
+        $this->assertEquals(1, $DB->count_records('enrol_lti_adv_user')); // Records here share lifecycle of the user.
+        $this->assertEquals(1, $DB->count_records('enrol_lti_app_registration'));
+        $this->assertEquals(1, $DB->count_records('enrol_lti_deployment'));
+        $this->assertEquals(1, $DB->count_records('enrol_lti_context'));
     }
 
     /**

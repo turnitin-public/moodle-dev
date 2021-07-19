@@ -22,9 +22,11 @@
  */
 namespace enrol_lti\local\ltiadvantage\service;
 use enrol_lti\local\ltiadvantage\entity\application_registration;
+use enrol_lti\local\ltiadvantage\entity\registration_url;
 use enrol_lti\local\ltiadvantage\repository\application_registration_repository;
 use enrol_lti\local\ltiadvantage\repository\context_repository;
 use enrol_lti\local\ltiadvantage\repository\deployment_repository;
+use enrol_lti\local\ltiadvantage\repository\registration_url_repository;
 use enrol_lti\local\ltiadvantage\repository\resource_link_repository;
 use enrol_lti\local\ltiadvantage\repository\user_repository;
 
@@ -133,5 +135,42 @@ class application_registration_service {
         }
 
         $this->appregistrationrepo->delete($registrationid);
+    }
+
+    /**
+     * Get a one-time-use dynamic registration URL which is valid only for the specified duration.
+     *
+     * @param int $durationsecs how long, in seconds, the registration URL will be valid for.
+     * @return registration_url the registration_url instnace.
+     */
+    public function create_registration_url(int $durationsecs = 86400): registration_url {
+        if ($durationsecs <= 0) {
+            throw new \coding_exception('Invalid registration URL duration. Must be greater than 0.');
+        }
+
+        $regurl = new registration_url(time() + $durationsecs);
+        $regurlrepo = new registration_url_repository();
+        return $regurlrepo->save($regurl);
+    }
+
+    /**
+     * Get the current dynamic registration URL.
+     *
+     * Will return null if the URL doesn't exist, or if the URL has expired.
+     *
+     * @param string $token Used to get the registration url by token.
+     * @return registration_url|null the registration_url instance if valid, otherwise null.
+     */
+    public function get_registration_url(string $token = ''): ?registration_url {
+        $regurlrepo = new registration_url_repository();
+        return $token ? $regurlrepo->find_by_token($token) : $regurlrepo->find();
+    }
+
+    /**
+     * Delete the current dynamic registration URL.
+     */
+    public function delete_registration_url(): void {
+        $regurlrepo = new registration_url_repository();
+        $regurlrepo->delete();
     }
 }

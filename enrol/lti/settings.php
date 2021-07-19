@@ -22,6 +22,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use enrol_lti\local\ltiadvantage\admin\admin_setting_toolendpoints;
+use enrol_lti\local\ltiadvantage\admin\admin_setting_registeredplatforms;
+
 defined('MOODLE_INTERNAL') || die;
 // The 'Publish as LTI tool' node is a category.
 $ADMIN->add('enrolments', new admin_category('enrolltifolder', new lang_string('pluginname', 'enrol_lti'),
@@ -83,12 +86,12 @@ $settings = new admin_settingpage('enrolsettingslti_registrations', "Tool regist
     $this->is_enabled() === false);
 
 $settings->add(new admin_setting_heading('enrol_lti_tool_endpoints_heading',
-    get_string('toolendpoints', 'enrol_lti'), ''));
-$settings->add(new enrol_lti\local\ltiadvantage\admin\admin_setting_toolendpoints());
+    get_string('registrationendpoints', 'enrol_lti'), ''));
+$settings->add(new admin_setting_toolendpoints());
 
 $settings->add(new admin_setting_heading('enrol_lti_tool_registrations_heading',
     get_string('registeredplatforms', 'enrol_lti'), ''));
-$settings->add(new enrol_lti\local\ltiadvantage\admin\admin_setting_registeredplatforms());
+$settings->add(new admin_setting_registeredplatforms());
 
 $ADMIN->add('enrolltifolder', $settings);
 

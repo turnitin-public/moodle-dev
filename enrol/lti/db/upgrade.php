@@ -295,5 +295,25 @@ function xmldb_enrol_lti_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2021052512, 'enrol', 'lti');
     }
 
+    if ($oldversion < 2021052513) {
+        // Define table enrol_lti_reg_token to be created.
+        $table = new xmldb_table('enrol_lti_reg_token');
+
+        // Adding fields to table enrol_lti_reg_token.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('token', XMLDB_TYPE_CHAR, '60', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('expirytime', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table enrol_lti_reg_token.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+
+        // Conditionally launch create table for enrol_lti_reg_token.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2021052513, 'enrol', 'lti');
+    }
     return true;
 }

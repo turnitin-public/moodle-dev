@@ -26,6 +26,7 @@ namespace enrol_lti\local\ltiadvantage\service;
 defined('MOODLE_INTERNAL') || die();
 
 use enrol_lti\helper;
+use enrol_lti\local\ltiadvantage\entity\registration_url;
 use enrol_lti\local\ltiadvantage\repository\application_registration_repository;
 use enrol_lti\local\ltiadvantage\repository\context_repository;
 use enrol_lti\local\ltiadvantage\repository\deployment_repository;
@@ -186,5 +187,104 @@ class application_registration_service_testcase extends \lti_advantage_testcase 
 
         // Verify the tool record stays in place (I.e. the published resource is still available).
         $this->assertNotEmpty(helper::get_lti_tool($resource->id));
+    }
+
+    /**
+     * Test creation of a dynamic registration url.
+     * @dataProvider registration_url_data_provider
+     * @param int|null $duration how long the URL is valid for, in seconds.
+     * @param array $expected the array of expected values/results.
+     */
+    public function test_create_registration_url(?int $duration, array $expected) {
+        $appregservice = $this->get_application_registration_service();
+        if ($expected['exception']) {
+            $this->expectException($expected['exception']);
+        }
+        if (!is_null($duration)) {
+            $regurl = $appregservice->create_registration_url($duration);
+        } else {
+            $regurl = $appregservice->create_registration_url();
+        }
+        $this->assertInstanceOf(registration_url::class, $regurl);
+        $this->assertGreaterThanOrEqual($expected['expirytime'], $regurl->get_expiry_time());
+    }
+
+    /**
+     * Data provider for testing registration url creation.
+     *
+     * @return array the test data.
+     */
+    public function registration_url_data_provider() {
+        return [
+            'no params' => [
+                'duration' => null,
+                'expected' => [
+                    'expirytime' => time() + 86400,
+                    'exception' => false,
+                ]
+            ],
+            'expiry specified' => [
+                'duration' => 3600,
+                'expected' => [
+                    'expirytime' => time() + 3600,
+                    'exception' => false,
+                ]
+            ],
+            'invalid expiry specified' => [
+                'duration' => -5,
+                'expected' => [
+                    'expirytime' => null,
+                    'exception' => \coding_exception::class,
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * Test getting the current registration url.
+     */
+    public function test_get_registration_url() {
+        $appregservice = $this->get_application_registration_service();
+
+        // Check when not existing.
+        $this->assertNull($appregservice->get_registration_url());
+
+        // Check after creation.
+        $appregservice->create_registration_url();
+        $regurl = $appregservice->get_registration_url();
+        $this->assertInstanceOf(registration_url::class, $regurl);
+    }
+
+    /**
+     * Test getting a registration URL by its token.
+     */
+    public function test_get_registration_url_using_token() {
+        $appregservice = $this->get_application_registration_service();
+        $createdregurl = $appregservice->create_registration_url();
+
+        // Check valid token.
+        $token = $createdregurl->param('token');
+        $regurl = $appregservice->get_registration_url($token);
+        $this->assertInstanceOf(registration_url::class, $regurl);
+
+        // Check invalid token.
+        $this->assertNull($appregservice->get_registration_url('invalid_token'));
+    }
+
+    /**
+     * Test deletion of the current registration URL.
+     */
+    public function test_delete_registration_url() {
+        $appregservice = $this->get_application_registration_service();
+
+        // Deletion when no URL exists.
+        $this->assertNull($appregservice->delete_registration_url());
+
+        // Deletion of a URL.
+        $appregservice->create_registration_url();
+        $regurl = $appregservice->get_registration_url();
+        $this->assertInstanceOf(registration_url::class, $regurl);
+        $appregservice->delete_registration_url();
+        $this->assertNull($appregservice->get_registration_url());
     }
 }

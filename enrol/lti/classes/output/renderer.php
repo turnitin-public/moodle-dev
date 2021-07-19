@@ -98,15 +98,7 @@ class renderer extends plugin_renderer_base {
      * @return string the html.
      */
     public function render_admin_setting_tool_endpoints(array $endpoints): string {
-        // Notice to let users know this is LTI Advantage ONLY.
-        $versionnotice = new notification(
-            get_string('endpointltiversionnotice', 'enrol_lti'),
-            notification::NOTIFY_INFO
-        );
-        $versionnotice->set_show_closebutton(false);
-
-        $return = parent::render($versionnotice);
-        $return .= parent::render_from_template('enrol_lti/local/ltiadvantage/tool_endpoints', $endpoints);
+        $return = parent::render_from_template('enrol_lti/local/ltiadvantage/tool_endpoints', $endpoints);
         return $return;
     }
 

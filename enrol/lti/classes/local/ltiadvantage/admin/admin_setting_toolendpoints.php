@@ -25,6 +25,13 @@
  */
 namespace enrol_lti\local\ltiadvantage\admin;
 
+use enrol_lti\local\ltiadvantage\repository\application_registration_repository;
+use enrol_lti\local\ltiadvantage\repository\context_repository;
+use enrol_lti\local\ltiadvantage\repository\deployment_repository;
+use enrol_lti\local\ltiadvantage\repository\resource_link_repository;
+use enrol_lti\local\ltiadvantage\repository\user_repository;
+use enrol_lti\local\ltiadvantage\service\application_registration_service;
+
 defined('MOODLE_INTERNAL') || die;
 
 /**
@@ -107,8 +114,27 @@ class admin_setting_toolendpoints extends \admin_setting {
     public function output_html($data, $query='') {
         global $PAGE, $CFG;
 
-        $urls = [
-            'urls' => [
+        $appregservice = new application_registration_service(
+            new application_registration_repository(),
+            new deployment_repository(),
+            new resource_link_repository(),
+            new context_repository(),
+            new user_repository()
+        );
+        $regurl = $appregservice->get_registration_url();
+        $expiryinfo = $regurl ? get_string('registrationurlexpiry', 'enrol_lti',
+            date('H:i, M dS, Y', $regurl->get_expiry_time())) : null;
+
+        $endpoints = [
+            'dynamic_registration_info' => get_string('registrationurlinfomessage', 'enrol_lti'),
+            'dynamic_registration_url' => [
+                'name' => get_string('registrationurl', 'enrol_lti'),
+                'url' => $regurl,
+                'expiryinfo' => $expiryinfo,
+                'id' => uniqid()
+            ],
+            'manual_registration_info' => get_string('endpointltiversionnotice', 'enrol_lti'),
+            'manual_registration_urls' => [
                 [
                     'name' => get_string('toolurl', 'enrol_lti'),
                     'url' => $CFG->wwwroot . '/enrol/lti/launch.php',
@@ -133,7 +159,7 @@ class admin_setting_toolendpoints extends \admin_setting {
         ];
 
         $renderer = $PAGE->get_renderer('enrol_lti');
-        $return = $renderer->render_admin_setting_tool_endpoints($urls);
+        $return = $renderer->render_admin_setting_tool_endpoints($endpoints);
         return highlight($query, $return);
     }
 }

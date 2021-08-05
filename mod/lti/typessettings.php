@@ -151,6 +151,8 @@ echo $OUTPUT->heading(get_string('toolsetup', 'lti'));
 echo $OUTPUT->box_start('generalbox');
 
 if ($action == 'update') {
+    $type->lti_password_migration = $type->lti_password ?? null;
+    $type->lti_resourcekey_migration = $type->lti_resourcekey ?? null;
     $form->set_data($type);
 }
 

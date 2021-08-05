@@ -118,6 +118,25 @@ class mod_lti_edit_types_form extends moodleform {
             $mform->addHelpButton('lti_password', 'password_admin', 'lti');
             $mform->hideIf('lti_password', 'lti_ltiversion', 'eq', LTI_VERSION_1P3);
 
+            // Legacy consumer key and secret fields, allowing upgraded tools to send a migration claim.
+            $mform->addElement('advcheckbox', 'lti_migration13', get_string('upgradedlegacytool', 'mod_lti'));
+            $mform->hideIf('lti_migration13', 'lti_ltiversion', 'eq', LTI_VERSION_1);
+            $mform->disabledIf('lti_migration13', 'lti_ltiversion', 'eq', LTI_VERSION_1);
+            $mform->addHelpButton('lti_migration13', 'upgradedlegacytool', 'lti');
+
+            $mform->addElement('text', 'lti_resourcekey_migration', get_string('legacyresourcekey', 'mod_lti'));
+            $mform->setType('lti_resourcekey_migration', PARAM_TEXT);
+            $mform->addHelpButton('lti_resourcekey_migration', 'legacyresourcekey', 'lti');
+            $mform->hideIf('lti_resourcekey_migration', 'lti_ltiversion', 'eq', LTI_VERSION_1);
+            $mform->hideIf('lti_resourcekey_migration', 'lti_migration13');
+            $mform->setForceLtr('lti_resourcekey_migration');
+
+            $mform->addElement('passwordunmask', 'lti_password_migration', get_string('legacypassword', 'mod_lti'));
+            $mform->setType('lti_password_migration', PARAM_TEXT);
+            $mform->addHelpButton('lti_password_migration', 'legacypassword', 'lti');
+            $mform->hideIf('lti_password_migration', 'lti_ltiversion', 'eq', LTI_VERSION_1);
+            $mform->hideIf('lti_password_migration', 'lti_migration13');
+
             if (!empty($typeid)) {
                 $mform->addElement('text', 'lti_clientid_disabled', get_string('clientidadmin', 'lti'));
                 $mform->setType('lti_clientid_disabled', PARAM_TEXT);
@@ -348,6 +367,18 @@ class mod_lti_edit_types_form extends moodleform {
             // Content item checkbox is disabled in tool settings, so this cannot be edited. Just unset it.
             unset($data->lti_contentitem);
         }
+
+        // The consumer key and password displayed used for LTI 1.3 tools (migration), use different form fields to the
+        // consumer key and password used in LTI 1.0/1.1. This is only to overcome limitations of hideif, which wouldn't
+        // permit multiple conditions logically OR-ed.
+        // The migration_resourcekey and migration_password should match the resourcekey and password fields, if set,
+        // so that any updates to one are reflected in the other.
+        if ($data && isset($data->lti_ltiversion) && $data->lti_ltiversion == LTI_VERSION_1P3
+                && $data->lti_migration13) {
+
+            $data->lti_resourcekey = $data->lti_resourcekey_migration;
+            $data->lti_password = $data->lti_password_migration;
+        }
         return $data;
     }
 
@@ -388,6 +419,17 @@ class mod_lti_edit_types_form extends moodleform {
                 return $errors;
             }
         }
+
+        // Tools upgraded to LTI 1.3 MUST contain both a resourcekey and password.
+        if (isset($data['lti_ltiversion']) && $data['lti_ltiversion'] == LTI_VERSION_1P3 && $data['lti_migration13']) {
+            if (empty($data['lti_resourcekey_migration'])) {
+                $errors['lti_resourcekey_migration'] = "This field is required for upgraded tools";
+            }
+            if (empty($data['lti_password_migration'])) {
+                $errors['lti_password_migration'] = "This field is required for upgraded tools";
+            }
+        }
+
         return $errors;
     }
 }

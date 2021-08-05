@@ -272,6 +272,14 @@ real estate to the tool, and others provide a more integrated feel with the Mood
         It is possible that browsers will prevent the new window from opening.';
 $string['launchoptions'] = 'Launch options';
 $string['leaveblank'] = 'Leave blank if you do not need them';
+$string['legacypassword'] = 'Legacy shared secret';
+$string['legacypassword_help'] = 'The legacy shared secret should contain the value of the secret used by the tool when originally launched over LTI 1.0/1.1.
+
+This is used to identify legacy users in the tool when launching an upgraded tool over LTI 1.3.';
+$string['legacyresourcekey'] = 'Legacy consumer key';
+$string['legacyresourcekey_help'] = 'The legacy consumer key should contain the value of the consumer key used by the tool when originally launched over LTI 1.0/1.1.
+
+This is used to identify legacy users in the tool when launching an upgraded tool over LTI 1.3.';
 $string['lti'] = 'LTI';
 $string['lti:addcoursetool'] = 'Add course-specific tool configurations';
 $string['lti:addmanualinstance'] = 'Add a manually-configured tool';
@@ -595,6 +603,12 @@ $string['unabletocreatetooltype'] = 'Unable to create tool';
 $string['unabletofindtooltype'] = 'Unable to find tool for {$a->id}';
 $string['unknownstate'] = 'Unknown state';
 $string['update'] = 'Update';
+$string['upgradedlegacytool'] = 'This is an upgraded legacy tool';
+$string['upgradedlegacytool_help'] = 'Use only for tool definitions which have been upgraded from LTI 1.0/1.1 to LTI 1.3.
+
+Checking this option and setting the legacy shared secret and consumer key allows existing tool users to continue to use the upgraded tool without the loss of existing identity and grades.
+
+If left unchecked, new users may be created in the tool on first launch.';
 $string['useraccountinformation'] = 'User account information';
 $string['userpersonalinformation'] = 'User personal information';
 $string['using_tool_cartridge'] = 'Using tool cartridge';

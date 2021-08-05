@@ -27,6 +27,7 @@
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->libdir.'/gradelib.php');
 require_once($CFG->dirroot.'/mod/quiz/locallib.php');
+require_once($CFG->dirroot . '/mod/quiz/report/reportlib.php');
 require_once($CFG->libdir . '/completionlib.php');
 require_once($CFG->dirroot . '/course/format/lib.php');
 
@@ -81,6 +82,7 @@ $viewobj->accessmanager = $accessmanager;
 $viewobj->canreviewmine = $canreviewmine || $canpreview;
 
 // Get this user's attempts.
+$quizhasquestions = quiz_has_questions($quiz->id);
 $attempts = quiz_get_user_attempts($quiz->id, $USER->id, 'finished', true);
 $lastfinishedattempt = end($attempts);
 $unfinished = false;
@@ -245,11 +247,11 @@ echo $OUTPUT->header();
 
 if (isguestuser()) {
     // Guests can't do a quiz, so offer them a choice of logging in or going back.
-    echo $output->view_page_guest($course, $quiz, $cm, $context, $viewobj->infomessages);
+    echo $output->view_page_guest($course, $quiz, $cm, $context, $viewobj->infomessages, $viewobj->quizhasquestions);
 } else if (!isguestuser() && !($canattempt || $canpreview
           || $viewobj->canreviewmine)) {
     // If they are not enrolled in this course in a good enough role, tell them to enrol.
-    echo $output->view_page_notenrolled($course, $quiz, $cm, $context, $viewobj->infomessages);
+    echo $output->view_page_notenrolled($course, $quiz, $cm, $context, $viewobj->infomessages, $viewobj->quizhasquestions);
 } else {
     echo $output->view_page($course, $quiz, $cm, $context, $viewobj);
 }

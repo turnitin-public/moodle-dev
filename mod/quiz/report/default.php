@@ -68,7 +68,11 @@ abstract class quiz_default_report {
         $PAGE->set_heading($course->fullname);
         echo $OUTPUT->header();
         $context = context_module::instance($cm->id);
-        echo $OUTPUT->heading(format_string($quiz->name, true, array('context' => $context)));
+        if (!$PAGE->has_secondary_navigation()) {
+            echo $OUTPUT->heading(format_string($quiz->name, true, array('context' => $context)));
+        }
+        $resultsaction = new \mod_quiz\output\resultsaction($cm->id);
+        echo $resultsaction->get_results_action();
         if (!empty($CFG->enableplagiarism)) {
             require_once($CFG->libdir . '/plagiarismlib.php');
             echo plagiarism_update_status($course, $cm);

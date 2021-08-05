@@ -220,7 +220,9 @@ function url_display_frame($url, $cm, $course) {
     if ($frame === 'top') {
         $PAGE->set_pagelayout('frametop');
         url_print_header($url, $cm, $course);
-        url_print_heading($url, $cm, $course);
+        if (!$PAGE->has_secondary_navigation()) {
+            url_print_heading($url, $cm, $course);
+        }
         url_print_intro($url, $cm, $course);
         echo $OUTPUT->footer();
         die;
@@ -266,10 +268,13 @@ EOF;
  * @return does not return
  */
 function url_print_workaround($url, $cm, $course) {
-    global $OUTPUT, $USER;
+    global $OUTPUT, $PAGE, $USER;
 
     url_print_header($url, $cm, $course);
-    url_print_heading($url, $cm, $course, true);
+
+    if (!$PAGE->has_secondary_navigation()) {
+        url_print_heading($url, $cm, $course, true);
+    }
 
     // Display any activity information (eg completion requirements / dates).
     $cminfo = cm_info::create($cm);

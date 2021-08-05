@@ -1000,6 +1000,24 @@ class mod_lti_locallib_testcase extends advanced_testcase {
                 'claim' => 'lis_result_sourcedid',
                 'isarray' => false
             ],
+            'lti_1p1_user_id' => [
+                'suffix' => '',
+                'group' => 'lti1p1',
+                'claim' => 'user_id',
+                'isarray' => false
+            ],
+            'lti_1p1_oauth_consumer_key' => [
+                'suffix' => '',
+                'group' => 'lti1p1',
+                'claim' => 'oauth_consumer_key',
+                'isarray' => false
+            ],
+            'lti_1p1_oauth_consumer_key_sign' => [
+                'suffix' => '',
+                'group' => 'lti1p1',
+                'claim' => 'oauth_consumer_key_sign',
+                'isarray' => false
+            ],
         ];
 
         $this->assertEquals($mapping, lti_get_jwt_claim_mapping());

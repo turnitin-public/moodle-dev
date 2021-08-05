@@ -502,6 +502,24 @@ function lti_get_jwt_claim_mapping() {
             'claim' => 'lis_result_sourcedid',
             'isarray' => false
         ],
+        'lti_1p1_user_id' => [
+            'suffix' => '',
+            'group' => 'lti1p1',
+            'claim' => 'user_id',
+            'isarray' => false
+        ],
+        'lti_1p1_oauth_consumer_key' => [
+            'suffix' => '',
+            'group' => 'lti1p1',
+            'claim' => 'oauth_consumer_key',
+            'isarray' => false
+        ],
+        'lti_1p1_oauth_consumer_key_sign' => [
+            'suffix' => '',
+            'group' => 'lti1p1',
+            'claim' => 'oauth_consumer_key_sign',
+            'isarray' => false
+        ],
     );
 }
 
@@ -676,11 +694,39 @@ function lti_get_launch_data($instance, $nonce = '') {
         }
     }
 
+    // Send to 'lti1p1' migration claim if the preconfigured tool has been updated accordingly.
+    if ($ltiversion === LTI_VERSION_1P3) {
+        $exp = time() + 60;
+        // This was a 1.1 type that has been upgraded.
+        if (!empty($typeconfig['migration13']) && !empty($typeconfig['resourcekey'])
+                && !empty($typeconfig['password'])) {
+
+            $keysign = function() use ($typeconfig, $typeid, $CFG, $key, $exp, $nonce) {
+                $base = [
+                    $typeconfig['resourcekey'],
+                    $typeid,
+                    $CFG->wwwroot,
+                    $key,
+                    $exp,
+                    $nonce
+                ];
+                $basestring = implode('&', $base);
+
+                // Sign the basestring using the 1.1 secret.
+                return base64_encode(hash_hmac('sha256', $basestring, $typeconfig['password']));
+            };
+
+            $requestparams['lti_1p1_user_id'] = $USER->id;
+            $requestparams['lti_1p1_oauth_consumer_key'] = $typeconfig['resourcekey'];
+            $requestparams['lti_1p1_oauth_consumer_key_sign'] = $keysign();
+        }
+    }
+
     if ((!empty($key) && !empty($secret)) || ($ltiversion === LTI_VERSION_1P3)) {
         if ($ltiversion !== LTI_VERSION_1P3) {
             $parms = lti_sign_parameters($requestparams, $endpoint, 'POST', $key, $secret);
         } else {
-            $parms = lti_sign_jwt($requestparams, $endpoint, $key, $typeid, $nonce);
+            $parms = lti_sign_jwt($requestparams, $endpoint, $key, $typeid, $nonce, $exp);
         }
 
         $endpointurl = new \moodle_url($endpoint);
@@ -2628,6 +2674,9 @@ function lti_get_type_type_config($id) {
 
     $type->lti_secureicon = $basicltitype->secureicon;
 
+    if (isset($config['migration13'])) {
+        $type->lti_migration13 = $config['migration13'];
+    }
     if (isset($config['resourcekey'])) {
         $type->lti_resourcekey = $config['resourcekey'];
     }
@@ -3297,7 +3346,7 @@ function lti_sign_parameters($oldparms, $endpoint, $method, $oauthconsumerkey, $
  * @param string $nonce        Nonce value to use
  * @return array|null
  */
-function lti_sign_jwt($parms, $endpoint, $oauthconsumerkey, $typeid = 0, $nonce = '') {
+function lti_sign_jwt($parms, $endpoint, $oauthconsumerkey, $typeid = 0, $nonce = '', $exp = false) {
     global $CFG;
 
     if (empty($typeid)) {
@@ -3333,7 +3382,7 @@ function lti_sign_jwt($parms, $endpoint, $oauthconsumerkey, $typeid = 0, $nonce 
     $payload = array(
         'nonce' => $nonce,
         'iat' => $now,
-        'exp' => $now + 60,
+        'exp' => !empty($exp) ? $exp : $now + 60,
     );
     $payload['iss'] = $CFG->wwwroot;
     $payload['aud'] = $oauthconsumerkey;

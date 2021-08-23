@@ -46,11 +46,16 @@ $category = $DB->get_record('question_categories', ["id" => $catid, 'contextid' 
 $PAGE->set_url($thispageurl);
 $PAGE->set_title($strexportquestions);
 $PAGE->set_heading($COURSE->fullname);
-echo $OUTPUT->header();
+$PAGE->set_secondary_active_tab("questionbank");
 
 // Print horizontal nav if needed.
 $renderer = $PAGE->get_renderer('core_question', 'bank');
-echo $renderer->extra_horizontal_navigation();
+// Pass either cmid or courseid.
+$qbankid = ($cmid !== null) ? ['cmid' => $cmid] : ['courseid' => $thispageurl->param('courseid')];
+$qbankaction = new \core_question\output\qbank_actionbar($qbankid, $thispageurl);
+
+echo $OUTPUT->header();
+echo $qbankaction->get_qbank_action();
 
 $exportform = new export_form($thispageurl,
         ['contexts' => $contexts->having_one_edit_tab_cap('export'), 'defaultcategory' => $pagevars['cat']]);

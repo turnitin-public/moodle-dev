@@ -32,7 +32,7 @@ $string['activitydate:submissionsopen'] = 'Submissions open:';
 $string['activitydate:submissionsopened'] = 'Submissions opened:';
 $string['aggregategrades'] = 'Re-calculate grades';
 $string['aggregation'] = 'Grades aggregation';
-$string['allocate'] = 'Allocate submissions';
+$string['allocate'] = 'Submissions allocation';
 $string['allocatedetails'] = 'expected: {$a->expected}<br />submitted: {$a->submitted}<br />to allocate: {$a->allocate}';
 $string['allocation'] = 'Submission allocation';
 $string['allocationdone'] = 'Allocation done';
@@ -335,7 +335,6 @@ $string['showingperpagechange'] = 'Change ...';
 $string['someuserswosubmission'] = 'There is at least one author who has not yet submitted their work';
 $string['sortasc'] = 'Ascending sort';
 $string['sortdesc'] = 'Descending sort';
-$string['submissionsallocation'] = 'Submissions allocation';
 $string['strategy'] = 'Grading strategy';
 $string['strategy_help'] = 'The grading strategy determines the assessment form used and the method of grading submissions. There are 4 options:
 
@@ -376,6 +375,7 @@ $string['submissiontypetextrequired'] = '<span class="accesshide">Online text </
 $string['submissiontypedisabled'] = 'This submission type is disabled for this workshop.';
 $string['submissiontypes'] = 'Submission types';
 $string['submissionsreport'] = 'Workshop submissions report';
+$string['submissionallocation'] = 'Submissions allocation';
 $string['submittednotsubmitted'] = 'Submitted ({$a->submitted}) / not submitted ({$a->notsubmitted})';
 $string['subplugintype_workshopallocation'] = 'Submissions allocation method';
 $string['subplugintype_workshopallocation_plural'] = 'Submissions allocation methods';

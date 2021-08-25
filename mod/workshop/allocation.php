@@ -38,7 +38,8 @@ $course     = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EX
 $workshop   = $DB->get_record('workshop', array('id' => $cm->instance), '*', MUST_EXIST);
 $workshop   = new workshop($workshop, $cm, $course);
 
-$PAGE->set_url($workshop->allocation_url($method));
+$url = $workshop->allocation_url($method);
+$PAGE->set_url($url);
 
 require_login($course, false, $cm);
 $context = $PAGE->context;
@@ -48,31 +49,22 @@ $PAGE->set_title($workshop->name);
 $PAGE->set_heading($course->fullname);
 $PAGE->navbar->add(get_string('allocation', 'workshop'), $workshop->allocation_url($method));
 
+
 $allocator  = $workshop->allocator_instance($method);
 $initresult = $allocator->init();
 
 //
 // Output starts here
 //
+$actionbar = new \mod_workshop\output\actionbar($cmid, $url, $workshop);
+
 $output = $PAGE->get_renderer('mod_workshop');
 echo $output->header();
-echo $OUTPUT->heading(format_string($workshop->name));
-
-$allocators = workshop::installed_allocators();
-if (!empty($allocators)) {
-    $tabs       = array();
-    $row        = array();
-    $inactive   = array();
-    $activated  = array();
-    foreach ($allocators as $methodid => $methodname) {
-        $row[] = new tabobject($methodid, $workshop->allocation_url($methodid)->out(), $methodname);
-        if ($methodid == $method) {
-            $currenttab = $methodid;
-        }
-    }
+if (!$PAGE->has_secondary_navigation()) {
+    echo $OUTPUT->heading(format_string($workshop->name));
 }
-$tabs[] = $row;
-print_tabs($tabs, $currenttab, $inactive, $activated);
+
+echo $actionbar->get_allocation_menu();
 
 if (is_null($initresult->get_status()) or $initresult->get_status() == workshop_allocation_result::STATUS_VOID) {
     echo $output->container_start('allocator-ui');

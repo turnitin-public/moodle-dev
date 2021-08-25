@@ -54,11 +54,15 @@ $PAGE->set_title($workshop->name);
 $PAGE->set_heading($course->fullname);
 $PAGE->navbar->add(get_string('switchingphase', 'workshop'));
 
+$PAGE->set_secondary_active_tab("modulepage");
+
 //
 // Output starts here
 //
 echo $OUTPUT->header();
-echo $OUTPUT->heading(format_string($workshop->name));
+if (!$PAGE->has_secondary_navigation()) {
+    echo $OUTPUT->heading(format_string($workshop->name));
+}
 echo $OUTPUT->confirm(get_string('switchphase' . $phase . 'info', 'workshop'),
                         new moodle_url($PAGE->url, array('confirm' => 1)), $workshop->view_url());
 echo $OUTPUT->footer();

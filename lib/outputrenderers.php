@@ -1992,6 +1992,7 @@ class core_renderer extends renderer_base {
         } else {
             throw new coding_exception('The continue param to $OUTPUT->confirm() must be either a URL (string/moodle_url) or a single_button instance.');
         }
+        $continue->class .= ' mr-3';
 
         if ($cancel instanceof single_button) {
             // ok

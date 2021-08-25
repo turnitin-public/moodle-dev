@@ -173,7 +173,9 @@ if ($edit and $canmanage) {
 
 // Output starts here
 echo $output->header();
-echo $output->heading(format_string($workshop->name), 2);
+if (!$PAGE->has_secondary_navigation()) {
+    echo $output->heading(format_string($workshop->name), 2);
+}
 
 // show instructions for submitting as they may contain some list of questions and we need to know them
 // while reading the submitted answer

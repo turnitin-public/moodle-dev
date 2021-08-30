@@ -105,7 +105,6 @@ $PAGE->set_context($forum->get_context());
 $PAGE->set_title($forum->get_name());
 $PAGE->add_body_class('forumtype-' . $forum->get_type());
 $PAGE->set_heading($course->fullname);
-$PAGE->set_button(forum_search_form($course, $search));
 
 if ($istypesingle && $displaymode == FORUM_MODE_NESTED_V2) {
     $PAGE->add_body_class('nested-v2-display-mode reset-style');
@@ -153,17 +152,27 @@ if (!empty($CFG->enablerssfeeds) && !empty($CFG->forum_enablerssfeeds) && $forum
     rss_add_http_header($forum->get_context(), 'mod_forum', $forumrecord, $rsstitle);
 }
 
+// Output starts from here.
 echo $OUTPUT->header();
-echo $OUTPUT->heading(format_string($forum->get_name()), 2);
+if (!$PAGE->has_secondary_navigation()) {
+    echo $OUTPUT->heading(format_string($forum->get_name()), 2);
+}
 
 // Render the activity information.
 $completiondetails = \core_completion\cm_completion_details::get_instance($cm, $USER->id);
 $activitydates = \core\activity_dates::get_dates_for_module($cm, $USER->id);
 echo $OUTPUT->activity_information($cm, $completiondetails, $activitydates);
 
+// Fetch the current groupid.
+$groupid = groups_get_activity_group($cm, true) ?: null;
+
 if (!$istypesingle && !empty($forum->get_intro())) {
     echo $OUTPUT->box(format_module_intro('forum', $forumrecord, $cm->id), 'generalbox', 'intro');
 }
+
+$rendererfactory = mod_forum\local\container::get_renderer_factory();
+// The elements for view action are rendered and added to the page.
+echo forum_activity_actionbar($forum, $groupid, $course, $search);
 
 if ($sortorder) {
     set_user_preference('forum_discussionlistsortorder', $sortorder);
@@ -171,9 +180,6 @@ if ($sortorder) {
 
 $sortorder = get_user_preferences('forum_discussionlistsortorder', $discussionlistvault::SORTORDER_LASTPOST_DESC);
 
-// Fetch the current groupid.
-$groupid = groups_get_activity_group($cm, true) ?: null;
-$rendererfactory = mod_forum\local\container::get_renderer_factory();
 switch ($forum->get_type()) {
     case 'single':
         $forumgradeitem = forum_gradeitem::load_from_forum_entity($forum);

@@ -1,0 +1,103 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_forum/forum_action_bar
+
+    Simple search input.
+
+    Example context (json):
+    {
+        "action": "https://moodle.local/mod/forum/search.php",
+        "extraclasses": "iconhelp",
+        "inputname": "search",
+        "inform": false,
+        "searchstring": "Search settings",
+        "value": "policy",
+        "btnclass": "primary",
+        "query": "themedesigner",
+        "hiddenfields": [{
+            "name": "id",
+            "value": "11"
+         }],
+         "helpicon": {
+         "heading": "Search",
+         "text": "<div class='no-overflow'><p>For basic searching .</p></div>",
+         "alt": "Help with search",
+         "icon": [{
+            "attributes": [{
+                "name": "alt",
+                "value": "Help with Search"
+                }, {
+                "name": "src",
+                "value": "http://localhost/theme/image.php?theme=boost&component=core&image=help"
+             }]
+          }]
+         },
+        "title": "Help with Search",
+        "url": "http://localhost/help.php?component=core&identifier=search&lang=en",
+        "ltr": true,
+        "linktext": null,
+        "newdiscussion": "<a class='btn btn-primary'>Add discussion topic</a>"
+    }
+}}
+
+{{#subscribetoforum}}
+    <a class="btn btn-secondary float-right" href="{{{ subscribetoforum }}}">{{#str}}subscribetoforum, mod_forum {{/str}}</a>
+{{/subscribetoforum}}
+{{#unsubscribefromforum}}
+    <a class="btn btn-secondary float-right" href="{{{ unsubscribefromforum }}}">{{#str}}unsubscribefromforum, mod_forum {{/str}}</a>
+{{/unsubscribefromforum}}
+<div class="simplesearchform row {{ extraclasses }}">
+    {{^inform}}
+    <form autocomplete="off" action="{{ action }}" method="get" accept-charset="utf-8" class="mform form-inline simplesearchform">
+    {{/inform}}
+    {{#hiddenfields}}
+        <input type="hidden" name="{{ name }}" value="{{ value }}">
+    {{/hiddenfields}}
+    <div class="input-group">
+        {{#helpicon}}
+            {{>core/help_icon}}
+        {{/helpicon}}
+        <label for="searchinput-{{uniqid}}">
+            <span class="sr-only">{{{ searchstring }}}</span>
+        </label>
+        <input type="text"
+           id="searchinput-{{uniqid}}"
+           class="form-control"
+           placeholder="{{ searchstring }}"
+           aria-label="{{ searchstring }}"
+           name="{{ inputname }}"
+           data-region="input"
+           autocomplete="off"
+           value="{{ query }}"
+        >
+        <div class="input-group-append">
+            <button type="submit" class="btn {{^btnclass}}btn-submit{{/btnclass}} {{ btnclass }} search-icon mr-5">
+                {{#pix}} a/search, core {{/pix}}
+                <span class="sr-only">{{ searchstring }}</span>
+            </button>
+        </div>
+
+        {{{newdiscussionbtn}}}
+    </div>
+    {{#otherfields}}
+        <div  class="ml-2">{{{ otherfields }}}</div>
+    {{/otherfields}}
+{{^inform}}
+    </form>
+{{/inform}}
+</div>

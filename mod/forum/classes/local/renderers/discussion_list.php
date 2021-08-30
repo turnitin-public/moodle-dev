@@ -242,6 +242,30 @@ class discussion_list {
     }
 
     /**
+     * Add new discussion button to the action bar for tertiary nav.
+     *
+     * @param stdClass $user The user object.
+     * @param int|null $groupid The group id.
+     * @return string rendered HTML string
+     */
+    public function render_new_discussion(
+        stdClass $user,
+        ?int $groupid
+    ): string {
+        $forumexporter = $this->exporterfactory->get_forum_exporter(
+            $user,
+            $this->forum,
+            $groupid
+        );
+
+        $forumview = [
+            'forum' => (array) $forumexporter->export($this->renderer),
+        ];
+
+        return $this->renderer->render_from_template('mod_forum/forum_new_discussion_actionbar', $forumview);
+    }
+
+    /**
      * Get the mod_forum_post_form. This is the default boiler plate from mod_forum/post_form.php with the inpage flag caveat
      *
      * @param stdClass $user The user the form is being generated for

@@ -113,7 +113,13 @@ if (is_null($mode) and !is_enrolled($context, $USER, '', true)) {   // Guests an
 
 $returnto = optional_param('backtoindex',0,PARAM_INT)
     ? "index.php?id=".$course->id
-    : "view.php?f=$id";
+    : "subscribers.php?id=$id";
+
+// If student access this url it shouldn't be navigated to subscribers.
+// It should be redirected to view.php.
+if (!has_capability('mod/forum:viewsubscribers', $context) && ($returnto === "subscribers.php?id=$id")) {
+    $returnto = "view.php?f=$id";
+}
 
 if ($returnurl) {
     $returnto = $returnurl;

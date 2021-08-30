@@ -483,12 +483,16 @@ if (!isguestuser() && isloggedin() && $showsubscriptioncolumns) {
 }
 
 if ($generalforums) {
-    echo $OUTPUT->heading(get_string('generalforums', 'forum'), 2);
+    if (!$PAGE->has_secondary_navigation()) {
+        echo $OUTPUT->heading(get_string('generalforums', 'forum'), 2);
+    }
     echo html_writer::table($generaltable);
 }
 
 if ($learningforums) {
-    echo $OUTPUT->heading(get_string('learningforums', 'forum'), 2);
+    if (!$PAGE->has_secondary_navigation()) {
+        echo $OUTPUT->heading(get_string('learningforums', 'forum'), 2);
+    }
     echo html_writer::table($learningtable);
 }
 

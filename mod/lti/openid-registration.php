@@ -53,6 +53,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' or ($_SERVER['REQUEST_METHOD'] === 'GE
                 $registrationpayload = json_decode(file_get_contents('php://input'), true);
                 $config = registration_helper::get()->registration_to_config($registrationpayload, $tokenres['clientid']);
                 if ($type->id) {
+                    // When updating 1.0/1.1 tools, set lti_migration13 in config so the migration claim will be sent.
+                    if ($type->ltiversion == 'LTI-1p0') {
+                        $config->lti_migration13 = true;
+                    }
                     lti_update_type($type, clone $config);
                     $typeid = $type->id;
                 } else {

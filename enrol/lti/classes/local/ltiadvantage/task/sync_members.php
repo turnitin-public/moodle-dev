@@ -130,7 +130,8 @@ class sync_members extends scheduled_task {
             resource_link $resourcelink) {
 
         // Get a service worker for the corresponding application registration.
-        $registration = $this->issuerdb->find_registration_by_issuer($appregistration->get_platformid());
+        $registration = $this->issuerdb->find_registration_by_issuer($appregistration->get_platformid(),
+            $appregistration->get_clientid());
         $sc = new LTI_Service_Connector($registration);
 
         $nrps = $resourcelink->get_names_and_roles_service();
@@ -159,7 +160,7 @@ class sync_members extends scheduled_task {
         $this->appregistrationrepo = new application_registration_repository();
         $this->deploymentrepo = new deployment_repository();
         $this->userrepo = new user_repository();
-        $this->issuerdb = new issuer_database();
+        $this->issuerdb = new issuer_database($this->appregistrationrepo, $this->deploymentrepo);
 
         $resources = helper::get_lti_tools(['status' => ENROL_INSTANCE_ENABLED, 'membersync' => 1,
             'ltiversion' => 'LTI-1p3']);

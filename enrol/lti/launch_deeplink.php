@@ -29,6 +29,8 @@
  */
 
 use enrol_lti\local\ltiadvantage\launch_cache_session;
+use enrol_lti\local\ltiadvantage\repository\application_registration_repository;
+use enrol_lti\local\ltiadvantage\repository\deployment_repository;
 use enrol_lti\local\ltiadvantage\repository\published_resource_repository;
 use enrol_lti\local\ltiadvantage\issuer_database;
 use IMSGlobal\LTI13\LTI_Message_Launch;
@@ -41,15 +43,17 @@ $launchid = optional_param('launchid', null, PARAM_RAW);
 
 // First launch from the platform: get launch data and cache it in case the user's not authenticated.
 $sessionlaunchcache = new launch_cache_session();
+$issuerdb = new issuer_database(new application_registration_repository(), new deployment_repository());
+
 if ($id_token) {
-    $launch = LTI_Message_Launch::new(new issuer_database(), $sessionlaunchcache)
+    $launch = LTI_Message_Launch::new($issuerdb, $sessionlaunchcache)
         ->validate();
     $PAGE->set_url('/enrol/lti/launch_deeplink.php?launchid='.urlencode($launch->get_launch_id()));
 }
 
 // Redirect after authentication: Fetch launch data from the session launch cache.
 if ($launchid) {
-    $launch = LTI_Message_Launch::from_cache($launchid, new issuer_database(), $sessionlaunchcache);
+    $launch = LTI_Message_Launch::from_cache($launchid, $issuerdb, $sessionlaunchcache);
     if (empty($launch)) {
         throw new coding_exception('Bad launchid. Deep linking launch data could not be found');
     }

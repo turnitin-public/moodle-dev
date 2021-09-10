@@ -24,6 +24,8 @@
 
 use enrol_lti\local\ltiadvantage\launch_cache_session;
 use enrol_lti\local\ltiadvantage\issuer_database;
+use enrol_lti\local\ltiadvantage\repository\application_registration_repository;
+use enrol_lti\local\ltiadvantage\repository\deployment_repository;
 use enrol_lti\local\ltiadvantage\repository\published_resource_repository;
 use IMSGlobal\LTI13\LTI_Deep_Link_Resource;
 use IMSGlobal\LTI13\LTI_Lineitem;
@@ -40,7 +42,8 @@ $modules = optional_param_array('modules', [], PARAM_INT);
 $grades = optional_param_array('grades', [], PARAM_INT);
 
 $sessionlaunchcache = new launch_cache_session();
-$launch = LTI_Message_Launch::from_cache($launchid, new issuer_database(), $sessionlaunchcache);
+$launch = LTI_Message_Launch::from_cache($launchid,
+    new issuer_database(new application_registration_repository(), new deployment_repository()), $sessionlaunchcache);
 if (!$launch->is_deep_link_launch()) {
     throw new coding_exception('Configuration can only be accessed as part of a content item selection deep link '.
         'launch.');

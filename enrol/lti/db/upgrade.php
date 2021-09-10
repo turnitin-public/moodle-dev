@@ -72,8 +72,9 @@ function xmldb_enrol_lti_upgrade($oldversion) {
         // Adding fields to table enrol_lti_app_registration.
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
         $table->add_field('name', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('platformid', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('platformid', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
         $table->add_field('clientid', XMLDB_TYPE_CHAR, '1333', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('platformclienthash', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null);
         $table->add_field('authenticationrequesturl', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
         $table->add_field('jwksurl', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
         $table->add_field('accesstokenurl', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
@@ -83,8 +84,8 @@ function xmldb_enrol_lti_upgrade($oldversion) {
         // Adding keys to table enrol_lti_app_registration.
         $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
 
-        // Add unique index on platformid (issuer).
-        $table->add_index('platformid', XMLDB_INDEX_UNIQUE, ['platformid']);
+        // Add unique index on platformclienthash.
+        $table->add_index('platformclienthash', XMLDB_INDEX_UNIQUE, ['platformclienthash']);
 
         // Conditionally launch create table for enrol_lti_app_registration.
         if (!$dbman->table_exists($table)) {
@@ -315,5 +316,6 @@ function xmldb_enrol_lti_upgrade($oldversion) {
 
         upgrade_plugin_savepoint(true, 2021052513, 'enrol', 'lti');
     }
+
     return true;
 }

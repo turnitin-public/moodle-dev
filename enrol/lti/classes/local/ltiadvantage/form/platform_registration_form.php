@@ -109,12 +109,12 @@ class platform_registration_form extends \moodleform {
             }
         }
 
-        // Check uniqueness of the issuer.
+        // Check uniqueness of the {issuer, client_id} tuple.
         $appregistrationrepo = new application_registration_repository();
-        $appreg = $appregistrationrepo->find_by_platform($data['platformid']);
+        $appreg = $appregistrationrepo->find_by_platform($data['platformid'], $data['clientid']);
         if ($appreg) {
             if (empty($data['id']) || $appreg->get_id() != $data['id']) {
-                $errors['platformid'] = get_string('registerplatform:duplicateplatformiderror', 'enrol_lti');
+                $errors['clientid'] = get_string('registerplatform:duplicateregistrationerror', 'enrol_lti');
             }
         }
 

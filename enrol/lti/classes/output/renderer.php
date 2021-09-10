@@ -119,8 +119,9 @@ class renderer extends plugin_renderer_base {
         foreach ($registrations as $reg) {
             $countdeployments = $deploymentrepository->count_by_registration($reg->get_id());
             $registrationscontext['registrations'][] = [
-                'name' => get_string('registeredplatformname', 'enrol_lti',
-                    (object)['name' => $reg->get_name(), 'platformid' => $reg->get_platformid()]),
+                'name' => $reg->get_name(),
+                'issuer' => $reg->get_platformid(),
+                'clientid' => $reg->get_clientid(),
                 'hasdeployments' => $countdeployments > 0,
                 'countdeployments' => $countdeployments,
                 'editurl' => (new \moodle_url('/enrol/lti/register_platform.php',

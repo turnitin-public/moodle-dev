@@ -75,10 +75,12 @@ class application_registration_repository {
      * @return \stdClass the record.
      */
     private function record_from_application_registration(application_registration $appregistration): \stdClass {
+        $indexhash = $this->get_unique_index_hash($appregistration->get_platformid(), $appregistration->get_clientid());
         $appregistrationrecord = (object) [
             'name' => $appregistration->get_name(),
             'platformid' => $appregistration->get_platformid(),
             'clientid' => $appregistration->get_clientid(),
+            'platformclienthash' => $indexhash,
             'authenticationrequesturl' => $appregistration->get_authenticationrequesturl()->out(false),
             'jwksurl' => $appregistration->get_jwksurl()->out(false),
             'accesstokenurl' => $appregistration->get_accesstokenurl()->out(false),
@@ -87,6 +89,17 @@ class application_registration_repository {
             $appregistrationrecord->id = $id;
         }
         return $appregistrationrecord;
+    }
+
+    /**
+     * Gets a hash of the {platformid, clientid} tuple for use in indexing purposes.
+     *
+     * @param string $platformid the platformid of the registration.
+     * @param string $clientid the clientid of the registration
+     * @return string a SHA256 hash.
+     */
+    private function get_unique_index_hash(string $platformid, string $clientid): string {
+        return hash('sha256', $platformid . ':' . $clientid);
     }
 
     /**
@@ -116,16 +129,18 @@ class application_registration_repository {
     }
 
     /**
-     * Find a registration by its unique platformid.
+     * Find a registration by its unique {platformid, clientid} tuple.
      *
      * @param string $platformid the url of the platform (the issuer).
+     * @param string $clientid the client_id of the tool registration on the platform.
      * @return application_registration|null application registration instance if found, else null.
      */
-    public function find_by_platform(string $platformid): ?application_registration {
+    public function find_by_platform(string $platformid, string $clientid): ?application_registration {
         global $DB;
         try {
-            $record = $DB->get_record($this->applicationregistrationtable,
-                ['platformid' => $platformid], '*', MUST_EXIST);
+            $indexhash = $this->get_unique_index_hash($platformid, $clientid);
+            $record = $DB->get_record($this->applicationregistrationtable, ['platformclienthash' => $indexhash], '*',
+                MUST_EXIST);
             return $this->application_registration_from_record($record);
         } catch (\dml_missing_record_exception $e) {
             return null;

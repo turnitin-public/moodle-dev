@@ -333,7 +333,7 @@ class tool_launch_service {
                 "exist.");
         }
 
-        if (!$registration = $this->registrationrepo->find_by_platform($launchdata->platform)) {
+        if (!$registration = $this->registrationrepo->find_by_platform($launchdata->platform, $launchdata->clientid)) {
             throw new \coding_exception("Invalid launch. Cannot launch tool for invalid registration " .
                 "(issuer: {$launchdata->platform}, 'clientid: {$launchdata->clientid}).");
         }

@@ -26,6 +26,7 @@ use core\task\scheduled_task;
 use enrol_lti\helper;
 use enrol_lti\local\ltiadvantage\issuer_database;
 use enrol_lti\local\ltiadvantage\repository\application_registration_repository;
+use enrol_lti\local\ltiadvantage\repository\deployment_repository;
 use enrol_lti\local\ltiadvantage\repository\resource_link_repository;
 use enrol_lti\local\ltiadvantage\repository\user_repository;
 use IMSGlobal\LTI13\LTI_Assignments_Grades_Service;
@@ -61,7 +62,7 @@ class sync_grades extends scheduled_task {
         $userrepo = new user_repository();
         $resourcelinkrepo = new resource_link_repository();
         $appregistrationrepo = new application_registration_repository();
-        $issuerdb = new issuer_database();
+        $issuerdb = new issuer_database($appregistrationrepo, new deployment_repository());
 
         if ($users = $userrepo->find_by_resource($resource->id)) {
             $completion = new \completion_info(get_course($resource->courseid));
@@ -145,7 +146,8 @@ class sync_grades extends scheduled_task {
                         $appregistration = $appregistrationrepo->find_by_deployment(
                             $userresourcelink->get_deploymentid()
                         );
-                        $registration = $issuerdb->find_registration_by_issuer($appregistration->get_platformid());
+                        $registration = $issuerdb->find_registration_by_issuer($appregistration->get_platformid(),
+                            $appregistration->get_clientid());
                         $sc = new LTI_Service_Connector($registration);
 
                         $lineitemurl = $gradeservice->get_lineitemurl();

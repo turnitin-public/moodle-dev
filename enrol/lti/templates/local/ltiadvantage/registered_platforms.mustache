@@ -54,6 +54,7 @@
     <thead>
     <tr>
         <th>{{#str}}name, core{{/str}}</th>
+        <th>{{#str}}details, enrol_lti{{/str}}</th>
         <th>{{#str}}deployments, enrol_lti{{/str}}</th>
         <th>{{#str}}actions, core{{/str}}</th>
     </tr>
@@ -62,7 +63,13 @@
     <tbody>
     {{#registrations}}
         <tr>
-            <th>{{name}}</th>
+            <th>
+                {{name}}
+            </th>
+            <td>
+                <span class="font-weight-bold">{{#str}}registerplatform:platformid, enrol_lti{{/str}}: </span> {{issuer}}<br>
+                <span class="font-weight-bold">{{#str}}registerplatform:clientid, enrol_lti{{/str}}: </span> {{clientid}}
+            </td>
             <td>
                 {{#hasdeployments}}
                     <a href="{{deploymentsurl}}" title="{{#str}} managedeployments, enrol_lti {{/str}}">{{countdeployments}}</a>

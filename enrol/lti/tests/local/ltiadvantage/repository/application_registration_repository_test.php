@@ -44,14 +44,18 @@ class application_registration_repository_test extends \advanced_testcase {
      * Helper to generate a new application_registration object.
      *
      * @param string|null $issuer the issuer of the application, or null to use a default.
+     * @param string|null $clientid the clientid of the platform's tool registration, or null to use a default.
      * @return application_registration the application_registration instance.
      */
-    protected function generate_application_registration(string $issuer = null): application_registration {
+    protected function generate_application_registration(string $issuer = null,
+            string $clientid = null): application_registration {
+
         $issuer = $issuer ?? 'https://lms.example.org';
+        $clientid = $clientid ?? 'clientid_123';
         return application_registration::create(
             'Example LMS application',
             $issuer,
-            'clientid_123',
+            $clientid,
             new \moodle_url('https://example.org/authrequesturl'),
             new \moodle_url('https://example.org/jwksurl'),
             new \moodle_url('https://example.org/accesstokenurl')
@@ -183,18 +187,18 @@ class application_registration_repository_test extends \advanced_testcase {
     public function test_find_by_platform() {
         // None to begin with.
         $repository = new application_registration_repository();
-        $this->assertNull($repository->find_by_platform('https://some.platform.org'));
+        $this->assertNull($repository->find_by_platform('https://some.platform.org', 'abc'));
 
         // Create 2 registrations.
-        $reg1 = $this->generate_application_registration('https://some.platform.org');
-        $reg2 = $this->generate_application_registration('https://another.platform.org');
+        $reg1 = $this->generate_application_registration('https://some.platform.org', 'abc');
+        $reg2 = $this->generate_application_registration('https://another.platform.org', 'def');
         $reg1 = $repository->save($reg1);
         $reg2 = $repository->save($reg2);
 
         // Verify that we can find the registrations by their platform string.
-        $found = $repository->find_by_platform('https://some.platform.org');
+        $found = $repository->find_by_platform('https://some.platform.org', 'abc');
         $this->assertEquals($reg1, $found);
-        $found2 = $repository->find_by_platform('https://another.platform.org');
+        $found2 = $repository->find_by_platform('https://another.platform.org', 'def');
         $this->assertEquals($reg2, $found2);
     }
 

@@ -165,11 +165,7 @@ if ($regresponse) {
         $toolconfig = $regresponse->{'https://purl.imsglobal.org/spec/lti-tool-configuration'};
         $appregrepo = new application_registration_repository();
 
-        // Because the tool currently only uniquely identifies registrations by their issuer (or platformid) and not by
-        // the {issuer, clientid} tuple, trying to register a different client for the same issuer will result in a
-        // write error. For now, just detect this, and report it back to the user.
-        // TODO MDL-72288: replace this check with an issuer+clientid uniqueness check.
-        if ($appregrepo->find_by_platform($openidconfig->issuer)) {
+        if ($appregrepo->find_by_platform($openidconfig->issuer, $regresponse->client_id)) {
             throw new moodle_exception('existingregistrationerror', 'enrol_lti');
         }
 

@@ -27,6 +27,8 @@
  */
 
 use enrol_lti\local\ltiadvantage\launch_cache_session;
+use enrol_lti\local\ltiadvantage\repository\application_registration_repository;
+use enrol_lti\local\ltiadvantage\repository\deployment_repository;
 use IMSGlobal\LTI13;
 use enrol_lti\local\ltiadvantage\issuer_database;
 
@@ -66,6 +68,7 @@ if (!in_array($targetlinkuri, $validuris)) {
 }
 
 // Now, do the OIDC login.
-LTI13\LTI_OIDC_Login::new(new issuer_database(), new launch_cache_session())
+LTI13\LTI_OIDC_Login::new(new issuer_database(new application_registration_repository(), new deployment_repository()),
+    new launch_cache_session())
     ->do_oidc_login_redirect($targetlinkuri)
     ->do_redirect();

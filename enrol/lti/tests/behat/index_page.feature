@@ -49,5 +49,5 @@ Feature: Check that the page listing the shared external tools is functioning as
     And I should see "Course - LTI" in the ".generaltable" "css_element"
     And I click on "Delete" "link" in the "Course - LTI" "table_row"
     And I press "Continue"
-    And I should see "No tools provided"
+    And I should see "No resources or activities are published yet"
     And I should not see "Course - LTI"

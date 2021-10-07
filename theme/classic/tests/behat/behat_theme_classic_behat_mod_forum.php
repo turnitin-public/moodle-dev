@@ -40,28 +40,28 @@ class behat_theme_classic_behat_mod_forum extends behat_mod_forum {
     /**
      * Checks if the user can subscribe to the forum.
      */
-    public function i_can_subscribe_to_this_forum() {
-        $this->execute('behat_general::assert_page_contains_text', [get_string('subscribe', 'mod_forum')]);
-    }
+    //public function i_can_subscribe_to_this_forum() {
+    //    $this->execute('behat_general::assert_page_contains_text', [get_string('subscribe', 'mod_forum')]);
+    //}
 
     /**
      * Checks if the user can unsubscribe from the forum.
      */
-    public function i_can_unsubscribe_from_this_forum() {
-        $this->execute('behat_general::assert_page_contains_text', [get_string('unsubscribe', 'mod_forum')]);
-    }
+    //public function i_can_unsubscribe_from_this_forum() {
+    //    $this->execute('behat_general::assert_page_contains_text', [get_string('unsubscribe', 'mod_forum')]);
+    //}
 
     /**
      * Subscribes to the forum.
      */
-    public function i_subscribe_to_this_forum() {
-        $this->execute('behat_general::click_link', [get_string('subscribe', 'mod_forum')]);
-    }
+    //public function i_subscribe_to_this_forum() {
+    //    $this->execute('behat_general::click_link', [get_string('subscribe', 'mod_forum')]);
+    //}
 
     /**
      * Unsubscribes from the forum.
      */
-    public function i_unsubscribe_from_this_forum() {
-        $this->execute('behat_general::click_link', [get_string('unsubscribe', 'mod_forum')]);
-    }
+    //public function i_unsubscribe_from_this_forum() {
+    //    $this->execute('behat_general::click_link', [get_string('unsubscribe', 'mod_forum')]);
+    //}
 }

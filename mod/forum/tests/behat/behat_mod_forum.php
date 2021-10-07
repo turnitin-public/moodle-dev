@@ -273,15 +273,7 @@ class behat_mod_forum extends behat_base {
      * @Given /^I can subscribe to this forum$/
      */
     public function i_can_subscribe_to_this_forum() {
-        if ($this->running_javascript()) {
-            $this->execute('behat_general::i_click_on', [get_string('actionsmenu'), 'link']);
-        }
-
         $this->execute('behat_general::assert_page_contains_text', [get_string('subscribetoforum', 'mod_forum')]);
-
-        if ($this->running_javascript()) {
-            $this->execute('behat_general::i_click_on', [get_string('actionsmenu'), 'link']);
-        }
     }
 
     /**
@@ -290,15 +282,7 @@ class behat_mod_forum extends behat_base {
      * @Given /^I can unsubscribe from this forum$/
      */
     public function i_can_unsubscribe_from_this_forum() {
-        if ($this->running_javascript()) {
-            $this->execute('behat_general::i_click_on', [get_string('actionsmenu'), 'link']);
-        }
-
         $this->execute('behat_general::assert_page_contains_text', [get_string('unsubscribefromforum', 'mod_forum')]);
-
-        if ($this->running_javascript()) {
-            $this->execute('behat_general::i_click_on', [get_string('actionsmenu'), 'link']);
-        }
     }
 
     /**
@@ -307,10 +291,6 @@ class behat_mod_forum extends behat_base {
      * @Given /^I subscribe to this forum$/
      */
     public function i_subscribe_to_this_forum() {
-        if ($this->running_javascript()) {
-            $this->execute('behat_general::i_click_on', [get_string('actionsmenu'), 'link']);
-        }
-
         $this->execute('behat_general::click_link', [get_string('subscribetoforum', 'mod_forum')]);
     }
 
@@ -320,10 +300,6 @@ class behat_mod_forum extends behat_base {
      * @Given /^I unsubscribe from this forum$/
      */
     public function i_unsubscribe_from_this_forum() {
-        if ($this->running_javascript()) {
-            $this->execute('behat_general::i_click_on', [get_string('actionsmenu'), 'link']);
-        }
-
         $this->execute('behat_general::click_link', [get_string('unsubscribefromforum', 'mod_forum')]);
     }
 

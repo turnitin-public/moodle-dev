@@ -83,6 +83,8 @@ if ($displaymode !== '') {
     $url->param('display', $displaymode);
 }
 $PAGE->set_url($url);
+$PAGE->set_secondary_active_tab("modulepage");
+
 $forcejs = get_config('scorm', 'forcejavascript');
 if (!empty($forcejs)) {
     $PAGE->add_body_class('forcejavascript');
@@ -191,7 +193,7 @@ if (file_exists($CFG->dirroot.'/mod/scorm/datamodels/'.$scorm->version.'.js')) {
 }
 
 echo $OUTPUT->header();
-if (!empty($scorm->displayactivityname)) {
+if (!empty($scorm->displayactivityname) && !$PAGE->has_secondary_navigation()) {
     echo $OUTPUT->heading(format_string($scorm->name));
 }
 

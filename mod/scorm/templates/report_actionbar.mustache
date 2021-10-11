@@ -1,0 +1,76 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_scorm/report_actionbar
+    Actions panel at the bottom of the assignment grading UI.
+    Classes required for JS:
+    * none
+    Data attributes required for JS:
+    * data-region
+    Context variables required for this template:
+    * see mod/scorm/classes/output/actionbar.php
+    Example context (json):
+    {
+        "scormreports": {
+            "id": "url_select_test",
+            "options": [
+                {"name": "Basic Report", "value": "/mod/scorm/report.php?id=69&mode=basic"},
+                {"name": "Graph Report", "value": "/mod/scorm/report.php?id=69&mode=graphs"},
+                {"name": "Interactions Report", "value": "/mod/scorm/report.php?id=69&mode=interactions"},
+                {"name": "Objectives Report", "value": "/mod/scorm/report.php?id=69&mode=objectives"}
+            ]
+        },
+        "downloadlinks": {
+            "id": "url_select_down123",
+            "options": [
+                {"name": "Download", "value": ""},
+                {
+                    "name": "Download in ODS format",
+                    "value": "/mod/scorm/report.php?id=69&mode=basic&attemptsmode=0&download=ODS&sesskey=G8FPNoJz9r"
+                },
+                {
+                    "name": "Download in Excel format",
+                    "value": "/mod/scorm/report.php?id=69&mode=basic&attemptsmode=0&download=Excel&sesskey=G8FPNoJz9r"
+                },
+                {
+                    "name": "Download in text format",
+                    "value": "/mod/scorm/report.php?id=69&mode=basic&attemptsmode=0&download=CSV&sesskey=G8FPNoJz9r"
+                }
+            ]
+        }
+    }
+}}
+<div class="container-fluid">
+    <div class="row justify-content-between">
+        <div class="mr-5">
+            {{#scormreports}}
+                {{>core/url_select}}
+            {{/scormreports}}
+        </div>
+        <div class="mr-5">
+            {{#downloadlinks}}
+                <div class="dropdown show">
+                    <a class="custom-select urlselect" href="#" role="button" id="downloadMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        {{#str}} download {{/str}}
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="downloadMenuLink">
+                        <a class="dropdown-item" href="{{ downloadods }}">{{#str}} downloadods {{/str}}</a>
+                        <a class="dropdown-item" href="{{ downloadexcel }}">{{#str}} downloadexcel {{/str}}</a>
+                        <a class="dropdown-item" href="{{ downloadtext }}">{{#str}} downloadtext {{/str}}</a>
+                    </div>
+                </div>
+            {{/downloadlinks}}
+        </div>
+    </div>
+</div>

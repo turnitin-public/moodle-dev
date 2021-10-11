@@ -44,6 +44,13 @@ class report extends \mod_scorm\report {
         $attemptsmode = optional_param('attemptsmode', SCORM_REPORT_ATTEMPTS_ALL_STUDENTS, PARAM_INT);
         $PAGE->set_url(new \moodle_url($PAGE->url, array('attemptsmode' => $attemptsmode)));
 
+        // Scorm action bar for report.
+        $download = optional_param('download', '', PARAM_RAW);
+        if ($download === '') {
+            $actionbar = new \mod_scorm\output\actionbar($cm->id, true, $attemptsmode);
+            echo $actionbar->get_report_selection();
+        }
+
         if ($action == 'delete' && has_capability('mod/scorm:deleteresponses', $contextmodule) && confirm_sesskey()) {
             if (scorm_delete_responses($attemptids, $scorm)) { // Delete responses.
                 echo $OUTPUT->notification(get_string('scormresponsedeleted', 'scorm'), 'notifysuccess');
@@ -577,34 +584,6 @@ class report extends \mod_scorm\report {
                         // Close form.
                         echo \html_writer::end_tag('div');
                         echo \html_writer::end_tag('form');
-                    }
-                    echo \html_writer::end_div();
-                    if (!empty($attempts)) {
-                        echo \html_writer::start_tag('table', array('class' => 'boxaligncenter')).\html_writer::start_tag('tr');
-                        echo \html_writer::start_tag('td');
-                        echo $OUTPUT->single_button(new \moodle_url($PAGE->url,
-                                                                   array('download' => 'ODS') + $displayoptions),
-                                                                   get_string('downloadods'),
-                                                                   'post',
-                                                                   ['class' => 'mt-1']);
-                        echo \html_writer::end_tag('td');
-                        echo \html_writer::start_tag('td');
-                        echo $OUTPUT->single_button(new \moodle_url($PAGE->url,
-                                                                   array('download' => 'Excel') + $displayoptions),
-                                                                   get_string('downloadexcel'),
-                                                                   'post',
-                                                                   ['class' => 'mt-1']);
-                        echo \html_writer::end_tag('td');
-                        echo \html_writer::start_tag('td');
-                        echo $OUTPUT->single_button(new \moodle_url($PAGE->url,
-                                                                   array('download' => 'CSV') + $displayoptions),
-                                                                   get_string('downloadtext'),
-                                                                   'post',
-                                                                   ['class' => 'mt-1']);
-                        echo \html_writer::end_tag('td');
-                        echo \html_writer::start_tag('td');
-                        echo \html_writer::end_tag('td');
-                        echo \html_writer::end_tag('tr').\html_writer::end_tag('table');
                     }
                 }
             } else {

@@ -14,14 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Displays enrolment LTI instances representing resources published over LTI Advantage.
- *
- * @package    enrol_lti
- * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
 namespace enrol_lti\local\ltiadvantage\table;
 
 use enrol_lti\helper;
@@ -33,8 +25,9 @@ global $CFG;
 require_once($CFG->libdir . '/tablelib.php');
 
 /**
- * Class which displays a list of resources (enrolment methods) published over LTI Advantage.
+ * Class which displays a list of resources published over LTI Advantage.
  *
+ * @package enrol_lti
  * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -115,14 +108,23 @@ class published_resources_table extends \table_sql {
 
         $customparamslabel = get_string('customproperties', 'enrol_lti');
         $customparams = "id={$tool->uuid}";
-        $launchurl = new \moodle_url('enrol/lti/launch.php');
+        $launchurl = new \moodle_url('/enrol/lti/launch.php');
         $launchurllabel = get_string('launchurl', 'enrol_lti');
 
         $data = [
                 "rows" => [
-                    [ "label" => $launchurllabel, "text" => $launchurl, "id" => "launchurl", "hidelabel" => false ],
-                    ["label" => $customparamslabel, "text" => $customparams, "id" => "customparams",
-                        "hidelabel" => false ]
+                    [
+                        "label" => $launchurllabel,
+                        "text" => $launchurl->out(false),
+                        "id" => "launchurl",
+                        "hidelabel" => false
+                    ],
+                    [
+                        "label" => $customparamslabel,
+                        "text" => $customparams,
+                        "id" => "customparams",
+                        "hidelabel" => false
+                    ]
                 ]
             ];
 

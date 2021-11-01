@@ -14,13 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Contains the application_registration class.
- *
- * @package enrol_lti
- * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 namespace enrol_lti\local\ltiadvantage\entity;
 
 /**
@@ -30,6 +23,7 @@ namespace enrol_lti\local\ltiadvantage\entity;
  * Each registered application may contain one or more deployments of the Moodle tool.
  * This registration provides the security contract for all tool deployments belonging to the registration.
  *
+ * @package enrol_lti
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -41,7 +35,7 @@ class application_registration {
     /** @var string the name of the application being registered. */
     private $name;
 
-    /** @var string the issuer identifying the platform, as provided by the platform. */
+    /** @var \moodle_url the issuer identifying the platform, as provided by the platform. */
     private $platformid;
 
     /** @var string the client id as provided by the platform. */
@@ -60,16 +54,22 @@ class application_registration {
      * The application_registration constructor.
      *
      * @param string $name the descriptor for this application registration.
-     * @param string $platformid the URL of application
+     * @param \moodle_url $platformid the URL of application
      * @param string $clientid unique id for the client on the application
      * @param \moodle_url $authenticationrequesturl URL to send OIDC Auth requests to.
      * @param \moodle_url $jwksurl URL to use to get public keys from the application.
      * @param \moodle_url $accesstokenurl URL to use to get an access token from the application, used in service calls.
      * @param int|null $id the id of the object instance, if being created from an existing store item.
      */
-    private function __construct(string $name, string $platformid, string $clientid,
+    private function __construct(string $name, \moodle_url $platformid, string $clientid,
             \moodle_url $authenticationrequesturl, \moodle_url $jwksurl, \moodle_url $accesstokenurl, int $id = null) {
 
+        if (empty($name)) {
+            throw new \coding_exception("Invalid 'name' arg. Cannot be an empty string.");
+        }
+        if (empty($clientid)) {
+            throw new \coding_exception("Invalid 'clientid' arg. Cannot be an empty string.");
+        }
         $this->name = $name;
         $this->platformid = $platformid;
         $this->clientid = $clientid;
@@ -83,7 +83,7 @@ class application_registration {
      * Factory method to create a new instance of an application repository
      *
      * @param string $name the descriptor for this application registration.
-     * @param string $platformid the URL of application
+     * @param \moodle_url $platformid the URL of application
      * @param string $clientid unique id for the client on the application
      * @param \moodle_url $authenticationrequesturl URL to send OIDC Auth requests to.
      * @param \moodle_url $jwksurl URL to use to get public keys from the application.
@@ -91,7 +91,7 @@ class application_registration {
      * @param int|null $id the id of the object instance, if being created from an existing store item.
      * @return application_registration the application_registration instance.
      */
-    public static function create(string $name, string $platformid, string $clientid,
+    public static function create(string $name, \moodle_url $platformid, string $clientid,
             \moodle_url $authenticationrequesturl, \moodle_url $jwksurl, \moodle_url $accesstokenurl,
             int $id = null): application_registration {
 
@@ -121,9 +121,9 @@ class application_registration {
     /**
      * Get the platform id.
      *
-     * @return string the platform id.
+     * @return \moodle_url the platformid/issuer URL.
      */
-    public function get_platformid(): string {
+    public function get_platformid(): \moodle_url {
         return $this->platformid;
     }
 
@@ -164,40 +164,19 @@ class application_registration {
     }
 
     /**
-     * Set the authentication request URL.
-     *
-     * @param string $urlstring the URL to set.
-     */
-    public function set_authenticationrequesturl(string $urlstring): void {
-        $this->authenticationrequesturl = new \moodle_url($urlstring);
-    }
-
-    /**
-     * Set the JWKS URL.
-     *
-     * @param string $urlstring the URL to set.
-     */
-    public function set_jwksurl(string $urlstring): void {
-        $this->jwksurl = new \moodle_url($urlstring);
-    }
-
-    /**
-     * Set the accesstoken URL.
-     *
-     * @param string $urlstring the URL to set.
-     */
-    public function set_accesstokenurl(string $urlstring): void {
-        $this->accesstokenurl = new \moodle_url($urlstring);
-    }
-
-    /**
      * Add a tool deployment to this registration.
      *
      * @param string $name human readable name for the deployment.
      * @param string $deploymentid the unique id of the tool deployment in the platform.
      * @return deployment the new deployment.
+     * @throws \coding_exception if trying to add a deployment to an instance without an id assigned.
      */
     public function add_tool_deployment(string $name, string $deploymentid): deployment {
+
+        if (empty($this->get_id())) {
+            throw new \coding_exception("Can't add deployment to a resource_link that hasn't first been saved.");
+        }
+
         return deployment::create(
             $this->get_id(),
             $deploymentid,

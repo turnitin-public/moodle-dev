@@ -13,13 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-/**
- * Contains the context entity class.
- *
- * @package    enrol_lti
- * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+
 namespace enrol_lti\local\ltiadvantage\entity;
 
 /**
@@ -27,9 +21,10 @@ namespace enrol_lti\local\ltiadvantage\entity;
  *
  * See: http://www.imsglobal.org/spec/lti/v1p3/#context-type-vocabulary for supported context types.
  *
+ * @package    enrol_lti
  * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later */
-final class context {
+class context {
 
     // The following full contexts are per the spec:
     // http://www.imsglobal.org/spec/lti/v1p3/#context-type-vocabulary.
@@ -80,6 +75,9 @@ final class context {
      * @param int|null $id local id of this object instance, nullable for new objects.
      */
     private function __construct(int $deploymentid, string $contextid, array $types, ?int $id) {
+        if (!is_null($id) && $id <= 0) {
+            throw new \coding_exception('id must be a positive int');
+        }
         $this->deploymentid = $deploymentid;
         $this->contextid = $contextid;
         $this->set_types($types); // Handles type validation.

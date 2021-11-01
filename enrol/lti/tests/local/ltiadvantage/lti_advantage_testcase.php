@@ -229,21 +229,16 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
      * Enable auth_lti plugin.
      */
     protected function enable_auth() {
-        $auths = get_enabled_auth_plugins();
-        if (!in_array('lti', $auths)) {
-            $auths[] = 'lti';
-        }
-        set_config('auth', implode(',', $auths));
+        $class = \core_plugin_manager::resolve_plugininfo_class('auth');
+        $class::enable_plugin('lti', true);
     }
 
     /**
      * Enable enrol_lti plugin.
      */
     protected function enable_enrol() {
-        $enabled = enrol_get_plugins(true);
-        $enabled['lti'] = true;
-        $enabled = array_keys($enabled);
-        set_config('enrol_plugins_enabled', implode(',', $enabled));
+        $class = \core_plugin_manager::resolve_plugininfo_class('enrol');
+        $class::enable_plugin('lti', true);
     }
 
     /**

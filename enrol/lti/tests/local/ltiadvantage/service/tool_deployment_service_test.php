@@ -14,16 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Contains tests for the tool_deployment_service.
- *
- * @package enrol_lti
- * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 namespace enrol_lti\local\ltiadvantage\service;
-
-defined('MOODLE_INTERNAL') || die();
 
 use enrol_lti\helper;
 use enrol_lti\local\ltiadvantage\entity\application_registration;
@@ -34,23 +25,18 @@ use enrol_lti\local\ltiadvantage\repository\user_repository;
 use enrol_lti\local\ltiadvantage\repository\deployment_repository;
 use enrol_lti\local\ltiadvantage\repository\resource_link_repository;
 
+defined('MOODLE_INTERNAL') || die();
+
 require_once(__DIR__ . '/../lti_advantage_testcase.php');
 
 /**
  * Tests for the tool_deployment_service.
  *
+ * @package enrol_lti
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class tool_deployment_service_testcase extends \lti_advantage_testcase {
-
-    /**
-     * Setup run for each test case.
-     */
-    protected function setUp(): void {
-        $this->resetAfterTest();
-    }
-
+class tool_deployment_service_test extends \lti_advantage_testcase {
     /**
      * Return a pre-existing application_registration object for testing.
      *
@@ -59,7 +45,7 @@ class tool_deployment_service_testcase extends \lti_advantage_testcase {
     protected function generate_application_registration(): application_registration {
         $reg = application_registration::create(
             'Example LMS application',
-            'https://lms.example.org',
+            new \moodle_url('https://lms.example.org'),
             '123',
             new \moodle_url('https://example.org/authrequesturl'),
             new \moodle_url('https://example.org/jwksurl'),
@@ -89,6 +75,7 @@ class tool_deployment_service_testcase extends \lti_advantage_testcase {
      * Test the use case "As an admin, I can register an application as an LTI consumer (platform)".
      */
     public function test_add_tool_deployment() {
+        $this->resetAfterTest();
         $testreg = $this->generate_application_registration();
         $deploymentrepo = new deployment_repository();
 
@@ -106,9 +93,28 @@ class tool_deployment_service_testcase extends \lti_advantage_testcase {
     }
 
     /**
+     * Test trying to add a tool deployment when a registration identified by the specified id cannot be found.
+     */
+    public function test_add_tool_deployment_registration_missing() {
+        $this->resetAfterTest();
+        $service = $this->get_tool_deployment_service();
+
+        $this->expectException(\coding_exception::class);
+        $this->expectExceptionMessageMatches('/Cannot add deployment to non-existent application registration/');
+        $service->add_tool_deployment(
+            (object) [
+                'registration_id' => 1234,
+                'deployment_id' => 'Deploy_ID_123',
+                'deployment_name' => "Tool deployment in location x"
+            ]
+        );
+    }
+
+    /**
      * Test that removal of a deployment removes all associated data.
      */
     public function test_delete_deployment() {
+        $this->resetAfterTest();
         // Setup.
         $registrationrepo = new application_registration_repository();
         $deploymentrepo = new deployment_repository();

@@ -13,13 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-/**
- * Contains the tool deployment service.
- *
- * @package    enrol_lti
- * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+
 namespace enrol_lti\local\ltiadvantage\service;
 
 use enrol_lti\local\ltiadvantage\entity\deployment;
@@ -32,6 +26,7 @@ use enrol_lti\local\ltiadvantage\repository\user_repository;
 /**
  * Class tool_deployment_service.
  *
+ * @package enrol_lti
  * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -118,7 +113,7 @@ class tool_deployment_service {
                     ON (lt.id = lu.toolid)
                   JOIN {enrol} e
                     ON (e.id = lt.enrolid)
-                 WHERE lu.deploymentid = :deploymentid";
+                 WHERE lu.ltideploymentid = :deploymentid";
         $instancesrs = $DB->get_recordset_sql($sql, ['deploymentid' => $deploymentid]);
         require_once($CFG->dirroot . '/enrol/lti/lib.php');
         $enrollti = new \enrol_lti_plugin();

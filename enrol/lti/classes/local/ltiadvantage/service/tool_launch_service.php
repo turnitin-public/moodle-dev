@@ -99,17 +99,18 @@ class tool_launch_service {
             'sub' => $launchdata['sub'],
             'roles' => $launchdata['https://purl.imsglobal.org/spec/lti/claim/roles'],
             'deploymentid' => $launchdata['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
-            'context' => $launchdata['https://purl.imsglobal.org/spec/lti/claim/context'] ?? null,
+            'context' => !empty($launchdata['https://purl.imsglobal.org/spec/lti/claim/context']) ?
+                $launchdata['https://purl.imsglobal.org/spec/lti/claim/context'] : null,
             'resourcelink' => $launchdata['https://purl.imsglobal.org/spec/lti/claim/resource_link'],
             'targetlinkuri' => $launchdata['https://purl.imsglobal.org/spec/lti/claim/target_link_uri'],
             'custom' => $launchdata['https://purl.imsglobal.org/spec/lti/claim/custom'] ?? null,
             'launchid' => $launch->get_launch_id(),
             'user' => [
-                'givenname' => $launchdata['given_name'] ?? null,
-                'familyname' => $launchdata['family_name'] ?? null,
-                'name' => $launchdata['name'] ?? null,
-                'email' => $launchdata['email'] ?? null,
-                'image' => $launchdata['image'] ?? null,
+                'givenname' => !empty($launchdata['given_name']) ? $launchdata['given_name'] : null,
+                'familyname' => !empty($launchdata['family_name']) ? $launchdata['family_name'] : null,
+                'name' => !empty($launchdata['name']) ? $launchdata['name'] : null,
+                'email' => !empty($launchdata['email']) ? $launchdata['email'] : null,
+                'picture' => !empty($launchdata['picture']) ? $launchdata['picture'] : null,
             ],
             'ags' => $launchdata['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint'] ?? null,
             'nrps' => $launchdata['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice'] ?? null,
@@ -316,36 +317,35 @@ class tool_launch_service {
      *
      * @param LTI_Message_Launch $launch the launch data.
      * @return array array containing [int $userid, \stdClass $resource]
-     * @throws \coding_exception if launch problems are encountered.
+     * @throws \moodle_exception if launch problems are encountered.
      */
     public function user_launches_tool(LTI_Message_Launch $launch): array {
 
         $launchdata = $this->get_launch_data($launch);
 
-        $resourceuuid = $launchdata->custom['id'] ?? null;
-        if (empty($resourceuuid)) {
-            throw new \coding_exception('Invalid launch data. The custom claim field \'id\' is required.');
-        }
-        $resource = array_values(helper::get_lti_tools(['uuid' => $resourceuuid]));
-        $resource = $resource[0] ?? null;
-        if (empty($resource) || $resource->status != ENROL_INSTANCE_ENABLED) {
-            throw new \coding_exception("Invalid launch. The resource '{$resourceuuid}' is unavailable or does not " .
-                "exist.");
-        }
-
         if (!$registration = $this->registrationrepo->find_by_platform($launchdata->platform, $launchdata->clientid)) {
-            throw new \coding_exception("Invalid launch. Cannot launch tool for invalid registration " .
-                "(issuer: {$launchdata->platform}, 'clientid: {$launchdata->clientid}).");
+            throw new \moodle_exception('ltiadvlauncherror:invalidregistration', 'enrol_lti', '',
+                [$launchdata->platform, $launchdata->clientid]);
         }
-
-        $migrationclaim = $this->migration_claim_from_launchdata($launchdata);
 
         if (!$deployment = $this->deploymentrepo->find_by_registration($registration->get_id(),
             $launchdata->deploymentid)) {
-            throw new \coding_exception("Invalid launch. Cannot launch tool for invalid deployment id " .
-                "'{$launchdata->deploymentid}'.");
+            throw new \moodle_exception('ltiadvlauncherror:invaliddeployment', 'enrol_lti', '',
+                [$launchdata->deploymentid]);
         }
-        if ($migrationclaim) {
+
+        $resourceuuid = $launchdata->custom['id'] ?? null;
+        if (empty($resourceuuid)) {
+            throw new \moodle_exception('ltiadvlauncherror:missingid', 'enrol_lti');
+        }
+
+        $resource = array_values(helper::get_lti_tools(['uuid' => $resourceuuid]));
+        $resource = $resource[0] ?? null;
+        if (empty($resource) || $resource->status != ENROL_INSTANCE_ENABLED) {
+            throw new \moodle_exception('ltiadvlauncherror:invalidid', 'enrol_lti', '', $resourceuuid);
+        }
+
+        if ($migrationclaim = $this->migration_claim_from_launchdata($launchdata)) {
             $deployment->set_legacy_consumer_key($migrationclaim->get_consumer_key());
             $this->deploymentrepo->save($deployment);
         }
@@ -377,8 +377,8 @@ class tool_launch_service {
         }
         $user = $this->userrepo->save($user);
 
-        if (!empty($launchdata->user['image'])) {
-            helper::update_user_profile_image($user->get_localid(), $launchdata->user['image']);
+        if (!empty($launchdata->user['picture'])) {
+            helper::update_user_profile_image($user->get_localid(), $launchdata->user['picture']);
         }
 
         // Set the frame embedding mode, which controls the display of blocks and nav when launching.

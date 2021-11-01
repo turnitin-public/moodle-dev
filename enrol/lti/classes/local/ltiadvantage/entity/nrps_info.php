@@ -13,18 +13,15 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-/**
- * Contains the nrps_info entity class.
- *
- * @package    enrol_lti
- * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+
 namespace enrol_lti\local\ltiadvantage\entity;
 
 /**
  * Class nrps_info, instances of which represent a names and roles provisioning service for a resource.
  *
+ * For information about Names and Role Provisioning Services 2.0, see http://www.imsglobal.org/spec/lti-nrps/v2p0.
+ *
+ * @package    enrol_lti
  * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later */
 class nrps_info {
@@ -49,14 +46,26 @@ class nrps_info {
     private $servicescope = 'https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly';
 
     /**
-     * The nrps_info constructor.
+     * The private nrps_info constructor.
      *
      * @param \moodle_url $contextmembershipsurl the memberships URL.
-     * @param array|string[] $serviceversions the supported service versions.
+     * @param string[] $serviceversions the supported service versions.
      */
-    public function __construct(\moodle_url $contextmembershipsurl, array $serviceversions = [self::SERVICE_VERSION_2]) {
+    private function __construct(\moodle_url $contextmembershipsurl, array $serviceversions = [self::SERVICE_VERSION_2]) {
         $this->contextmembershipsurl = $contextmembershipsurl;
         $this->set_service_versions($serviceversions);
+    }
+
+    /**
+     * Factory method to create a new nrps_info instance.
+     *
+     * @param \moodle_url $contextmembershipsurl the memberships URL.
+     * @param string[] $serviceversions the supported service versions.
+     * @return nrps_info the object instance.
+     */
+    public static function create(\moodle_url $contextmembershipsurl,
+            array $serviceversions = [self::SERVICE_VERSION_2]): nrps_info {
+        return new self($contextmembershipsurl, $serviceversions);
     }
 
     /**
@@ -81,6 +90,10 @@ class nrps_info {
      * @throws \coding_exception if any of the supplied versions are not valid.
      */
     private function set_service_versions(array $serviceversions): void {
+        if (empty($serviceversions)) {
+            throw new \coding_exception('Service versions array cannot be empty');
+        }
+        $serviceversions = array_unique($serviceversions);
         foreach ($serviceversions as $serviceversion) {
             if (!$this->is_valid_service_version($serviceversion)) {
                 throw new \coding_exception("Invalid Names and Roles service version '{$serviceversion}'");

@@ -14,13 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Contains the resource_link class.
- *
- * @package enrol_lti
- * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 namespace enrol_lti\local\ltiadvantage\entity;
 
 /**
@@ -28,6 +21,7 @@ namespace enrol_lti\local\ltiadvantage\entity;
  *
  * This class represents an LTI Advantage Resource Link (http://www.imsglobal.org/spec/lti/v1p3/#resource-link).
  *
+ * @package    enrol_lti
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -148,6 +142,9 @@ class resource_link {
      * @param int $contextid the local id of the context instance containing information about the platform context.
      */
     public function set_contextid(int $contextid): void {
+        if ($contextid <= 0) {
+            throw new \coding_exception('Context id must be a positive int');
+        }
         $this->contextid = $contextid;
     }
 
@@ -157,6 +154,9 @@ class resource_link {
      * @param int $resourceid the published resource id.
      */
     public function set_resourceid(int $resourceid): void {
+        if ($resourceid <= 0) {
+            throw new \coding_exception('Resource id must be a positive int');
+        }
         $this->resourceid = $resourceid;
     }
 
@@ -187,7 +187,7 @@ class resource_link {
      * @param string[] $serviceversions the string array of supported service versions.
      */
     public function add_names_and_roles_service(\moodle_url $contextmembershipurl, array $serviceversions): void {
-        $this->namesrolesservice = new nrps_info($contextmembershipurl, $serviceversions);
+        $this->namesrolesservice = nrps_info::create($contextmembershipurl, $serviceversions);
     }
 
     /**
@@ -205,7 +205,7 @@ class resource_link {
      * This is useful for associating the user with the resource link and resource I.e. the user was created when
      * launching a specific resource link.
      *
-     * @param string $issuer the issuer from which the user originates.
+     * @param \moodle_url $issuer the issuer from which the user originates.
      * @param string $sourceid the id of the user on the platform.
      * @param string $firsname the user's first name.
      * @param string $lastname the user's last name.
@@ -219,7 +219,7 @@ class resource_link {
      * @return user the user instance.
      * @throws \coding_exception if trying to add a user to an as-yet-unsaved resource_link instance.
      */
-    public function add_user(string $issuer, string $sourceid, string $firsname, string $lastname, string $lang,
+    public function add_user(\moodle_url $issuer, string $sourceid, string $firsname, string $lastname, string $lang,
             string $email, string $city, string $country, string $institution, string $timezone,
             ?int $maildisplay = null): user {
 
@@ -228,7 +228,7 @@ class resource_link {
         }
 
         return user::create_from_resource_link($this->get_id(), $this->get_resourceid(), $issuer,
-            $this->get_deploymentid(), $sourceid, $firsname, $lastname, $lang, $email, $city, $country, $institution,
-            $timezone, $maildisplay);
+            $this->get_deploymentid(), $sourceid, $firsname, $lastname, $lang, $timezone, $email, $city, $country,
+            $institution, $maildisplay);
     }
 }

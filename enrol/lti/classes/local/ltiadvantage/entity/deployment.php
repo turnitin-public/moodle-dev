@@ -14,13 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Contains the deployment class.
- *
- * @package enrol_lti
- * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 namespace enrol_lti\local\ltiadvantage\entity;
 
 /**
@@ -28,6 +21,7 @@ namespace enrol_lti\local\ltiadvantage\entity;
  *
  * This class represents an LTI Advantage Tool Deployment (http://www.imsglobal.org/spec/lti/v1p3/#tool-deployment).
  *
+ * @package enrol_lti
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -58,6 +52,16 @@ class deployment {
      */
     private function __construct(string $deploymentname, string $deploymentid, int $registrationid, ?int $id = null,
             ?string $legacyconsumerkey = null) {
+
+        if (!is_null($id) && $id <= 0) {
+            throw new \coding_exception('id must be a positive int');
+        }
+        if (empty($deploymentname)) {
+            throw new \coding_exception("Invalid 'deploymentname' arg. Cannot be an empty string.");
+        }
+        if (empty($deploymentid)) {
+            throw new \coding_exception("Invalid 'deploymentid' arg. Cannot be an empty string.");
+        }
         $this->deploymentname = $deploymentname;
         $this->deploymentid = $deploymentid;
         $this->registrationid = $registrationid;
@@ -146,12 +150,12 @@ class deployment {
      *
      * @param string $resourcelinkid the platform-issued string id of the resource link.
      * @param int $resourceid the local published resource to which this link points.
-     * @param string|null $contextid the platform context in which the resource link resides, if available.
+     * @param int|null $contextid the platform context instance in which the resource link resides, if available.
      * @return resource_link the resource_link instance.
      * @throws \coding_exception if the resource_link can't be created.
      */
     public function add_resource_link(string $resourcelinkid, int $resourceid,
-            string $contextid = null): resource_link {
+            int $contextid = null): resource_link {
 
         if (!$this->get_id()) {
             throw new \coding_exception('Can\'t add resource_link to a deployment that hasn\'t first been saved');

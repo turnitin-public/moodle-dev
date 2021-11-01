@@ -14,18 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Contains the ags_info class, used to validate service information associated with a resource_link.
- *
- * @package    enrol_lti
- * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 namespace enrol_lti\local\ltiadvantage\entity;
 
 /**
  * The ags_info class, instances of which represent grade service information for a resource_link or context.
  *
+ * For information about Assignment and Grade Services 2.0, see https://www.imsglobal.org/spec/lti-ags/v2p0/.
+ *
+ * @package    enrol_lti
  * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

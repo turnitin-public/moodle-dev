@@ -14,15 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Contains the admin_setting_toolendpoints class for rendering a table of tool endpoints.
- *
- * This setting is useful for LTI 1.3 only.
- *
- * @package    enrol_lti
- * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 namespace enrol_lti\local\ltiadvantage\admin;
 
 use enrol_lti\local\ltiadvantage\repository\application_registration_repository;
@@ -32,11 +23,12 @@ use enrol_lti\local\ltiadvantage\repository\resource_link_repository;
 use enrol_lti\local\ltiadvantage\repository\user_repository;
 use enrol_lti\local\ltiadvantage\service\application_registration_service;
 
-defined('MOODLE_INTERNAL') || die;
-
 /**
- * Class for rendering a table of tool endpoints.
+ * The admin_setting_toolendpoints class, for rendering a table of tool endpoints.
  *
+ * This setting is useful for LTI 1.3 only.
+ *
+ * @package    enrol_lti
  * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

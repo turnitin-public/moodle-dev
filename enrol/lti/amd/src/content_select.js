@@ -16,7 +16,6 @@
  * Module providing checkbox autoselection behaviour to the table on the select content deep linking view, launch_deeplink.php.
  *
  * @module     enrol_lti/content_select
- * @package    enrol_lti
  * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

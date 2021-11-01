@@ -38,14 +38,14 @@ use IMSGlobal\LTI13\LTI_Message_Launch;
 require_once(__DIR__ . '/../../config.php');
 global $CFG, $DB, $OUTPUT, $PAGE;
 
-$id_token = optional_param('id_token', null, PARAM_RAW);
+$idtoken = optional_param('id_token', null, PARAM_RAW);
 $launchid = optional_param('launchid', null, PARAM_RAW);
 
 // First launch from the platform: get launch data and cache it in case the user's not authenticated.
 $sessionlaunchcache = new launch_cache_session();
 $issuerdb = new issuer_database(new application_registration_repository(), new deployment_repository());
 
-if ($id_token) {
+if ($idtoken) {
     $launch = LTI_Message_Launch::new($issuerdb, $sessionlaunchcache)
         ->validate();
     $PAGE->set_url('/enrol/lti/launch_deeplink.php?launchid='.urlencode($launch->get_launch_id()));
@@ -54,9 +54,10 @@ if ($id_token) {
 // Redirect after authentication: Fetch launch data from the session launch cache.
 if ($launchid) {
     $launch = LTI_Message_Launch::from_cache($launchid, $issuerdb, $sessionlaunchcache);
-    if (empty($launch)) {
-        throw new coding_exception('Bad launchid. Deep linking launch data could not be found');
-    }
+}
+
+if (empty($launch)) {
+    throw new moodle_exception('Bad launchid. Deep linking launch data could not be found');
 }
 
 require_login(null, false);

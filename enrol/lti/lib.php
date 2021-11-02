@@ -359,6 +359,10 @@ class enrol_lti_plugin extends enrol_plugin {
             $mform->setType('toolid', PARAM_INT);
             $mform->setConstant('toolid', $ltitool->id);
 
+            $mform->addElement('hidden', 'uuid');
+            $mform->setType('uuid', PARAM_ALPHANUMEXT);
+            $mform->setConstant('uuid', $ltitool->uuid);
+
             $mform->setDefaults((array) $ltitool);
         }
     }

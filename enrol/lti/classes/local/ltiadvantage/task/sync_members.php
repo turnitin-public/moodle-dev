@@ -13,15 +13,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-/**
- * Contains an LTI Advantage-specific task responsible for pulling memberships from tool platforms into the tool.
- *
- * @package    enrol_lti
- * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 
 namespace enrol_lti\local\ltiadvantage\task;
+
 use core\task\scheduled_task;
 use enrol_lti\helper;
 use enrol_lti\local\ltiadvantage\entity\application_registration;
@@ -130,8 +124,10 @@ class sync_members extends scheduled_task {
             resource_link $resourcelink) {
 
         // Get a service worker for the corresponding application registration.
-        $registration = $this->issuerdb->find_registration_by_issuer($appregistration->get_platformid(),
-            $appregistration->get_clientid());
+        $registration = $this->issuerdb->find_registration_by_issuer(
+            $appregistration->get_platformid()->out(false),
+            $appregistration->get_clientid()
+        );
         $sc = new LTI_Service_Connector($registration);
 
         $nrps = $resourcelink->get_names_and_roles_service();
@@ -214,10 +210,10 @@ class sync_members extends scheduled_task {
 
                 mtrace("Completed - Synced $membercount members for the resource link '{$resourcelink->get_id()}' ".
                     "for the resource '{$resource->id}'");
-            }
-            // Now we check if we have to unenrol users who were not listed.
-            if ($this->should_sync_unenrol($resource->membersyncmode)) {
-                $unenrolcount = $this->sync_unenrol($resource, $syncedusers);
+
+                // Sync unenrolments on a per-resource-link basis so we have fine grained control over unenrolments.
+                // If a resource link doesn't support NRPS, it will already have been skipped.
+                $unenrolcount += $this->sync_unenrol_resourcelink($resourcelink, $resource, $syncedusers);
             }
 
             mtrace("Completed - Synced members for tool '$resource->id' in the course '$resource->courseid'. " .
@@ -230,6 +226,39 @@ class sync_members extends scheduled_task {
             $countsyncedimages = $this->sync_profile_images();
             mtrace("Completed - Synced $countsyncedimages profile images.");
         }
+    }
+
+    /**
+     * Process unenrolment of users for a given resource link and based on the list of recently synced users.
+     *
+     * @param resource_link $resourcelink the resource_link instance to which the $synced users pertains
+     * @param stdClass $resource the resource object instance
+     * @param array $syncedusers the array of recently synced users, who are not to be unenrolled.
+     * @return int the number of unenrolled users.
+     */
+    protected function sync_unenrol_resourcelink(resource_link $resourcelink, stdClass $resource,
+            array $syncedusers): int {
+
+        if (!$this->should_sync_unenrol($resource->membersyncmode)) {
+            return 0;
+        }
+        $ltiplugin = enrol_get_plugin('lti');
+        $unenrolcount = 0;
+
+        // Get all users for the resource_link instance.
+        $linkusers = $this->userrepo->find_by_resource_link($resourcelink->get_id());
+
+        foreach ($linkusers as $ltiuser) {
+            if (!in_array($ltiuser->get_localid(), $syncedusers)) {
+                $instance = new stdClass();
+                $instance->id = $resource->enrolid;
+                $instance->courseid = $resource->courseid;
+                $instance->enrol = 'lti';
+                $ltiplugin->unenrol_user($instance, $ltiuser->get_localid());
+                $unenrolcount++;
+            }
+        }
+        return $unenrolcount;
     }
 
     /**
@@ -264,28 +293,12 @@ class sync_members extends scheduled_task {
     protected function user_from_member(application_registration $appregistration, stdClass $resource,
             resource_link $resourcelink, array $member): user {
 
-        if ($founduser = $this->userrepo->find_by_sub($member['user_id'], $appregistration->get_platformid(),
-                $resource->id)) {
-
-            $user = user::create(
-                $resourcelink->get_resourceid(),
-                $appregistration->get_platformid(),
-                $founduser->get_deploymentid(),
-                $founduser->get_sourceid(),
-                $member['given_name'] ?? $member['user_id'],
-                $member['family_name'] ?? $resource->contextid,
-                $founduser->get_lang(),
-                $member['email'] ?? '',
-                $founduser->get_city(),
-                $founduser->get_country(),
-                $founduser->get_institution(),
-                $founduser->get_timezone(),
-                $founduser->get_maildisplay(),
-                $founduser->get_lastgrade(),
-                null,
-                $founduser->get_localid(),
-                $founduser->get_id()
-            );
+        if ($user = $this->userrepo->find_by_sub($member['user_id'],
+                $appregistration->get_platformid(), $resource->id)) {
+            // Update existing user.
+            $user->set_firstname($member['given_name'] ?? $member['user_id']);
+            $user->set_lastname($member['family_name'] ?? $resource->contextid);
+            $user->set_email($member['email'] ?? '');
         } else {
             // New user, so create them.
             $user = user::create(
@@ -296,12 +309,12 @@ class sync_members extends scheduled_task {
                 $member['given_name'] ?? $member['user_id'],
                 $member['family_name'] ?? $resource->contextid,
                 $resource->lang,
+                $resource->timezone,
                 $member['email'] ?? '',
                 $resource->city ?? '',
                 $resource->country ?? '',
                 $resource->institution ?? '',
-                $resource->timezone ?? '',
-                $resource->maildisplay ?? null
+                $resource->maildisplay
             );
         }
         $user->set_lastaccess(time());
@@ -346,6 +359,7 @@ class sync_members extends scheduled_task {
 
             if ($this->should_sync_enrol($resource->membersyncmode)) {
 
+                $user->set_resourcelinkid($resourcelink->get_id());
                 $user = $this->userrepo->save($user);
                 if (isset($member['picture'])) {
                     $this->userphotos[$user->get_localid()] = $member['picture'];
@@ -366,41 +380,6 @@ class sync_members extends scheduled_task {
         }
 
         return [$enrolcount, $userids];
-    }
-
-    /**
-     * Unenrols users for a published resource, based on their absence in last link-level or context-level sync.
-     *
-     * @param stdClass $resource The published resource record object.
-     * @param array $userids list of ids of users considered valid based on the current sync request.
-     * @return int The number of users that have been unenrolled.
-     */
-    protected function sync_unenrol(stdClass $resource, array $userids): int {
-        global $DB;
-
-        $ltiplugin = enrol_get_plugin('lti');
-
-        if (!$this->should_sync_unenrol($resource->membersyncmode)) {
-            return 0;
-        }
-
-        $unenrolcount = 0;
-        $ltiusersrs = $DB->get_recordset('enrol_lti_users', array('toolid' => $resource->id), 'lastaccess DESC',
-            'userid');
-        // Go through the users and check if any weren't present in the latest sync, removing if so.
-        foreach ($ltiusersrs as $ltiuser) {
-            if (!in_array($ltiuser->userid, $userids)) {
-                $instance = new stdClass();
-                $instance->id = $resource->enrolid;
-                $instance->courseid = $resource->courseid;
-                $instance->enrol = 'lti';
-                $ltiplugin->unenrol_user($instance, $ltiuser->userid);
-                $unenrolcount++;
-            }
-        }
-        $ltiusersrs->close();
-
-        return $unenrolcount;
     }
 
     /**

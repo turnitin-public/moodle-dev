@@ -13,38 +13,26 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-/**
- * Tests for the enrol_lti\local\ltiadvantage\task\sync_members scheduled task class.
- *
- * @package enrol_lti
- * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-namespace enrol_lti\local\ltiadvantage\task;
 
-defined('MOODLE_INTERNAL') || die();
+namespace enrol_lti\local\ltiadvantage\task;
 
 use enrol_lti\helper;
 use enrol_lti\local\ltiadvantage\entity\user;
 use enrol_lti\local\ltiadvantage\repository\resource_link_repository;
 use enrol_lti\local\ltiadvantage\repository\user_repository;
 
+defined('MOODLE_INTERNAL') || die();
+
 require_once(__DIR__ . '/../lti_advantage_testcase.php');
 
 /**
  * Tests for the enrol_lti\local\ltiadvantage\task\sync_members scheduled task.
  *
+ * @package enrol_lti
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class sync_members_testcase extends \lti_advantage_testcase {
-    /**
-     * Setup run for each test case.
-     */
-    protected function setUp(): void {
-        $this->resetAfterTest();
-    }
-
+class sync_members_test extends \lti_advantage_testcase {
     /**
      * Helper to get a list of mocked member entries for use in the mocked sync task.
      *
@@ -55,13 +43,13 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * @param bool $linklevel whether to mock the user return data at link-level (true) or context-level (false).
      * @param bool $picture whether to mock a user's picture field in the return data.
      * @return array the array of users.
-     * @throws exception if the legacyuserids array doesn't contain the correct number of ids.
+     * @throws \Exception if the legacyuserids array doesn't contain the correct number of ids.
      */
     protected function get_mock_members_with_ids(array $userids, ?array $legacyuserids = null, $names = true,
             $emails = true, bool $linklevel = true, bool $picture = false): array {
 
         if (!is_null($legacyuserids) && count($legacyuserids) != count($userids)) {
-            throw new exception('legacyuserids must contain the same number of ids as $userids.');
+            throw new \Exception('legacyuserids must contain the same number of ids as $userids.');
         }
 
         $users = [];
@@ -190,9 +178,17 @@ class sync_members_testcase extends \lti_advantage_testcase {
     }
 
     /**
+     * Test confirming task name.
+     */
+    public function test_get_name() {
+        $this->assertEquals(get_string('tasksyncmembers', 'enrol_lti'), (new sync_members())->get_name());
+    }
+
+    /**
      * Test a resource-link-level membership sync, confirming that all relevant domain objects are updated properly.
      */
     public function test_resource_link_level_sync() {
+        $this->resetAfterTest();
         [$course, $resource] = $this->create_test_environment();
 
         // Launch the tool for a user.
@@ -217,6 +213,7 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * Test a resource-link-level membership sync when there are more than one resource links for the resource.
      */
     public function test_resource_link_level_sync_multiple_resource_links() {
+        $this->resetAfterTest();
         [$course, $resource] = $this->create_test_environment();
 
         // Launch twice - once from each resource link in the platform.
@@ -259,6 +256,7 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * Verify the task will update users' profile pictures if the 'picture' member field is provided.
      */
     public function test_user_profile_image_sync() {
+        $this->resetAfterTest();
         [$course, $resource] = $this->create_test_environment();
 
         // Launch the tool for a user.
@@ -286,6 +284,7 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * Test a context-level membership sync, confirming that all relevant domain objects are updated properly.
      */
     public function test_context_level_sync() {
+        $this->resetAfterTest();
         [$course, $resource] = $this->create_test_environment();
 
         // Launch the tool for a user.
@@ -310,6 +309,7 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * Test verifying the sync task handles the omission/inclusion of PII information for users.
      */
     public function test_sync_user_data() {
+        $this->resetAfterTest();
         [$course, $resource, $resource2, $resource3, $appreg] = $this->create_test_environment();
         $userrepo = new user_repository();
 
@@ -369,6 +369,7 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * Test verifying the task won't sync members for shared resources having member sync disabled.
      */
     public function test_membership_sync_disabled() {
+        $this->resetAfterTest();
         [$course, $resource] = $this->create_test_environment(true, true, false);
 
         // Launch the tool for a user.
@@ -396,6 +397,7 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * Test verifying the sync task for resources configured as 'helper::MEMBER_SYNC_ENROL_AND_UNENROL'.
      */
     public function test_sync_mode_enrol_and_unenrol() {
+        $this->resetAfterTest();
         [$course, $resource] = $this->create_test_environment();
         $userrepo = new user_repository();
 
@@ -440,6 +442,7 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * Confirm the sync task operation for resources configured as 'helper::MEMBER_SYNC_UNENROL_MISSING'.
      */
     public function test_sync_mode_unenrol_missing() {
+        $this->resetAfterTest();
         [$course, $resource] = $this->create_test_environment(true, true, true, helper::MEMBER_SYNC_UNENROL_MISSING);
         $userrepo = new user_repository();
 
@@ -465,6 +468,7 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * Confirm the sync task operation for resources configured as 'helper::MEMBER_SYNC_ENROL_NEW'.
      */
     public function test_sync_mode_enrol_new() {
+        $this->resetAfterTest();
         [$course, $resource] = $this->create_test_environment(true, true, true, helper::MEMBER_SYNC_ENROL_NEW);
         $userrepo = new user_repository();
 
@@ -491,6 +495,7 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * Test confirming that no changes take place if the auth_lti plugin is not enabled.
      */
     public function test_sync_auth_disabled() {
+        $this->resetAfterTest();
         [$course, $resource] = $this->create_test_environment(false);
         $userrepo = new user_repository();
 
@@ -517,6 +522,7 @@ class sync_members_testcase extends \lti_advantage_testcase {
      * Test confirming that no sync takes place when the enrol_lti plugin is not enabled.
      */
     public function test_sync_enrol_disabled() {
+        $this->resetAfterTest();
         [$course, $resource] = $this->create_test_environment(true, false);
         $userrepo = new user_repository();
 
@@ -540,7 +546,38 @@ class sync_members_testcase extends \lti_advantage_testcase {
     }
 
     /**
+     * Test syncing members for a membersync-enabled resource when the launch omits the NRPS service endpoints.
+     */
+    public function test_sync_no_nrps_support() {
+        $this->resetAfterTest();
+        [$course, $resource] = $this->create_test_environment();
+        $userrepo = new user_repository();
+
+        // Launch the tool for a user.
+        $mockinstructor = $this->get_mock_launch_users_with_ids([1])[0];
+        $mocklaunch = $this->get_mock_launch($resource, $mockinstructor, null, false, false);
+        $launchservice = $this->get_tool_launch_service();
+        $launchservice->user_launches_tool($mocklaunch);
+        $this->assertCount(1, $userrepo->find_by_resource($resource->id));
+
+        // The task would sync an additional 2 users if the link had NRPS service support.
+        $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(range(2, 2)));
+
+        // We expect the task to report that it is skipping the resource due to a lack of NRPS support.
+        $task->execute();
+        $this->expectOutputRegex(
+            "/Skipping - No names and roles service found.\n".
+            "Completed - Synced members for tool '{$resource->id}' in the course '{$course->id}'. ".
+            "Processed 0 users; enrolled 0 members; unenrolled 0 members./"
+        );
+
+        // Verify no enrolments or unenrolments.
+        $this->assertCount(1, $userrepo->find_by_resource($resource->id));
+    }
+
+    /**
      * Test the member sync for a range of scenarios including migrated tools, unlaunched tools.
+     *
      * @dataProvider member_sync_data_provider
      * @param array|null $legacydata array detailing what legacy information to create, or null if not required.
      * @param array $launchdata array containing details of the launch, including user and migration claim.
@@ -550,6 +587,7 @@ class sync_members_testcase extends \lti_advantage_testcase {
     public function test_sync_user_migration(?array $legacydata, array $launchdata,
             ?array $syncmembers, array $expected) {
 
+        $this->resetAfterTest();
         // Set up the environment.
         [$course, $resource] = $this->create_test_environment(true, true, true, helper::MEMBER_SYNC_ENROL_NEW);
 
@@ -557,10 +595,11 @@ class sync_members_testcase extends \lti_advantage_testcase {
         [$legacytools, $legacyconsumerrecord, $legacyusers] = $this->setup_legacy_data($course, $legacydata);
 
         // Mock the launch for the specified user.
-        $mocklaunch = $this->get_mock_launch($resource, $launchdata['user'], null, $launchdata['launch_migration_claim']);
+        $mocklaunch = $this->get_mock_launch($resource, $launchdata['user'], null, true, true,
+            $launchdata['launch_migration_claim']);
 
         // Perform the launch.
-        $this->get_tool_launch_service()->user_launches_tool($mocklaunch, $resource);
+        $this->get_tool_launch_service()->user_launches_tool($mocklaunch);
 
         // Prepare the sync task, with a stubbed list of members.
         $task = $this->get_mock_task_with_users($syncmembers);

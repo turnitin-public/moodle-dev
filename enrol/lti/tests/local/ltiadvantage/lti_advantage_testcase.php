@@ -14,13 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Contains a parent class used in LTI Advantage testing.
- *
- * @package    enrol_lti
- * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 use enrol_lti\helper;
 use enrol_lti\local\ltiadvantage\entity\application_registration;
 use enrol_lti\local\ltiadvantage\repository\application_registration_repository;
@@ -34,6 +27,7 @@ use IMSGlobal\LTI13\LTI_Message_Launch;
 /**
  * Parent class for LTI Advantage tests, providing environment setup and mock user launches.
  *
+ * @package    enrol_lti
  * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -43,6 +37,8 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
      * Get a list of users ready for use with mock launches by providing an array of user ids.
      *
      * @param array $ids the platform user_ids for the users.
+     * @param bool $includepicture whether to include a profile picture or not (slows tests, so defaults to false).
+     * @param string $role the LTI role to include in the user data.
      * @return array the users list.
      */
     protected function get_mock_launch_users_with_ids(array $ids, bool $includepicture = false,
@@ -72,11 +68,14 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
      * @param array $mockuser the user on the platform who is performing the launch.
      * @param string|null $resourcelinkid the id of resource link in the platform, if desired.
      * @param bool $ags whether to include a mock AGS claim or not.
+     * @param bool $nrps whether to include a mock NRPS claim or not.
      * @param array|null $migrationclaiminfo contains consumer key, secret and any fields which are sent in the claim.
+     * @param array|null $customparams an array of custom params to send, or null to just use defaults.
      * @return LTI_Message_Launch the mock launch object with test launch data.
      */
     protected function get_mock_launch(\stdClass $resource, array $mockuser,
-            ?string $resourcelinkid = null, bool $ags = true, ?array $migrationclaiminfo = null): LTI_Message_Launch {
+            ?string $resourcelinkid = null, bool $ags = true, bool $nrps = true, ?array $migrationclaiminfo = null,
+            ?array $customparams = null): LTI_Message_Launch {
 
         $mocklaunch = $this->getMockBuilder(LTI_Message_Launch::class)
             ->onlyMethods(['get_launch_data'])
@@ -85,91 +84,102 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
         $mocklaunch->expects($this->any())
             ->method('get_launch_data')
             ->will($this->returnCallback(
-                function() use ($resource, $mockuser, $resourcelinkid, $migrationclaiminfo, $ags) {
-                // This simulates the data in the jwt['body'] of a real resource link launch.
-                // Real launches would of course have this data and authenticity of the user verified.
-                $rltitle = $resourcelinkid ? "Resource link $resourcelinkid in platform" : "Resource link in platform";
-                $rlid = $resourcelinkid ?: '12345';
-                $data = [
-                    'iss' => 'https://lms.example.org', // Must match registration in create_test_environment.
-                    'aud' => '123', // Must match registration in create_test_environment.
-                    'sub' => $mockuser['user_id'], // User id on the platform site.
-                    'exp' => time() + 60,
-                    'nonce' => 'some-nonce-value-123',
-                    'https://purl.imsglobal.org/spec/lti/claim/deployment_id' => '1', // Must match registration.
-                    'https://purl.imsglobal.org/spec/lti/claim/roles' =>
-                        $mockuser['roles'] ?? ['http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'],
-                    'https://purl.imsglobal.org/spec/lti/claim/resource_link' => [
-                        'title' => $rltitle,
-                        'id' => $rlid, // Arbitrary, will be mapped to the user during resource link launch.
-                    ],
-                    "https://purl.imsglobal.org/spec/lti/claim/context" => [
-                        "id" => "context-id-12345",
-                        "label" => "ITS 123",
-                        "title" => "ITS 123 Machine Learning",
-                        "type" => ["http://purl.imsglobal.org/vocab/lis/v2/course#CourseOffering"]
-                    ],
-                    'https://purl.imsglobal.org/spec/lti/claim/target_link_uri' =>
-                        'https://this-moodle-tool.example.org/context/24/resource/14',
-                    'https://purl.imsglobal.org/spec/lti/claim/custom' => [
-                        'id' => $resource->uuid,
-                        'force_embed' => true
-                    ],
-                    'given_name' => $mockuser['given_name'],
-                    'family_name' => $mockuser['family_name'],
-                    'email' => $mockuser['email'],
-                    'https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice' => [
-                        'context_memberships_url' => 'https://lms.example.org/context/24/memberships',
-                        'service_versions' => ['2.0']
-                    ]
-                ];
-
-                if ($ags) {
-                    $data["https://purl.imsglobal.org/spec/lti-ags/claim/endpoint"] = [
-                        "scope" => [
-                            "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
-                            "https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly",
-                            "https://purl.imsglobal.org/spec/lti-ags/scope/score"
+                function()
+                use ($resource, $mockuser, $resourcelinkid, $migrationclaiminfo, $ags, $nrps, $customparams) {
+                    // This simulates the data in the jwt['body'] of a real resource link launch.
+                    // Real launches would of course have this data and authenticity of the user verified.
+                    $rltitle = $resourcelinkid ? "Resource link $resourcelinkid in platform" : "Resource link in platform";
+                    $rlid = $resourcelinkid ?: '12345';
+                    $data = [
+                        'iss' => 'https://lms.example.org', // Must match registration in create_test_environment.
+                        'aud' => '123', // Must match registration in create_test_environment.
+                        'sub' => $mockuser['user_id'], // User id on the platform site.
+                        'exp' => time() + 60,
+                        'nonce' => 'some-nonce-value-123',
+                        'https://purl.imsglobal.org/spec/lti/claim/deployment_id' => '1', // Must match registration.
+                        'https://purl.imsglobal.org/spec/lti/claim/roles' =>
+                            $mockuser['roles'] ?? ['http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'],
+                        'https://purl.imsglobal.org/spec/lti/claim/resource_link' => [
+                            'title' => $rltitle,
+                            'id' => $rlid, // Arbitrary, will be mapped to the user during resource link launch.
                         ],
-                        "lineitems" => "https://platform.example.com/10/lineitems/",
-                        "lineitem" => "https://platform.example.com/10/lineitems/45/lineitem"
-                    ];
-                }
-
-                if (!empty($mockuser['picture'])) {
-                    $data['picture'] = $mockuser['picture'];
-                }
-
-                if ($migrationclaiminfo) {
-                    $base = [
-                        $migrationclaiminfo['consumer_key'],
-                        $data['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
-                        $data['iss'],
-                        $data['aud'],
-                        $data['exp'],
-                        $data['nonce']
-                    ];
-                    $basestring = implode('&', $base);
-
-                    $data['https://purl.imsglobal.org/spec/lti/claim/lti1p1'] = [
-                        'oauth_consumer_key' => $migrationclaiminfo['consumer_key'],
+                        "https://purl.imsglobal.org/spec/lti/claim/context" => [
+                            "id" => "context-id-12345",
+                            "label" => "ITS 123",
+                            "title" => "ITS 123 Machine Learning",
+                            "type" => ["http://purl.imsglobal.org/vocab/lis/v2/course#CourseOffering"]
+                        ],
+                        'https://purl.imsglobal.org/spec/lti/claim/target_link_uri' =>
+                            'https://this-moodle-tool.example.org/context/24/resource/14',
+                        'given_name' => $mockuser['given_name'],
+                        'family_name' => $mockuser['family_name'],
+                        'email' => $mockuser['email'],
                     ];
 
-                    if (isset($migrationclaiminfo['signing_secret'])) {
-                        $sig = base64_encode(hash_hmac('sha256', $basestring, $migrationclaiminfo['signing_secret']));
-                        $data['https://purl.imsglobal.org/spec/lti/claim/lti1p1']['oauth_consumer_key_sign'] = $sig;
+                    if (!is_null($customparams)) {
+                        $data['https://purl.imsglobal.org/spec/lti/claim/custom'] = $customparams;
+                    } else {
+                        $data['https://purl.imsglobal.org/spec/lti/claim/custom'] = [
+                            'id' => $resource->uuid,
+                        ];
                     }
 
-                    $claimprops = ['user_id', 'context_id', 'tool_consumer_instance_guid', 'resource_link_id'];
-                    foreach ($claimprops as $prop) {
-                        if (!empty($migrationclaiminfo[$prop])) {
-                            $data['https://purl.imsglobal.org/spec/lti/claim/lti1p1'][$prop] =
-                                $migrationclaiminfo[$prop];
+                    if ($ags) {
+                        $data["https://purl.imsglobal.org/spec/lti-ags/claim/endpoint"] = [
+                            "scope" => [
+                                "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
+                                "https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly",
+                                "https://purl.imsglobal.org/spec/lti-ags/scope/score"
+                            ],
+                            "lineitems" => "https://platform.example.com/10/lineitems/",
+                            "lineitem" => "https://platform.example.com/10/lineitems/45/lineitem"
+                        ];
+                    }
+
+                    if ($nrps) {
+                        $data['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice'] = [
+                            'context_memberships_url' => 'https://lms.example.org/context/24/memberships',
+                            'service_versions' => ['2.0']
+                        ];
+                    }
+
+                    if (!empty($mockuser['picture'])) {
+                        $data['picture'] = $mockuser['picture'];
+                    }
+
+                    if ($migrationclaiminfo) {
+                        if (isset($migrationclaiminfo['consumer_key'])) {
+                            $base = [
+                                $migrationclaiminfo['consumer_key'],
+                                $data['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
+                                $data['iss'],
+                                $data['aud'],
+                                $data['exp'],
+                                $data['nonce']
+                            ];
+                            $basestring = implode('&', $base);
+
+                            $data['https://purl.imsglobal.org/spec/lti/claim/lti1p1'] = [
+                                'oauth_consumer_key' => $migrationclaiminfo['consumer_key'],
+                            ];
+
+                            if (isset($migrationclaiminfo['signing_secret'])) {
+                                $sig = base64_encode(hash_hmac('sha256', $basestring, $migrationclaiminfo['signing_secret']));
+                                $data['https://purl.imsglobal.org/spec/lti/claim/lti1p1']['oauth_consumer_key_sign'] = $sig;
+                            }
+                        }
+
+                        $claimprops = ['user_id', 'context_id', 'tool_consumer_instance_guid', 'resource_link_id'];
+                        foreach ($claimprops as $prop) {
+                            if (!empty($migrationclaiminfo[$prop])) {
+                                $data['https://purl.imsglobal.org/spec/lti/claim/lti1p1'][$prop] =
+                                    $migrationclaiminfo[$prop];
+                            }
                         }
                     }
+                    return $data;
                 }
-                return $data;
-            }));
+            ));
 
         return $mocklaunch;
     }
@@ -181,11 +191,14 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
      * @param bool $enableenrolplugin whether to enable the enrol plugin during setup.
      * @param bool $membersync whether or not the published resource support membership sync with the platform.
      * @param int $membersyncmode the mode of member sync to set up on the shared resource.
+     * @param bool $gradesync whether or not to enabled gradesync on the published resources.
+     * @param bool $gradesynccompletion whether or not to require gradesynccompletion on the published resources.
+     * @param int $enrolstartdate the unix time when the enrolment starts, or 0 for no start time.
      * @return array array of objects for use in individual tests; courses, tools.
      */
     protected function create_test_environment(bool $enableauthplugin = true, bool $enableenrolplugin = true,
             bool $membersync = true, int $membersyncmode = helper::MEMBER_SYNC_ENROL_AND_UNENROL,
-            bool $gradesync = true, bool $gradesynccompletion = false) {
+            bool $gradesync = true, bool $gradesynccompletion = false, int $enrolstartdate = 0) {
 
         global $CFG;
         require_once($CFG->libdir . '/completionlib.php');
@@ -200,11 +213,11 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
         // Set up the registration and deployment.
         $reg = application_registration::create(
             'Example LMS application',
-            'https://lms.example.org',
+            new moodle_url('https://lms.example.org'),
             '123',
-            new \moodle_url('https://example.org/authrequesturl'),
-            new \moodle_url('https://example.org/jwksurl'),
-            new \moodle_url('https://example.org/accesstokenurl')
+            new moodle_url('https://example.org/authrequesturl'),
+            new moodle_url('https://example.org/jwksurl'),
+            new moodle_url('https://example.org/accesstokenurl')
         );
         $regrepo = new application_registration_repository();
         $reg = $regrepo->save($reg);
@@ -225,7 +238,8 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
             'membersync' => $membersync,
             'gradesync' => $gradesync,
             'gradesynccompletion' => $gradesynccompletion,
-            'ltiversion' => 'LTI-1p3'
+            'ltiversion' => 'LTI-1p3',
+            'enrolstartdate' => $enrolstartdate
         ];
         $tool = $generator->create_lti_tool((object)$tooldata);
         $tool = helper::get_lti_tool($tool->id);
@@ -240,7 +254,8 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
             'membersync' => $membersync,
             'gradesync' => $gradesync,
             'gradesynccompletion' => $gradesynccompletion,
-            'ltiversion' => 'LTI-1p3'
+            'ltiversion' => 'LTI-1p3',
+            'enrolstartdate' => $enrolstartdate
         ];
         $tool2 = $generator->create_lti_tool((object)$tooldata);
         $tool2 = helper::get_lti_tool($tool2->id);
@@ -252,7 +267,8 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
             'membersync' => $membersync,
             'gradesync' => $gradesync,
             'gradesynccompletion' => $gradesynccompletion,
-            'ltiversion' => 'LTI-1p3'
+            'ltiversion' => 'LTI-1p3',
+            'enrolstartdate' => $enrolstartdate
         ];
         $tool3 = $generator->create_lti_tool((object)$tooldata);
         $tool3 = helper::get_lti_tool($tool3->id);

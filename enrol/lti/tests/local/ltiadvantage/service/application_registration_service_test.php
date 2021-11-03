@@ -72,8 +72,6 @@ class application_registration_service_test extends \lti_advantage_testcase {
     }
 
     /**
-<<<<<<< Updated upstream
-=======
      * Test verifying that the service cannot save two identical (same issuer and clientid) application registrations.
      */
     public function test_register_application_unique_constraints() {
@@ -95,7 +93,6 @@ class application_registration_service_test extends \lti_advantage_testcase {
     }
 
     /**
->>>>>>> Stashed changes
      * Test the use case "As an admin, I can update an application registered as an LTI consumer (platform)".
      */
     public function test_update_application_registration() {

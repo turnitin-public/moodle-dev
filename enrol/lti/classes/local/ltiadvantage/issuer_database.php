@@ -14,13 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Contains the issuer_database class.
- *
- * @package    enrol_lti
- * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 namespace enrol_lti\local\ltiadvantage;
 use enrol_lti\local\ltiadvantage\repository\application_registration_repository;
 use enrol_lti\local\ltiadvantage\repository\deployment_repository;
@@ -29,6 +22,7 @@ use IMSGlobal\LTI13;
 /**
  * The issuer_database class, providing a read-only store of issuer details.
  *
+ * @package    enrol_lti
  * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -57,9 +51,9 @@ class issuer_database implements LTI13\Database {
      *
      * @param string $iss the issuer id.
      * @param string $clientid the client_id of the registration.
-     * @return LTI13\LTI_Registration The registration object.
+     * @return null|LTI13\LTI_Registration The registration object.
      */
-    public function find_registration_by_issuer($iss, $clientid = null): LTI13\LTI_Registration {
+    public function find_registration_by_issuer($iss, $clientid = null): ?LTI13\LTI_Registration {
         if (is_null($clientid)) {
             throw new \coding_exception("Both issuer and client id are required to identify platform registrations ".
                 "and must be sent by your LMS during both login requests (as 'client_id') and in the auth response ".
@@ -69,16 +63,19 @@ class issuer_database implements LTI13\Database {
         global $CFG;
         require_once($CFG->libdir . '/moodlelib.php'); // For get_config() usage.
         $reg = $this->appregrepo->find_by_platform($iss, $clientid);
+        if (!$reg) {
+            return null;
+        }
         $privatekey = get_config('enrol_lti', 'lti_13_privatekey');
         $kid = get_config('enrol_lti', 'lti_13_kid');
 
         return LTI13\LTI_Registration::new()
-            ->set_auth_login_url($reg->get_authenticationrequesturl())
-            ->set_auth_token_url($reg->get_accesstokenurl())
+            ->set_auth_login_url($reg->get_authenticationrequesturl()->out(false))
+            ->set_auth_token_url($reg->get_accesstokenurl()->out(false))
             ->set_client_id($reg->get_clientid())
-            ->set_key_set_url($reg->get_jwksurl())
+            ->set_key_set_url($reg->get_jwksurl()->out(false))
             ->set_kid($kid)
-            ->set_issuer($reg->get_platformid())
+            ->set_issuer($reg->get_platformid()->out(false))
             ->set_tool_private_key($privatekey);
     }
 
@@ -87,17 +84,17 @@ class issuer_database implements LTI13\Database {
      *
      * @param string $iss the issuer id.
      * @param string $deployment_id the deployment id.
-     * @param string $clientid the client_id of the registration.
+     * @param string $client_id the client_id of the registration.
      * @return LTI13\LTI_Deployment|null The deployment object or null if not found.
      */
-    public function find_deployment($iss, $deployment_id, $clientid = null): ?LTI13\LTI_Deployment {
-        if (is_null($clientid)) {
+    public function find_deployment($iss, $deployment_id, $client_id = null): ?LTI13\LTI_Deployment {
+        if (is_null($client_id)) {
             throw new \coding_exception("Both issuer and client id are required to identify platform registrations ".
                 "and must be sent by your LMS during both login requests (as 'client_id') and in the auth response ".
                 "Tool JWT (as the 'aud' claim).");
         }
 
-        $appregistration = $this->appregrepo->find_by_platform($iss, $clientid);
+        $appregistration = $this->appregrepo->find_by_platform($iss, $client_id);
         if (!$appregistration) {
             return null;
         }

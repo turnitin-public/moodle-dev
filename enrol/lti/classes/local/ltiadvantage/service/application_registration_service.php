@@ -13,14 +13,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-/**
- * Contains the application registration service.
- *
- * @package    enrol_lti
- * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+
 namespace enrol_lti\local\ltiadvantage\service;
+
 use enrol_lti\local\ltiadvantage\entity\application_registration;
 use enrol_lti\local\ltiadvantage\entity\registration_url;
 use enrol_lti\local\ltiadvantage\repository\application_registration_repository;
@@ -33,6 +28,7 @@ use enrol_lti\local\ltiadvantage\repository\user_repository;
 /**
  * Class application_registration_service.
  *
+ * @package enrol_lti
  * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -81,7 +77,7 @@ class application_registration_service {
     private function registration_from_dto(\stdClass $dto): application_registration {
         return application_registration::create(
             $dto->name,
-            $dto->platformid,
+            new \moodle_url($dto->platformid),
             $dto->clientid,
             new \moodle_url($dto->authenticationrequesturl),
             new \moodle_url($dto->jwksurl),
@@ -97,6 +93,10 @@ class application_registration_service {
      * @return application_registration the application_registration domain object.
      */
     public function create_application_registration(\stdClass $appregdto): application_registration {
+        if ($this->appregistrationrepo->find_by_platform($appregdto->platformid, $appregdto->clientid)) {
+            throw new \moodle_exception("A registration for issuer '$appregdto->platformid', "
+                ."clientid '$appregdto->clientid' already exists.");
+        }
         return $this->appregistrationrepo->save($this->registration_from_dto($appregdto));
     }
 

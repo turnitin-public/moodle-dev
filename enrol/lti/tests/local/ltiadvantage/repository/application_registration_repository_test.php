@@ -14,13 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Contains tests for the application_registration_repository.
- *
- * @package enrol_lti
- * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 namespace enrol_lti\local\ltiadvantage\repository;
 use enrol_lti\local\ltiadvantage\entity\application_registration;
 use enrol_lti\local\ltiadvantage\entity\deployment;
@@ -28,18 +21,11 @@ use enrol_lti\local\ltiadvantage\entity\deployment;
 /**
  * Tests for the application_registration_repository.
  *
+ * @package enrol_lti
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class application_registration_repository_test extends \advanced_testcase {
-
-    /**
-     * Setup run for each test case.
-     */
-    protected function setUp(): void {
-        $this->resetAfterTest();
-    }
-
     /**
      * Helper to generate a new application_registration object.
      *
@@ -54,7 +40,7 @@ class application_registration_repository_test extends \advanced_testcase {
         $clientid = $clientid ?? 'clientid_123';
         return application_registration::create(
             'Example LMS application',
-            $issuer,
+            new \moodle_url($issuer),
             $clientid,
             new \moodle_url('https://example.org/authrequesturl'),
             new \moodle_url('https://example.org/jwksurl'),
@@ -102,6 +88,7 @@ class application_registration_repository_test extends \advanced_testcase {
      * Tests adding an application_registration to the repository.
      */
     public function test_save_new() {
+        $this->resetAfterTest();
         $registration = $this->generate_application_registration();
         $repository = new application_registration_repository();
         $createdregistration = $repository->save($registration);
@@ -115,13 +102,20 @@ class application_registration_repository_test extends \advanced_testcase {
      * Test saving an application_registration that is already present in the store.
      */
     public function test_save_existing() {
+        $this->resetAfterTest();
         $testregistration = $this->generate_application_registration();
         $repository = new application_registration_repository();
 
         $createdregistration = $repository->save($testregistration);
-        $createdregistration->set_authenticationrequesturl('https://example.com/NEW_authrequesturl');
-        $createdregistration->set_jwksurl('https://example.com/NEW_jwksurl');
-        $createdregistration->set_accesstokenurl('https://example.com/NEW_accesstokenurl');
+        $updatedregistration = application_registration::create(
+            'Updated name',
+            new \moodle_url('https://updated-lms.example.org/'),
+            'Updated-client-id',
+            new \moodle_url('https://updated-lms.example.org/auth'),
+            new \moodle_url('https://updated-lms.example.org/jwks'),
+            new \moodle_url('https://updated-lms.example.org/token'),
+            $createdregistration->get_id()
+        );
         $updatedregistration = $repository->save($createdregistration);
 
         $this->assertEquals($createdregistration->get_id(), $updatedregistration->get_id());
@@ -133,6 +127,7 @@ class application_registration_repository_test extends \advanced_testcase {
      * Tests trying to persist two as-yet-unpersisted objects having identical makeup.
      */
     public function test_save_duplicate_unique_constraints() {
+        $this->resetAfterTest();
         $testregistration = $this->generate_application_registration();
         $testregistration2 = $this->generate_application_registration();
         $repository = new application_registration_repository();
@@ -146,6 +141,7 @@ class application_registration_repository_test extends \advanced_testcase {
      * Test finding an application_registration in the repository.
      */
     public function test_find() {
+        $this->resetAfterTest();
         $testregistration = $this->generate_application_registration();
         $repository = new application_registration_repository();
         $createdregistration = $repository->save($testregistration);
@@ -160,6 +156,7 @@ class application_registration_repository_test extends \advanced_testcase {
      * Test verifying that find_all() returns all registrations.
      */
     public function test_find_all() {
+        $this->resetAfterTest();
         // None to begin with.
         $repository = new application_registration_repository();
         $this->assertEquals([], $repository->find_all());
@@ -185,6 +182,7 @@ class application_registration_repository_test extends \advanced_testcase {
      * Test confirming that registrations can be found by their platform string.
      */
     public function test_find_by_platform() {
+        $this->resetAfterTest();
         // None to begin with.
         $repository = new application_registration_repository();
         $this->assertNull($repository->find_by_platform('https://some.platform.org', 'abc'));
@@ -206,6 +204,7 @@ class application_registration_repository_test extends \advanced_testcase {
      * Test checking existence of an application_registration within the repository.
      */
     public function test_exists() {
+        $this->resetAfterTest();
         $testregistration = $this->generate_application_registration();
         $repository = new application_registration_repository();
         $createdregistration = $repository->save($testregistration);
@@ -218,6 +217,7 @@ class application_registration_repository_test extends \advanced_testcase {
      * Test confirming that delete removes items from the repository.
      */
     public function test_delete() {
+        $this->resetAfterTest();
         global $DB;
         $reg = $this->generate_application_registration();
         $repository = new application_registration_repository();
@@ -235,6 +235,7 @@ class application_registration_repository_test extends \advanced_testcase {
      * Verify that application registrations can be found through their linked deployments.
      */
     public function test_find_by_deployment() {
+        $this->resetAfterTest();
         $appregrepo = new application_registration_repository();
         $deploymentrepo = new deployment_repository();
 

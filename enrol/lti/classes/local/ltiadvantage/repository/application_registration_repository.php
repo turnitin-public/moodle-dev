@@ -13,19 +13,14 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-/**
- * Contains the application_registration_repository class.
- *
- * @package enrol_lti
- * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+
 namespace enrol_lti\local\ltiadvantage\repository;
 use enrol_lti\local\ltiadvantage\entity\application_registration;
 
 /**
  * Class application_registration_repository.
  *
+ * @package    enrol_lti
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -43,7 +38,7 @@ class application_registration_repository {
     private function application_registration_from_record(\stdClass $record): application_registration {
         $appreg = application_registration::create(
             $record->name,
-            $record->platformid,
+            new \moodle_url($record->platformid),
             $record->clientid,
             new \moodle_url($record->authenticationrequesturl),
             new \moodle_url($record->jwksurl),
@@ -75,10 +70,11 @@ class application_registration_repository {
      * @return \stdClass the record.
      */
     private function record_from_application_registration(application_registration $appregistration): \stdClass {
-        $indexhash = $this->get_unique_index_hash($appregistration->get_platformid(), $appregistration->get_clientid());
+        $indexhash = $this->get_unique_index_hash($appregistration->get_platformid()->out(false),
+            $appregistration->get_clientid());
         $appregistrationrecord = (object) [
             'name' => $appregistration->get_name(),
-            'platformid' => $appregistration->get_platformid(),
+            'platformid' => $appregistration->get_platformid()->out(false),
             'clientid' => $appregistration->get_clientid(),
             'platformclienthash' => $indexhash,
             'authenticationrequesturl' => $appregistration->get_authenticationrequesturl()->out(false),

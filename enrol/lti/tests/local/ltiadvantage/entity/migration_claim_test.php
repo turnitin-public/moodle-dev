@@ -14,13 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Contains tests for the migration_claim class.
- *
- * @package enrol_lti
- * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 namespace enrol_lti\local\ltiadvantage\entity;
 
 use enrol_lti\local\ltiadvantage\repository\legacy_consumer_repository;
@@ -28,10 +21,11 @@ use enrol_lti\local\ltiadvantage\repository\legacy_consumer_repository;
 /**
  * Tests for migration_claim.
  *
+ * @package enrol_lti
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class migration_claim_testcase extends \advanced_testcase {
+class migration_claim_test extends \advanced_testcase {
     /**
      * Setup run for each test case.
      */

@@ -13,17 +13,10 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-/**
- * Contains the migration_claim class.
- *
- * @package enrol_lti
- * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+
 namespace enrol_lti\local\ltiadvantage\entity;
 
 use enrol_lti\local\ltiadvantage\repository\legacy_consumer_repository;
-
 
 /**
  * The migration_claim class, instances of which represent information passed in an 'lti1p1' migration claim.
@@ -32,6 +25,7 @@ use enrol_lti\local\ltiadvantage\repository\legacy_consumer_repository;
  *
  * See https://www.imsglobal.org/spec/lti/v1p3/migr#lti-1-1-migration-claim
  *
+ * @package enrol_lti
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -39,9 +33,6 @@ class migration_claim {
 
     /** @var string the LTI 1.1 consumer key */
     private $consumerkey;
-
-    /** @var string base64 encoded hmac-sha256 signature. */
-    private $signature;
 
     /** @var string the LTI 1.1 user identifier.
      * This is only included in the claim if it differs to the value included in the LTI 1.3 'sub' claim.
@@ -105,7 +96,6 @@ class migration_claim {
         }
 
         $this->consumerkey = $claim['oauth_consumer_key'];
-        $this->signature = $claim['oauth_consumer_key_sign'];
         $this->userid = $claim['user_id'] ?? null;
         $this->contextid = $claim['context_id'] ?? null;
         $this->toolconsumerinstanceguid = $claim['tool_consumer_instance_guid'] ?? null;

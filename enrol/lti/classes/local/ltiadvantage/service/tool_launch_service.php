@@ -13,13 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-/**
- * Contains the tool_launch_service class.
- *
- * @package enrol_lti
- * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+
 namespace enrol_lti\local\ltiadvantage\service;
 
 use enrol_lti\helper;
@@ -44,6 +38,7 @@ use IMSGlobal\LTI13\LTI_Message_Launch;
  *
  * See http://www.imsglobal.org/spec/lti/v1p3/#launch-from-a-resource-link
  *
+ * @package enrol_lti
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -199,32 +194,22 @@ class tool_launch_service {
             resource_link $resourcelink): user {
 
         // Find the user based on the unique-to-the-issuer 'sub' value.
-        if ($founduser = $this->userrepo->find_by_sub($launchdata->sub, $launchdata->platform, $resource->id)) {
-            // User exists, so update existing.
-            $user = user::create(
-                $resource->id,
-                $founduser->get_issuer(),
-                $founduser->get_deploymentid(),
-                $launchdata->sub,
-                $launchdata->user['givenname'] ?? $launchdata->sub,
-                $launchdata->user['familyname'] ?? $resource->contextid,
-                $resource->lang,
-                $launchdata->user['email'] ?? '',
-                $resource->city ?? '',
-                $resource->country ?? '',
-                $resource->institution ?? '',
-                $resource->timezone ?? '',
-                $resource->maildisplay ?? null,
-                $founduser->get_lastgrade(),
-                null,
-                $founduser->get_localid(),
-                $founduser->get_id()
-            );
+        if ($user = $this->userrepo->find_by_sub($launchdata->sub, new \moodle_url($launchdata->platform), $resource->id)) {
+            // User exists, so update existing based on launch data and resource data which may have changed.
+            $user->set_firstname($launchdata->user['givenname'] ?? $launchdata->sub);
+            $user->set_lastname($launchdata->user['familyname'] ?? $resource->contextid);
+            $user->set_email($launchdata->user['email'] ?? '');
             $user->set_resourcelinkid($resourcelink->get_id());
+            $user->set_lang($resource->lang);
+            $user->set_city($resource->city);
+            $user->set_country($resource->country);
+            $user->set_institution($resource->institution);
+            $user->set_timezone($resource->timezone);
+            $user->set_maildisplay($resource->maildisplay);
         } else {
             // Create the lti user.
             $user = $resourcelink->add_user(
-                $launchdata->platform,
+                new \moodle_url($launchdata->platform),
                 $launchdata->sub,
                 $launchdata->user['givenname'] ?? $launchdata->sub,
                 $launchdata->user['familyname'] ?? $resource->contextid,
@@ -251,6 +236,15 @@ class tool_launch_service {
         if (!isset($launchdata->lti1p1)) {
             return null;
         }
+
+        // Despite the spec requiring the oauth_consumer_key field be present in the migration claim:
+        // (see https://www.imsglobal.org/spec/lti/v1p3/migr#oauth_consumer_key),
+        // Platforms may omit this field making migration impossible.
+        // E.g. for Canvas launches taking place after an assignment_selection placement.
+        if (empty($launchdata->lti1p1['oauth_consumer_key'])) {
+            return null;
+        }
+
         return new migration_claim($launchdata->lti1p1, $launchdata->deploymentid,
             $launchdata->platform, $launchdata->clientid, $launchdata->exp, $launchdata->nonce,
             new legacy_consumer_repository());
@@ -385,7 +379,7 @@ class tool_launch_service {
         global $SESSION;
         $context = \context::instance_by_id($resource->contextid);
         $isforceembed = $launchdata->custom['force_embed'] ?? false;
-        $isinstructor = $this->user_is_staff($launchdata) || $this->user_is_admin($launchdata);
+        $isinstructor = $this->user_is_staff($launchdata, true) || $this->user_is_admin($launchdata);
         $isforceembed = $isforceembed || ($context->contextlevel == CONTEXT_MODULE && !$isinstructor);
         if ($isforceembed) {
             $SESSION->forcepagelayout = 'embedded';

@@ -14,13 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Contains tests for the deployment_repository.
- *
- * @package enrol_lti
- * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 namespace enrol_lti\local\ltiadvantage\repository;
 use enrol_lti\local\ltiadvantage\entity\application_registration;
 use enrol_lti\local\ltiadvantage\entity\deployment;
@@ -28,17 +21,11 @@ use enrol_lti\local\ltiadvantage\entity\deployment;
 /**
  * Tests for deployment_repository.
  *
+ * @package enrol_lti
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class deployment_repository_testcase extends \advanced_testcase {
-    /**
-     * Setup run for each test case.
-     */
-    protected function setUp(): void {
-        $this->resetAfterTest();
-    }
-
+class deployment_repository_test extends \advanced_testcase {
     /**
      * Helper to create test deployment objects for use with the repository tests.
      *
@@ -52,7 +39,7 @@ class deployment_repository_testcase extends \advanced_testcase {
         if (is_null($appregistrationid)) {
             $registration = application_registration::create(
                 'Test',
-                'http://lms.example.org',
+                new \moodle_url('http://lms.example.org'),
                 'clientid_123',
                 new \moodle_url('https://example.org/authrequesturl'),
                 new \moodle_url('https://example.org/jwksurl'),
@@ -103,6 +90,7 @@ class deployment_repository_testcase extends \advanced_testcase {
      * Test saving a new deployment.
      */
     public function test_save_new() {
+        $this->resetAfterTest();
         $deploymentrepo = new deployment_repository();
         $deployment = $this->create_test_deployment();
         $deployment->set_legacy_consumer_key('test-consumer-key');
@@ -117,6 +105,7 @@ class deployment_repository_testcase extends \advanced_testcase {
      * Test saving an existing deployment.
      */
     public function test_save_existing() {
+        $this->resetAfterTest();
         $deploymentrepo = new deployment_repository();
         $deployment = $this->create_test_deployment();
         $saved = $deploymentrepo->save($deployment);
@@ -133,6 +122,7 @@ class deployment_repository_testcase extends \advanced_testcase {
      * Test trying to save two deployments of identical nature in sequence.
      */
     public function test_save_unique_constraints_not_met() {
+        $this->resetAfterTest();
         $deployment1 = $this->create_test_deployment('Deploy_ID_123');
         $deployment2 = $this->create_test_deployment('Deploy_ID_123', $deployment1->get_registrationid());
         $deploymentrepo = new deployment_repository();
@@ -146,6 +136,7 @@ class deployment_repository_testcase extends \advanced_testcase {
      * Test existence of a deployment within the repository.
      */
     public function test_exists() {
+        $this->resetAfterTest();
         $deploymentrepo = new deployment_repository();
         $deployment = $this->create_test_deployment();
         $saveddeployment = $deploymentrepo->save($deployment);
@@ -158,6 +149,7 @@ class deployment_repository_testcase extends \advanced_testcase {
      * Test finding a deployment in the repository.
      */
     public function test_find() {
+        $this->resetAfterTest();
         $deployment = $this->create_test_deployment();
         $deploymentrepo = new deployment_repository();
         $saveddeployment = $deploymentrepo->save($deployment);
@@ -172,6 +164,7 @@ class deployment_repository_testcase extends \advanced_testcase {
      * Test deleting a deployment object from the repository.
      */
     public function test_delete() {
+        $this->resetAfterTest();
         $deployment = $this->create_test_deployment();
         $deploymentrepo = new deployment_repository();
         $saveddeployment = $deploymentrepo->save($deployment);
@@ -187,6 +180,7 @@ class deployment_repository_testcase extends \advanced_testcase {
      * Test deleting a deployment by registration.
      */
     public function test_delete_by_registration() {
+        $this->resetAfterTest();
         $deployment = $this->create_test_deployment();
         $deploymentrepo = new deployment_repository();
         $saveddeployment = $deploymentrepo->save($deployment);
@@ -212,6 +206,7 @@ class deployment_repository_testcase extends \advanced_testcase {
      * Test counting the number of deployments for a given registration.
      */
     public function test_count_by_registration() {
+        $this->resetAfterTest();
         $deployment = $this->create_test_deployment();
         $deploymentrepo = new deployment_repository();
         $saveddeployment = $deploymentrepo->save($deployment);
@@ -231,6 +226,7 @@ class deployment_repository_testcase extends \advanced_testcase {
      * Test confirming a deployment can be found by registration and deploymentid.
      */
     public function test_find_by_registration() {
+        $this->resetAfterTest();
         $deployment = $this->create_test_deployment();
         $deploymentrepo = new deployment_repository();
         $saveddeployment = $deploymentrepo->save($deployment);
@@ -248,9 +244,10 @@ class deployment_repository_testcase extends \advanced_testcase {
      * Testing that all deployments for a given registration can be fetched.
      */
     public function test_find_all_by_registration() {
+        $this->resetAfterTest();
         $registration1 = application_registration::create(
             'Test',
-            'http://lms.example.org',
+            new \moodle_url('http://lms.example.org'),
             'clientid_123',
             new \moodle_url('https://example.org/authrequesturl'),
             new \moodle_url('https://example.org/jwksurl'),
@@ -258,7 +255,7 @@ class deployment_repository_testcase extends \advanced_testcase {
         );
         $registration2 = application_registration::create(
             'Test 2',
-            'http://lms2.example.org',
+            new \moodle_url('http://lms2.example.org'),
             'clientid_345',
             new \moodle_url('https://example.org/authrequesturl'),
             new \moodle_url('https://example.org/jwksurl'),

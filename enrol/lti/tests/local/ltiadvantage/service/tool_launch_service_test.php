@@ -14,16 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Contains tests for the tool_launch_service.
- *
- * @package enrol_lti
- * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 namespace enrol_lti\local\ltiadvantage\service;
-
-defined('MOODLE_INTERNAL') || die();
 
 use core_availability\info_module;
 use enrol_lti\local\ltiadvantage\entity\resource_link;
@@ -34,24 +25,19 @@ use enrol_lti\local\ltiadvantage\repository\context_repository;
 use enrol_lti\local\ltiadvantage\repository\deployment_repository;
 use enrol_lti\local\ltiadvantage\repository\resource_link_repository;
 use enrol_lti\local\ltiadvantage\repository\user_repository;
-use IMSGlobal\LTI13\LTI_Message_Launch;
+
+defined('MOODLE_INTERNAL') || die();
 
 require_once(__DIR__ . '/../lti_advantage_testcase.php');
 
 /**
  * Tests for the tool_launch_service.
  *
+ * @package enrol_lti
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class tool_launch_service_testcase extends \lti_advantage_testcase {
-
-    /**
-     * Setup run for each test case.
-     */
-    protected function setUp(): void {
-        $this->resetAfterTest();
-    }
+class tool_launch_service_test extends \lti_advantage_testcase {
 
     /**
      * Test the use case "A user launches a tool so they can view an external resource/activity".
@@ -62,6 +48,7 @@ class tool_launch_service_testcase extends \lti_advantage_testcase {
      * @param array $expected the array detailing expectations.
      */
     public function test_user_launches_tool(?array $legacydata, ?array $launchdata, array $expected) {
+        $this->resetAfterTest();
         // Setup.
         $contextrepo = new context_repository();
         $resourcelinkrepo = new resource_link_repository();
@@ -82,7 +69,7 @@ class tool_launch_service_testcase extends \lti_advantage_testcase {
         }
 
         // Get a mock 1.3 launch, optionally including the lti1p1 migration claim based on a legacy tool secret.
-        $mocklaunch = $this->get_mock_launch($modresource, $launchdata['user'], null,
+        $mocklaunch = $this->get_mock_launch($modresource, $launchdata['user'], null, true, true,
             $launchdata['launch_migration_claim']);
 
         // Call the service.
@@ -91,7 +78,7 @@ class tool_launch_service_testcase extends \lti_advantage_testcase {
             $this->expectException($expected['exception']);
             $this->expectExceptionMessage($expected['exception_message']);
         }
-        [$userid, $resource] = $launchservice->user_launches_tool($mocklaunch, $modresource);
+        [$userid, $resource] = $launchservice->user_launches_tool($mocklaunch);
 
         // As part of the launch, we expect to now have an lti-enrolled user who is recorded against the deployment.
         $users = $userrepo->find_by_resource($resource->id);
@@ -139,6 +126,11 @@ class tool_launch_service_testcase extends \lti_advantage_testcase {
         // And that other published modules are not yet visible to the user.
         $cmcontext = \context::instance_by_id($modresource2->contextid);
         $this->assertFalse(info_module::is_user_visible($cmcontext->instanceid, $userid));
+
+        // And that the picture was synced.
+        if (isset($expected['picture_sync']) && $expected['picture_sync'] == true) {
+            $this->verify_user_profile_image_updated($user->get_localid());
+        }
     }
 
     /**
@@ -340,7 +332,44 @@ class tool_launch_service_testcase extends \lti_advantage_testcase {
                     'exception' => \coding_exception::class,
                     'exception_message' => "Missing 'oauth_consumer_key_sign' property in lti1p1 migration claim."
                 ]
-            ]
+            ],
+            'Migrated tool: Legacy data exists, migration claim missing oauth_consumer_key' => [
+                'legacy_data' => [
+                    'users' => [
+                        ['user_id' => '123-abc'],
+                    ],
+                    'consumer_key' => 'CONSUMER_1',
+                    'tools' => [
+                        ['secret' => 'toolsecret1'],
+                        ['secret' => 'toolsecret2'],
+                    ]
+                ],
+                'launch_data' => [
+                    'user' => $this->get_mock_launch_users_with_ids(['1p3_1'])[0],
+                    'launch_migration_claim' => [
+                        'user_id' => 'user-id-123',
+                        'context_id' => 'd345b',
+                        'tool_consumer_instance_guid' => '12345-123',
+                        'resource_link_id' => '4b6fa'
+                    ],
+                ],
+                'expected' => [
+                    'user_migrated' => false,
+                    'deployment_consumer_key' => null
+                ]
+            ],
+            'New tool: no legacy data, no migration claim sent, picture sync included' => [
+                'legacy_data' => null,
+                'launch_data' => [
+                    'user' => $this->get_mock_launch_users_with_ids(['1p3_1'], true)[0],
+                    'launch_migration_claim' => null,
+                ],
+                'expected' => [
+                    'user_migrated' => false,
+                    'deployment_consumer_key' => null,
+                    'picture_sync' => true,
+                ]
+            ],
         ];
     }
 
@@ -348,142 +377,37 @@ class tool_launch_service_testcase extends \lti_advantage_testcase {
      * Test confirming that an exception is thrown if trying to launch a published resource without a custom id.
      */
     public function test_user_launches_tool_missing_custom_id() {
-        // Setup.
-        [
-            $course,
-            $modresource,
-            $modresource2,
-            $courseresource,
-            $registration,
-            $deployment
-        ] = $this->create_test_environment();
-
-        // Call the service.
+        $this->resetAfterTest();
+        [$course, $modresource] = $this->create_test_environment();
         $launchservice = $this->get_tool_launch_service();
         $mockuser = $this->get_mock_launch_users_with_ids(['1p3_1'])[0];
-
-        $mocklaunch = $this->getMockBuilder(LTI_Message_Launch::class)
-            ->onlyMethods(['get_launch_data'])
-            ->disableOriginalConstructor()
-            ->getMock();
-        $mocklaunch->expects($this->any())
-            ->method('get_launch_data')
-            ->will($this->returnCallback(function() use ($modresource, $mockuser) {
-                // This simulates the data in the jwt['body'] of a real resource link launch.
-                // Real launches would of course have this data and authenticity of the user verified.
-                return [
-                    'iss' => 'https://lms.example.org', // Must match registration in create_test_environment.
-                    'aud' => '123', // Must match registration in create_test_environment.
-                    'sub' => $mockuser['user_id'], // User id on the platform site.
-                    'exp' => time() + 60,
-                    'nonce' => 'some-nonce-value-123',
-                    'https://purl.imsglobal.org/spec/lti/claim/deployment_id' => '1', // Must match registration.
-                    'https://purl.imsglobal.org/spec/lti/claim/roles' => [
-                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'
-                    ],
-                    'https://purl.imsglobal.org/spec/lti/claim/resource_link' => [
-                        'title' => 'Name of resource link in platform',
-                        'id' => '12345', // Arbitrary, will be mapped to the user during resource link launch.
-                    ],
-                    "https://purl.imsglobal.org/spec/lti/claim/context" => [
-                        "id" => "context-id-12345",
-                        "label" => "ITS 123",
-                        "title" => "ITS 123 Machine Learning",
-                        "type" => ["http://purl.imsglobal.org/vocab/lis/v2/course#CourseOffering"]
-                    ],
-                    'https://purl.imsglobal.org/spec/lti/claim/target_link_uri' =>
-                        'https://this-moodle-tool.example.org/context/24/resource/14',
-                    'https://purl.imsglobal.org/spec/lti/claim/custom' => [
-                        // NOTE: Lack of custom id here.
-                        'force_embed' => true
-                    ],
-                    'given_name' => $mockuser['given_name'],
-                    'family_name' => $mockuser['family_name'],
-                    'email' => $mockuser['email'],
-                    'https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice' => [
-                        'context_memberships_url' => 'https://lms.example.org/context/24/memberships',
-                        'service_versions' => ['2.0']
-                    ]
-                ];
-            }));
+        $mocklaunch = $this->get_mock_launch($modresource, $mockuser, null, false, false, null, []);
 
         $this->expectException(\moodle_exception::class);
         $this->expectExceptionMessage(get_string('ltiadvlauncherror:missingid', 'enrol_lti'));
-        [$userid, $resource] = $launchservice->user_launches_tool($mocklaunch, $modresource);
+        [$userid, $resource] = $launchservice->user_launches_tool($mocklaunch);
     }
 
     /**
      * Test confirming that an exception is thrown if trying to launch a published resource that doesn't exist.
      */
     public function test_user_launches_tool_invalid_custom_id() {
-        // Setup.
-        [
-            $course,
-            $modresource,
-            $modresource2,
-            $courseresource,
-            $registration,
-            $deployment
-        ] = $this->create_test_environment();
-
-        // Call the service.
+        $this->resetAfterTest();
+        [$course, $modresource] = $this->create_test_environment();
         $launchservice = $this->get_tool_launch_service();
         $mockuser = $this->get_mock_launch_users_with_ids(['1p3_1'])[0];
-
-        $mocklaunch = $this->getMockBuilder(LTI_Message_Launch::class)
-            ->onlyMethods(['get_launch_data'])
-            ->disableOriginalConstructor()
-            ->getMock();
-        $mocklaunch->expects($this->any())
-            ->method('get_launch_data')
-            ->will($this->returnCallback(function() use ($modresource, $mockuser) {
-                // This simulates the data in the jwt['body'] of a real resource link launch.
-                // Real launches would of course have this data and authenticity of the user verified.
-                return [
-                    'iss' => 'https://lms.example.org', // Must match registration in create_test_environment.
-                    'aud' => '123', // Must match registration in create_test_environment.
-                    'sub' => $mockuser['user_id'], // User id on the platform site.
-                    'exp' => time() + 60,
-                    'nonce' => 'some-nonce-value-123',
-                    'https://purl.imsglobal.org/spec/lti/claim/deployment_id' => '1', // Must match registration.
-                    'https://purl.imsglobal.org/spec/lti/claim/roles' => [
-                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'
-                    ],
-                    'https://purl.imsglobal.org/spec/lti/claim/resource_link' => [
-                        'title' => 'Name of resource link in platform',
-                        'id' => '12345', // Arbitrary, will be mapped to the user during resource link launch.
-                    ],
-                    "https://purl.imsglobal.org/spec/lti/claim/context" => [
-                        "id" => "context-id-12345",
-                        "label" => "ITS 123",
-                        "title" => "ITS 123 Machine Learning",
-                        "type" => ["http://purl.imsglobal.org/vocab/lis/v2/course#CourseOffering"]
-                    ],
-                    'https://purl.imsglobal.org/spec/lti/claim/target_link_uri' =>
-                        'https://this-moodle-tool.example.org/context/24/resource/14',
-                    'https://purl.imsglobal.org/spec/lti/claim/custom' => [
-                        'id' => 999999,
-                        'force_embed' => true
-                    ],
-                    'given_name' => $mockuser['given_name'],
-                    'family_name' => $mockuser['family_name'],
-                    'email' => $mockuser['email'],
-                    'https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice' => [
-                        'context_memberships_url' => 'https://lms.example.org/context/24/memberships',
-                        'service_versions' => ['2.0']
-                    ]
-                ];
-            }));
+        $mocklaunch = $this->get_mock_launch($modresource, $mockuser, null, false, false, null, ['id' => 999999]);
 
         $this->expectException(\moodle_exception::class);
         $this->expectExceptionMessage(get_string('ltiadvlauncherror:invalidid', 'enrol_lti', 999999));
-        [$userid, $resource] = $launchservice->user_launches_tool($mocklaunch, $modresource);
+        [$userid, $resource] = $launchservice->user_launches_tool($mocklaunch);
     }
 
     /**
      * Test confirming that an exception is thrown if trying to launch the tool where no application can be found.
      */
     public function test_user_launches_tool_missing_registration() {
+        $this->resetAfterTest();
         // Setup.
         [
             $course,
@@ -506,13 +430,14 @@ class tool_launch_service_testcase extends \lti_advantage_testcase {
         $this->expectException(\moodle_exception::class);
         $this->expectExceptionMessage(get_string('ltiadvlauncherror:invalidregistration', 'enrol_lti',
             [$registration->get_platformid(), $registration->get_clientid()]));
-        [$userid, $resource] = $launchservice->user_launches_tool($mocklaunch, $modresource);
+        [$userid, $resource] = $launchservice->user_launches_tool($mocklaunch);
     }
 
     /**
      * Test confirming that an exception is thrown if trying to launch the tool where no deployment can be found.
      */
     public function test_user_launches_tool_missing_deployment() {
+        $this->resetAfterTest();
         // Setup.
         [
             $course,
@@ -535,13 +460,14 @@ class tool_launch_service_testcase extends \lti_advantage_testcase {
         $this->expectException(\moodle_exception::class);
         $this->expectExceptionMessage(get_string('ltiadvlauncherror:invaliddeployment', 'enrol_lti',
             [$deployment->get_deploymentid()]));
-        [$userid, $resource] = $launchservice->user_launches_tool($mocklaunch, $modresource);
+        [$userid, $resource] = $launchservice->user_launches_tool($mocklaunch);
     }
 
     /**
      * Verify that legacy mapping changes only occur the first time a migrated tool is launched for a given user.
      */
     public function test_user_launches_tool_migration_idempotency() {
+        $this->resetAfterTest();
         // Setup.
         $userrepo = new user_repository();
         [
@@ -578,18 +504,18 @@ class tool_launch_service_testcase extends \lti_advantage_testcase {
             'tool_consumer_instance_guid' => '12345-123',
             'resource_link_id' => '4b6fa'
         ];
-        $mocklaunch = $this->get_mock_launch($modresource, $mockuser, null, $migrationclaiminfo);
+        $mocklaunch = $this->get_mock_launch($modresource, $mockuser, null, true, true, $migrationclaiminfo);
 
         // Setup the service.
         $launchservice = $this->get_tool_launch_service();
 
         // Launch once.
-        $launchservice->user_launches_tool($mocklaunch, $modresource);
+        $launchservice->user_launches_tool($mocklaunch);
         $user1 = $userrepo->find_by_resource($modresource->id)[0];
         $this->assertEquals((string)$user1->get_localid(), $legacyusers[0]->id);
 
         // Launch again.
-        $launchservice->user_launches_tool($mocklaunch, $modresource);
+        $launchservice->user_launches_tool($mocklaunch);
         $users = $userrepo->find_by_resource($modresource->id);
         $this->assertCount(1, $users);
         $user2 = $users[0];
@@ -612,5 +538,152 @@ class tool_launch_service_testcase extends \lti_advantage_testcase {
         $this->assertEquals($user1->get_resourcelinkid(), $user2->get_resourcelinkid());
         $this->assertEquals($user1->get_localid(), $user2->get_localid());
         $this->assertEquals($user1->get_id(), $user2->get_id());
+    }
+
+    /**
+     * Test the mapping from IMS roles to Moodle roles during a launch.
+     */
+    public function test_user_launches_tool_role_mapping() {
+        $this->resetAfterTest();
+        // Create mock launches for 3 different user types: instructor, admin, learner.
+        [$course, $modresource] = $this->create_test_environment();
+        $mockinstructoruser = $this->get_mock_launch_users_with_ids(['1'])[0];
+        $mockadminuser = $this->get_mock_launch_users_with_ids(
+            ['2'],
+            false,
+            'http://purl.imsglobal.org/vocab/lis/v2/system/person#Administrator'
+        )[0];
+        $mocklearneruser = $this->get_mock_launch_users_with_ids(
+            ['3'],
+            false,
+            'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'
+        )[0];
+        $mockinstructor2user = $this->get_mock_launch_users_with_ids(
+            ['3'],
+            false,
+            'Instructor' // Using the legacy (deprecated in 1.3) simple name.
+        )[0];
+        $mockinstructorlaunch = $this->get_mock_launch($modresource, $mockinstructoruser);
+        $mockadminlaunch = $this->get_mock_launch($modresource, $mockadminuser);
+        $mocklearnerlaunch = $this->get_mock_launch($modresource, $mocklearneruser);
+        $mockinstructor2launch = $this->get_mock_launch($modresource, $mockinstructor2user);
+
+        // Launch and confirm the role assignment.
+        $launchservice = $this->get_tool_launch_service();
+        $modulecontext = \context::instance_by_id($modresource->contextid);
+
+        [$instructorid] = $launchservice->user_launches_tool($mockinstructorlaunch);
+        [$instructorrole] = array_slice(get_user_roles($modulecontext, $instructorid), 0, 1);
+        $this->assertEquals('teacher', $instructorrole->shortname);
+
+        [$adminid] = $launchservice->user_launches_tool($mockadminlaunch);
+        [$adminrole] = array_slice(get_user_roles($modulecontext, $adminid), 0, 1);
+        $this->assertEquals('teacher', $adminrole->shortname);
+
+        [$learnerid] = $launchservice->user_launches_tool($mocklearnerlaunch);
+        [$learnerrole] = array_slice(get_user_roles($modulecontext, $learnerid), 0, 1);
+        $this->assertEquals('student', $learnerrole->shortname);
+
+        [$instructor2id] = $launchservice->user_launches_tool($mockinstructor2launch);
+        [$instructor2role] = array_slice(get_user_roles($modulecontext, $instructor2id), 0, 1);
+        $this->assertEquals('teacher', $instructor2role->shortname);
+    }
+
+    /**
+     * Test verifying that a user launch can result in updates to some user fields.
+     */
+    public function test_user_launches_tool_user_fields_updated() {
+        $this->resetAfterTest();
+        [$course, $modresource] = $this->create_test_environment();
+        $mockinstructoruser = $this->get_mock_launch_users_with_ids(['1'])[0];
+        $launchservice = $this->get_tool_launch_service();
+        $userrepo = new user_repository();
+
+        // Launch once, verifying the user details.
+        $mocklaunch = $this->get_mock_launch($modresource, $mockinstructoruser);
+        $launchservice->user_launches_tool($mocklaunch);
+        $createduser = $userrepo->find_by_sub(
+            $mockinstructoruser['user_id'],
+            new \moodle_url('https://lms.example.org'),
+            $modresource->id
+        );
+        $this->assertEquals($mockinstructoruser['given_name'], $createduser->get_firstname());
+        $this->assertEquals($mockinstructoruser['family_name'], $createduser->get_lastname());
+        $this->assertEquals($mockinstructoruser['email'], $createduser->get_email());
+        $this->assertEquals($modresource->timezone, $createduser->get_timezone());
+        $this->assertEquals($modresource->lang, $createduser->get_lang());
+        $this->assertEquals($modresource->city, $createduser->get_city());
+        $this->assertEquals($modresource->country, $createduser->get_country());
+        $this->assertEquals($modresource->institution, $createduser->get_institution());
+        $this->assertEquals($modresource->timezone, $createduser->get_timezone());
+        $this->assertEquals($modresource->maildisplay, $createduser->get_maildisplay());
+
+        // Change the user + resource data and relaunch, verifying the relevant fields are updated for the launch user.
+        $mockinstructoruser['given_name'] = 'Updated Firstname';
+        $mockinstructoruser['family_name'] = 'Updated Surname';
+        $mockinstructoruser['email'] = 'update.email@platform.example.com';
+        // Note: lang change can't be tested without installation of another language pack.
+        $modresource->city = 'Paris';
+        $modresource->country = 'FR';
+        $modresource->institution = 'Updated institution name';
+        $modresource->timezone = 'UTC';
+        $modresource->maildisplay = '1';
+        global $DB;
+        $DB->update_record('enrol_lti_tools', $modresource);
+
+        $mocklaunch = $this->get_mock_launch($modresource, $mockinstructoruser);
+        $launchservice->user_launches_tool($mocklaunch);
+        $createduser = $userrepo->find($createduser->get_id());
+        $this->assertEquals($mockinstructoruser['given_name'], $createduser->get_firstname());
+        $this->assertEquals($mockinstructoruser['family_name'], $createduser->get_lastname());
+        $this->assertEquals($mockinstructoruser['email'], $createduser->get_email());
+        $this->assertEquals($modresource->city, $createduser->get_city());
+        $this->assertEquals($modresource->country, $createduser->get_country());
+        $this->assertEquals($modresource->institution, $createduser->get_institution());
+        $this->assertEquals($modresource->timezone, $createduser->get_timezone());
+        $this->assertEquals($modresource->maildisplay, $createduser->get_maildisplay());
+    }
+
+    /**
+     * Test the launch when a module has an enrolment start date.
+     */
+    public function test_user_launches_tool_max_enrolment_start_restriction() {
+        $this->resetAfterTest();
+        [$course, $modresource] = $this->create_test_environment(true, true, false,
+            \enrol_lti\helper::MEMBER_SYNC_ENROL_NEW, false, false, time() + DAYSECS);
+        $mockinstructoruser = $this->get_mock_launch_users_with_ids(['1'])[0];
+        $mockinstructorlaunch = $this->get_mock_launch($modresource, $mockinstructoruser);
+        $launchservice = $this->get_tool_launch_service();
+
+        $this->expectException(\moodle_exception::class);
+        $launchservice->user_launches_tool($mockinstructorlaunch);
+    }
+
+    /**
+     * Test the Moodle-specific custom param 'forceembed' during user launches.
+     */
+    public function test_user_launches_tool_force_embedding_custom_param() {
+        $this->resetAfterTest();
+        [$course, $modresource] = $this->create_test_environment();
+        $mockinstructoruser = $this->get_mock_launch_users_with_ids(['1'])[0];
+        $mocklearneruser = $this->get_mock_launch_users_with_ids(['1'], false, '')[0];
+        $mockinstructorlaunch = $this->get_mock_launch($modresource, $mockinstructoruser, null, false, false, null, [
+            'id' => $modresource->uuid,
+            'forcedembed' => true
+        ]);
+        $mocklearnerlaunch = $this->get_mock_launch($modresource, $mocklearneruser, null, false, false, null, [
+            'id' => $modresource->uuid,
+            'forcedembed' => true
+        ]);
+        $launchservice = $this->get_tool_launch_service();
+        global $SESSION;
+
+        // Instructors aren't subject to forceembed.
+        $launchservice->user_launches_tool($mockinstructorlaunch);
+        $this->assertObjectNotHasAttribute('forcepagelayout', $SESSION);
+
+        // Learners are.
+        $launchservice->user_launches_tool($mocklearnerlaunch);
+        $this->assertEquals('embedded', $SESSION->forcepagelayout);
     }
 }

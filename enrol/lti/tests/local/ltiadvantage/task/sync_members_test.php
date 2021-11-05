@@ -279,18 +279,7 @@ class sync_members_testcase extends \lti_advantage_testcase {
         $this->verify_course_enrolments($course, $ltiusers);
 
         // Verify user profile image has been updated.
-        global $CFG;
-        $user = \core_user::get_user($ltiusers[0]->get_localid());
-        $page = new \moodle_page();
-        $page->set_url('/user/profile.php');
-        $page->set_context(\context_system::instance());
-        $renderer = $page->get_renderer('core');
-        $usercontext = \context_user::instance($user->id);
-        $userpicture = new \user_picture($user);
-        $this->assertSame(
-            $CFG->wwwroot . '/pluginfile.php/' . $usercontext->id . '/user/icon/boost/f2?rev='. $user->picture,
-            $userpicture->get_url($page, $renderer)->out(false)
-        );
+        $this->verify_user_profile_image_updated($ltiusers[0]->get_localid());
     }
 
     /**

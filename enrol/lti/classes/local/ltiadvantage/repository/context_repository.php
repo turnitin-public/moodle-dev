@@ -14,23 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Contains the context_repository class.
- *
- * @package enrol_lti
- * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 namespace enrol_lti\local\ltiadvantage\repository;
 use enrol_lti\local\ltiadvantage\entity\context;
 
 /**
  * Class context_repository.
  *
+ * @package enrol_lti
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-final class context_repository {
+class context_repository {
 
     /** @var string the name of the table storing object data. */
     private $contexttable = 'enrol_lti_context';
@@ -43,7 +37,7 @@ final class context_repository {
      */
     private function context_from_record(\stdClass $record): context {
         $context = context::create(
-            $record->deploymentid,
+            $record->ltideploymentid,
             $record->contextid,
             json_decode($record->type),
             $record->id
@@ -61,7 +55,7 @@ final class context_repository {
 
         $record = [
             'contextid' => $context->get_contextid(),
-            'deploymentid' => $context->get_deploymentid(),
+            'ltideploymentid' => $context->get_deploymentid(),
             'type' => json_encode($context->get_types()),
         ];
 
@@ -123,8 +117,8 @@ final class context_repository {
     public function find_by_contextid(string $contextid, int $deploymentid): ?context {
         global $DB;
         try {
-            $record = $DB->get_record($this->contexttable, ['contextid' => $contextid, 'deploymentid' => $deploymentid],
-                '*', MUST_EXIST);
+            $record = $DB->get_record($this->contexttable,
+                ['contextid' => $contextid, 'ltideploymentid' => $deploymentid], '*', MUST_EXIST);
             return $this->context_from_record($record);
         } catch (\dml_missing_record_exception $e) {
             return null;
@@ -159,6 +153,6 @@ final class context_repository {
      */
     public function delete_by_deployment(int $deploymentid): void {
         global $DB;
-        $DB->delete_records($this->contexttable, ['deploymentid' => $deploymentid]);
+        $DB->delete_records($this->contexttable, ['ltideploymentid' => $deploymentid]);
     }
 }

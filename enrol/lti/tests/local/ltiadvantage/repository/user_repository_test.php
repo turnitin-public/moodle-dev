@@ -454,6 +454,55 @@ class user_repository_testcase extends \advanced_testcase {
     }
 
     /**
+     * Test deleting a collection of lti user instances by deployment.
+     */
+    public function test_delete_by_deployment() {
+        $user = $this->generate_user();
+        $userrepo = new user_repository();
+        $saveduser = $userrepo->save($user);
+
+        $user2 = user::create(
+            $saveduser->get_resourceid(),
+            $saveduser->get_issuer(),
+            $saveduser->get_deploymentid(),
+            'another-user-123',
+            'Another',
+            'User',
+            'en',
+            'simon@example.com',
+            'Perth',
+            'AU',
+            'An Example Institution',
+            '99'
+        );
+        $saveduser2 = $userrepo->save($user2);
+
+        $user3 = user::create(
+            $saveduser->get_resourceid(),
+            $saveduser->get_issuer(),
+            $saveduser->get_deploymentid() + 1,
+            'another-user-678',
+            'Test',
+            'Student',
+            'en',
+            'simon@example.com',
+            'Melbourne',
+            'AU',
+            'An Example Institution',
+            '99'
+        );
+        $saveduser3 = $userrepo->save($user3);
+        $this->assertTrue($userrepo->exists($saveduser->get_id()));
+        $this->assertTrue($userrepo->exists($saveduser2->get_id()));
+        $this->assertTrue($userrepo->exists($saveduser3->get_id()));
+
+        $userrepo->delete_by_deployment($saveduser->get_deploymentid());
+        $this->assertFalse($userrepo->exists($saveduser->get_id()));
+        $this->assertFalse($userrepo->exists($saveduser2->get_id()));
+        $this->assertTrue($userrepo->exists($saveduser3->get_id()));
+    }
+
+    /**
      * Confirms localid is can only be used when lti users don't already exist, i.e. a one time use mapping mechanism.
      */
     public function test_localid_insertion_only() {

@@ -13,13 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-/**
- * Test the resource_link_repository objects.
- *
- * @package enrol_lti
- * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+
 namespace enrol_lti\local\ltiadvantage\repository;
 use enrol_lti\local\ltiadvantage\entity\resource_link;
 use enrol_lti\local\ltiadvantage\entity\application_registration;
@@ -27,17 +21,11 @@ use enrol_lti\local\ltiadvantage\entity\application_registration;
 /**
  * Tests for resource_link_repository objects.
  *
+ * @package enrol_lti
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class resource_link_repository_testcase extends \advanced_testcase {
-    /**
-     * Setup run for each test case.
-     */
-    protected function setUp(): void {
-        $this->resetAfterTest();
-    }
-
+class resource_link_repository_test extends \advanced_testcase {
     /**
      * Helper to generate a new resource_link instance.
      *
@@ -47,7 +35,7 @@ class resource_link_repository_testcase extends \advanced_testcase {
     protected function generate_resource_link($id = 'res-link-1'): resource_link {
         $registration = application_registration::create(
             'Test',
-            'http://lms.example.org',
+            new \moodle_url('http://lms.example.org'),
             'clientid_123',
             new \moodle_url('https://example.org/authrequesturl'),
             new \moodle_url('https://example.org/jwksurl'),
@@ -110,9 +98,9 @@ class resource_link_repository_testcase extends \advanced_testcase {
         $checkrecord = $DB->get_record('enrol_lti_resource_link', ['id' => $expected->get_id()]);
         $gradeservice = $expected->get_grade_service();
         $this->assertEquals($expected->get_id(), $checkrecord->id);
-        $this->assertEquals($expected->get_deploymentid(), $checkrecord->deploymentid);
+        $this->assertEquals($expected->get_deploymentid(), $checkrecord->ltideploymentid);
         $this->assertEquals($expected->get_resourcelinkid(), $checkrecord->resourcelinkid);
-        $this->assertEquals($expected->get_contextid(), $checkrecord->contextid);
+        $this->assertEquals($expected->get_contextid(), $checkrecord->lticontextid);
         $this->assertEquals($gradeservice ? $gradeservice->get_lineitemsurl() : null, $checkrecord->lineitemsservice);
         $this->assertEquals($gradeservice ? $gradeservice->get_lineitemurl() : null, $checkrecord->lineitemservice);
         $this->assertEquals($gradeservice ? json_encode($gradeservice->get_lineitemscope()) : null,
@@ -127,6 +115,7 @@ class resource_link_repository_testcase extends \advanced_testcase {
      * Tests adding a resource_link to the store.
      */
     public function test_save_new() {
+        $this->resetAfterTest();
         $resourcelink = $this->generate_resource_link();
         $repository = new resource_link_repository();
         $savedresourcelink = $repository->save($resourcelink);
@@ -140,6 +129,7 @@ class resource_link_repository_testcase extends \advanced_testcase {
      * Test that we cannot add two resource_links with the same resourcelinkid for a given deploymentid.
      */
     public function test_add_uniqueness_constraints() {
+        $this->resetAfterTest();
         $reslink1 = $this->generate_resource_link();
         $reslink2 = clone $reslink1;
         $repository = new resource_link_repository();
@@ -153,6 +143,7 @@ class resource_link_repository_testcase extends \advanced_testcase {
      * Test fetching an object from the store.
      */
     public function test_find() {
+        $this->resetAfterTest();
         $resourcelink = $this->generate_resource_link();
         $repository = new resource_link_repository();
         $newreslink = $repository->save($resourcelink);
@@ -164,9 +155,97 @@ class resource_link_repository_testcase extends \advanced_testcase {
     }
 
     /**
+     * Test finding a collection of resource links by resource.
+     */
+    public function test_find_by_resource() {
+        $this->resetAfterTest();
+        $resourcelink = $this->generate_resource_link();
+        $repository = new resource_link_repository();
+        $newreslink = $repository->save($resourcelink);
+        $resourcelink2 = resource_link::create('another-res-link-1', $newreslink->get_deploymentid(),
+            $newreslink->get_resourceid());
+        $newreslink2 = $repository->save($resourcelink2);
+        $resourcelink3 = resource_link::create('another-res-link-2', $newreslink->get_deploymentid(),
+            $newreslink->get_resourceid() + 1);
+        $newreslink3 = $repository->save($resourcelink3);
+
+        $locatedreslinks = $repository->find_by_resource($newreslink->get_resourceid());
+        $this->assertCount(2, $locatedreslinks);
+        usort($locatedreslinks, function($a, $b) {
+            return strcmp($b->get_resourcelinkid(), $a->get_resourcelinkid());
+        });
+        $this->assertEquals([$newreslink, $newreslink2], $locatedreslinks);
+        $locatedreslinks = $repository->find_by_resource($newreslink->get_resourceid() + 1);
+        $this->assertCount(1, $locatedreslinks);
+        $this->assertEquals([$newreslink3], $locatedreslinks);
+        $this->assertEmpty($repository->find_by_resource(0));
+    }
+
+    /**
+     * Test finding a collection of resource links by resource and user.
+     */
+    public function test_find_by_resource_and_user() {
+        $this->resetAfterTest();
+        $resourcelink = $this->generate_resource_link();
+        $repository = new resource_link_repository();
+        $newreslink = $repository->save($resourcelink);
+        $resourcelink2 = resource_link::create('another-res-link-1', $newreslink->get_deploymentid(),
+            $newreslink->get_resourceid());
+        $newreslink2 = $repository->save($resourcelink2);
+        $resourcelink3 = resource_link::create('another-res-link-2', $newreslink->get_deploymentid(),
+            $newreslink->get_resourceid());
+        $newreslink3 = $repository->save($resourcelink3);
+
+        $userrepo = new user_repository();
+        $user = $newreslink->add_user(
+            new \moodle_url('https://lms.example.org'),
+            'platform-user-id-123',
+            'Test',
+            'Student',
+            'en',
+            's1@example.com',
+            'Sydney',
+            'AU',
+            'Test university',
+            '99'
+        );
+        $createduser = $userrepo->save($user);
+        $createduser->set_resourcelinkid($newreslink2->get_id());
+        $userrepo->save($createduser);
+
+        $user2 = $newreslink3->add_user(
+            new \moodle_url('https://lms.example.org'),
+            'platform-user-id-777',
+            'Another',
+            'Person',
+            'en',
+            's2@example.com',
+            'Melbourne',
+            'AU',
+            'Test university',
+            '99'
+        );
+        $createduser2 = $userrepo->save($user2);
+
+        $locatedreslinks = $repository->find_by_resource_and_user($newreslink->get_resourceid(),
+            $createduser->get_id());
+        $this->assertCount(2, $locatedreslinks);
+        usort($locatedreslinks, function($a, $b) {
+            return strcmp($b->get_resourcelinkid(), $a->get_resourcelinkid());
+        });
+        $this->assertEquals([$newreslink, $newreslink2], $locatedreslinks);
+        $locatedreslinks = $repository->find_by_resource_and_user($newreslink->get_resourceid(),
+            $createduser2->get_id());
+        $this->assertCount(1, $locatedreslinks);
+        $this->assertEquals([$newreslink3], $locatedreslinks);
+        $this->assertEmpty($repository->find_by_resource_and_user($newreslink->get_resourceid(), 0));
+    }
+
+    /**
      * Test deletion from the store.
      */
     public function test_delete() {
+        $this->resetAfterTest();
         $resourcelink = $this->generate_resource_link();
         $repository = new resource_link_repository();
         $newreslink = $repository->save($resourcelink);
@@ -174,10 +253,10 @@ class resource_link_repository_testcase extends \advanced_testcase {
 
         // Also create a user from this resource link so we get some test user_resource_link mappings.
         $user = $newreslink->add_user(
+            new \moodle_url('https://lms.example.org'),
             'source-id-123',
             'Simon',
             'McTest',
-            'unique-user-name',
             'en',
             'simon@example.com',
             'Perth',
@@ -202,9 +281,55 @@ class resource_link_repository_testcase extends \advanced_testcase {
     }
 
     /**
+     * Test deleting a group of resource links by resource.
+     */
+    public function test_delete_by_resource() {
+        $this->resetAfterTest();
+        $resourcelink = $this->generate_resource_link();
+        $repository = new resource_link_repository();
+        $newreslink = $repository->save($resourcelink);
+
+        // Also create a user from this resource link so we get some test user_resource_link mappings.
+        $user = $newreslink->add_user(
+            new \moodle_url('https://lms.example.org'),
+            'source-id-123',
+            'Simon',
+            'McTest',
+            'en',
+            'simon@example.com',
+            'Perth',
+            'AU',
+            'An Example Institution',
+            '99',
+            2,
+        );
+        $userrepo = new user_repository();
+        $userrepo->save($user);
+        global $DB;
+        $this->assertTrue($DB->record_exists('enrol_lti_user_resource_link',
+            ['resourcelinkid' => $newreslink->get_id()]));
+
+        // Create a resource link under the same deployment for another resource.
+        $resourcelink2 = resource_link::create('another-res-link-1', $newreslink->get_deploymentid(),
+            $newreslink->get_resourceid() + 1);
+        $newreslink2 = $repository->save($resourcelink2);
+
+        $repository->delete_by_resource($newreslink->get_resourceid());
+        $this->assertFalse($repository->exists($newreslink->get_id()));
+        $this->assertEmpty($repository->find($newreslink->get_id()));
+        $this->assertFalse($DB->record_exists('enrol_lti_user_resource_link',
+            ['resourcelinkid' => $newreslink->get_id()]));
+        $this->assertTrue($repository->exists($newreslink2->get_id()));
+        $this->assertInstanceOf(resource_link::class, $repository->find($newreslink2->get_id()));
+
+        $this->assertNull($repository->delete_by_deployment($newreslink->get_deploymentid()));
+    }
+
+    /**
      * Test deleting a resource links by their deployment container.
      */
     public function test_delete_by_deployment() {
+        $this->resetAfterTest();
         $resourcelink = $this->generate_resource_link();
         $repository = new resource_link_repository();
         $newreslink = $repository->save($resourcelink);
@@ -212,10 +337,10 @@ class resource_link_repository_testcase extends \advanced_testcase {
 
         // Also create a user from this resource link so we get some test user_resource_link mappings.
         $user = $newreslink->add_user(
+            new \moodle_url('https://lms.example.org'),
             'source-id-123',
             'Simon',
             'McTest',
-            'unique-user-name',
             'en',
             'simon@example.com',
             'Perth',
@@ -243,6 +368,7 @@ class resource_link_repository_testcase extends \advanced_testcase {
      * Test checking existence in the store.
      */
     public function test_exists() {
+        $this->resetAfterTest();
         $resourcelink = $this->generate_resource_link();
         $repository = new resource_link_repository();
         $newreslink = $repository->save($resourcelink);
@@ -255,6 +381,7 @@ class resource_link_repository_testcase extends \advanced_testcase {
      * Test update of an existing resource_link.
      */
     public function test_save_existing() {
+        $this->resetAfterTest();
         $resourcelink = $this->generate_resource_link();
         $repository = new resource_link_repository();
         $newreslink = $repository->save($resourcelink);
@@ -270,6 +397,7 @@ class resource_link_repository_testcase extends \advanced_testcase {
      * Test update with a stale object which is no longer present in the store.
      */
     public function test_update_stale() {
+        $this->resetAfterTest();
         $resourcelink = $this->generate_resource_link();
         $repository = new resource_link_repository();
         $newreslink = $repository->save($resourcelink);

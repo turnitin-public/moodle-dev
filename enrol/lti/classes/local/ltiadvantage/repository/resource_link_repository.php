@@ -13,13 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-/**
- * Contains the resource_link_repository class.
- *
- * @package enrol_lti
- * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+
 namespace enrol_lti\local\ltiadvantage\repository;
 use enrol_lti\local\ltiadvantage\entity\deployment;
 use enrol_lti\local\ltiadvantage\entity\resource_link;
@@ -29,10 +23,11 @@ use enrol_lti\local\ltiadvantage\entity\resource_link;
  *
  * This class encapsulates persistence logic for \enrol_lti\local\entity\resource_link type objects.
  *
+ * @package enrol_lti
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-final class resource_link_repository {
+class resource_link_repository {
 
     /** @var string the name of the table to which the entity will be persisted */
     private $table = 'enrol_lti_resource_link';
@@ -49,9 +44,9 @@ final class resource_link_repository {
     private function resource_link_from_record(\stdClass $record): resource_link {
         $resourcelink = resource_link::create(
             $record->resourcelinkid,
-            $record->deploymentid,
+            $record->ltideploymentid,
             $record->resourceid,
-            $record->contextid,
+            $record->lticontextid,
             $record->id
         );
 
@@ -114,9 +109,9 @@ final class resource_link_repository {
         $record = [
             'id' => $resourcelink->get_id(),
             'resourcelinkid' => $resourcelink->get_resourcelinkid(),
-            'deploymentid' => $resourcelink->get_deploymentid(),
+            'ltideploymentid' => $resourcelink->get_deploymentid(),
             'resourceid' => $resourcelink->get_resourceid(),
-            'contextid' => $resourcelink->get_contextid(),
+            'lticontextid' => $resourcelink->get_contextid(),
             'lineitemsservice' => $gradeservice ? $gradeservice->get_lineitemsurl()->out(false) : null,
             'lineitemservice' => null,
             'lineitemscope' => null,
@@ -190,7 +185,7 @@ final class resource_link_repository {
     public function find_by_deployment(deployment $deployment, string $resourcelinkid): ?resource_link {
         global $DB;
         try {
-            $record = $DB->get_record($this->table, ['deploymentid' => $deployment->get_id(),
+            $record = $DB->get_record($this->table, ['ltideploymentid' => $deployment->get_id(),
                 'resourcelinkid' => $resourcelinkid], '*', MUST_EXIST);
             return $this->resource_link_from_record($record);
         } catch (\dml_missing_record_exception $ex) {
@@ -207,7 +202,7 @@ final class resource_link_repository {
      */
     public function find_by_resource_and_user(int $resourceid, int $userid): array {
         global $DB;
-        $sql = "SELECT r.id, r.resourcelinkid, r.resourceid, r.deploymentid, r.contextid, r.lineitemsservice,
+        $sql = "SELECT r.id, r.resourcelinkid, r.resourceid, r.ltideploymentid, r.lticontextid, r.lineitemsservice,
                        r.lineitemservice, r.lineitemscope, r.resultscope, r.scorescope, r.contextmembershipsurl,
                        r.nrpsserviceversions, r.timecreated, r.timemodified
                   FROM {enrol_lti_resource_link} r
@@ -267,12 +262,12 @@ final class resource_link_repository {
         // First remove all enrol_lti_user_resource_link mappings.
         $DB->delete_records_select(
             $this->userresourcelinkmaptable,
-            "resourcelinkid IN (SELECT id FROM {{$this->table}} WHERE deploymentid = :deploymentid)",
-            ['deploymentid' => $deploymentid]
+            "resourcelinkid IN (SELECT id FROM {{$this->table}} WHERE ltideploymentid = :ltideploymentid)",
+            ['ltideploymentid' => $deploymentid]
         );
 
         // And remove the resource_link entries themselves.
-        $DB->delete_records($this->table, ['deploymentid' => $deploymentid]);
+        $DB->delete_records($this->table, ['ltideploymentid' => $deploymentid]);
     }
 
     /**

@@ -103,7 +103,7 @@ class deployment_repository_testcase extends \advanced_testcase {
      * Test saving a new deployment.
      */
     public function test_save_new() {
-        $deploymentrepo = new deployment_repository(new application_registration_repository());
+        $deploymentrepo = new deployment_repository();
         $deployment = $this->create_test_deployment();
         $deployment->set_legacy_consumer_key('test-consumer-key');
         $saved = $deploymentrepo->save($deployment);
@@ -117,7 +117,7 @@ class deployment_repository_testcase extends \advanced_testcase {
      * Test saving an existing deployment.
      */
     public function test_save_existing() {
-        $deploymentrepo = new deployment_repository(new application_registration_repository());
+        $deploymentrepo = new deployment_repository();
         $deployment = $this->create_test_deployment();
         $saved = $deploymentrepo->save($deployment);
 
@@ -135,7 +135,7 @@ class deployment_repository_testcase extends \advanced_testcase {
     public function test_save_unique_constraints_not_met() {
         $deployment1 = $this->create_test_deployment('Deploy_ID_123');
         $deployment2 = $this->create_test_deployment('Deploy_ID_123', $deployment1->get_registrationid());
-        $deploymentrepo = new deployment_repository(new application_registration_repository());
+        $deploymentrepo = new deployment_repository();
 
         $this->assertInstanceOf(deployment::class, $deploymentrepo->save($deployment1));
         $this->expectException(\dml_exception::class);
@@ -146,7 +146,7 @@ class deployment_repository_testcase extends \advanced_testcase {
      * Test existence of a deployment within the repository.
      */
     public function test_exists() {
-        $deploymentrepo = new deployment_repository(new application_registration_repository());
+        $deploymentrepo = new deployment_repository();
         $deployment = $this->create_test_deployment();
         $saveddeployment = $deploymentrepo->save($deployment);
 
@@ -159,7 +159,7 @@ class deployment_repository_testcase extends \advanced_testcase {
      */
     public function test_find() {
         $deployment = $this->create_test_deployment();
-        $deploymentrepo = new deployment_repository(new application_registration_repository());
+        $deploymentrepo = new deployment_repository();
         $saveddeployment = $deploymentrepo->save($deployment);
 
         $founddeployment = $deploymentrepo->find($saveddeployment->get_id());
@@ -173,7 +173,7 @@ class deployment_repository_testcase extends \advanced_testcase {
      */
     public function test_delete() {
         $deployment = $this->create_test_deployment();
-        $deploymentrepo = new deployment_repository(new application_registration_repository());
+        $deploymentrepo = new deployment_repository();
         $saveddeployment = $deploymentrepo->save($deployment);
         $this->assertTrue($deploymentrepo->exists($saveddeployment->get_id()));
 
@@ -184,11 +184,55 @@ class deployment_repository_testcase extends \advanced_testcase {
     }
 
     /**
+     * Test deleting a deployment by registration.
+     */
+    public function test_delete_by_registration() {
+        $deployment = $this->create_test_deployment();
+        $deploymentrepo = new deployment_repository();
+        $saveddeployment = $deploymentrepo->save($deployment);
+        $deployment2 = deployment::create($saveddeployment->get_registrationid(), 'another-deployment-id-1',
+            'another deployment 1');
+        $saveddeployment2 = $deploymentrepo->save($deployment2);
+        $deployment3 = deployment::create($saveddeployment->get_registrationid() + 1, 'another-deployment-id-2',
+            'another deployment 2');
+        $saveddeployment3 = $deploymentrepo->save($deployment3);
+        $this->assertTrue($deploymentrepo->exists($saveddeployment->get_id()));
+        $this->assertTrue($deploymentrepo->exists($saveddeployment2->get_id()));
+        $this->assertTrue($deploymentrepo->exists($saveddeployment3->get_id()));
+
+        $deploymentrepo->delete_by_registration($saveddeployment->get_registrationid());
+        $this->assertFalse($deploymentrepo->exists($saveddeployment->get_id()));
+        $this->assertFalse($deploymentrepo->exists($saveddeployment2->get_id()));
+        $this->assertTrue($deploymentrepo->exists($saveddeployment3->get_id()));
+
+        $this->assertNull($deploymentrepo->delete($saveddeployment->get_id()));
+    }
+
+    /**
+     * Test counting the number of deployments for a given registration.
+     */
+    public function test_count_by_registration() {
+        $deployment = $this->create_test_deployment();
+        $deploymentrepo = new deployment_repository();
+        $saveddeployment = $deploymentrepo->save($deployment);
+        $deployment2 = deployment::create($saveddeployment->get_registrationid(), 'another-deployment-id-1',
+            'another deployment 1');
+        $saveddeployment2 = $deploymentrepo->save($deployment2);
+        $deployment3 = deployment::create($saveddeployment->get_registrationid() + 1, 'another-deployment-id-2',
+            'another deployment 2');
+        $saveddeployment3 = $deploymentrepo->save($deployment3);
+
+        $this->assertEquals(2, $deploymentrepo->count_by_registration($saveddeployment->get_registrationid()));
+        $this->assertEquals(1, $deploymentrepo->count_by_registration($saveddeployment3->get_registrationid()));
+        $this->assertEquals(0, $deploymentrepo->count_by_registration(0));
+    }
+
+    /**
      * Test confirming a deployment can be found by registration and deploymentid.
      */
     public function test_find_by_registration() {
         $deployment = $this->create_test_deployment();
-        $deploymentrepo = new deployment_repository(new application_registration_repository());
+        $deploymentrepo = new deployment_repository();
         $saveddeployment = $deploymentrepo->save($deployment);
         $regid = $saveddeployment->get_registrationid();
 

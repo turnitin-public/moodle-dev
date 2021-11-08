@@ -13,15 +13,8 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-/**
- * Contains the user_repository class.
- *
- * @package enrol_lti
- * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+
 namespace enrol_lti\local\ltiadvantage\repository;
-use core\session\exception;
 use enrol_lti\local\ltiadvantage\entity\user;
 
 /**
@@ -29,6 +22,7 @@ use enrol_lti\local\ltiadvantage\entity\user;
  *
  * This class encapsulates persistence logic for \enrol_lti\local\entity\user type objects.
  *
+ * @package enrol_lti
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -50,19 +44,19 @@ class user_repository {
      * @return user a user object.
      */
     private function user_from_record(\stdClass $userrecord): user {
-        return user::create_from_store(
+        return user::create(
             $userrecord->toolid,
-            $userrecord->issuer,
-            $userrecord->deploymentid,
+            new \moodle_url($userrecord->issuer),
+            $userrecord->ltideploymentid,
             $userrecord->sourceid,
             $userrecord->firstname,
             $userrecord->lastname,
-            $userrecord->email,
             $userrecord->lang,
+            $userrecord->timezone,
+            $userrecord->email,
             $userrecord->city,
             $userrecord->country,
             $userrecord->institution,
-            $userrecord->timezone,
             $userrecord->maildisplay,
             $userrecord->lastgrade,
             $userrecord->lastaccess,
@@ -124,7 +118,7 @@ class user_repository {
     private function lti_user_record_from_user(user $user): \stdClass {
         $record = [
             'toolid' => $user->get_resourceid(),
-            'deploymentid' => $user->get_deploymentid(),
+            'ltideploymentid' => $user->get_deploymentid(),
             'sourceid' => $user->get_sourceid(),
             'lastgrade' => $user->get_lastgrade(),
             'lastaccess' => $user->get_lastaccess(),
@@ -144,7 +138,7 @@ class user_repository {
      */
     private function lti_advantage_user_record_from_user(user $user): \stdClass {
         return (object) [
-            'issuer' => $user->get_issuer(),
+            'issuer' => $user->get_issuer()->out(false),
             'issuer256' => hash('sha256', $user->get_issuer()),
             'sub' => $user->get_sourceid(),
             'sub256' => hash('sha256', $user->get_sourceid()),
@@ -230,7 +224,7 @@ class user_repository {
             $advantageuserrecordexists = false;
             if (!isset($userrecord->id)) {
                 $userid = $DB->get_field($this->ltiadvantageusertable, 'userid',
-                    ['issuer' => $user->get_issuer(), 'sub' => $user->get_sourceid()]);
+                    ['issuer' => $user->get_issuer()->out(false), 'sub' => $user->get_sourceid()]);
                 if ($userid !== false) {
                     $advantageuserrecordexists = true;
                     $userrecord->id = $userid;
@@ -264,7 +258,7 @@ class user_repository {
             // Create the lti_adv_user record holding platform details of the user and having a lifespan equal to that
             // of the user record itself.
             if (!$advantageuserrecordexists && !$DB->record_exists($this->ltiadvantageusertable,
-                    ['issuer' => $user->get_issuer(), 'sub' => $user->get_sourceid()])) {
+                    ['issuer' => $user->get_issuer()->out(false), 'sub' => $user->get_sourceid()])) {
                 $ltiadvantageuserrecord->timecreated = $ltiadvantageuserrecord->timemodified = $timenow;
                 $ltiadvantageuserrecord->userid = $userid;
                 $DB->insert_record($this->ltiadvantageusertable, $ltiadvantageuserrecord);
@@ -303,7 +297,7 @@ class user_repository {
         try {
             $sql = "SELECT lu.id, u.id as localid, u.username, u.firstname, u.lastname, u.email, u.city, u.country,
                            u.institution, u.timezone, u.maildisplay, u.lang, lu.sourceid, lu.toolid, lu.lastgrade,
-                           lu.lastaccess, lu.deploymentid, lau.sub, lau.issuer, lau.legacymigrated
+                           lu.lastaccess, lu.ltideploymentid, lau.sub, lau.issuer, lau.legacymigrated
                       FROM {enrol_lti_users} lu
                       JOIN {user} u
                         ON (u.id = lu.userid)
@@ -322,17 +316,17 @@ class user_repository {
      * Find an lti user by the unique identifier they have been issued on the issuer/platform and for a given resource.
      *
      * @param string $sub the user id on the issuer/platform.
-     * @param string $issuer the issuer domain in which the sub id is unique.
+     * @param \moodle_url $issuer the issuer domain in which the sub id is unique.
      * @param int $resourceid the id of the published resource to which the lti user is associated.
      * @return user|null the user instance or null if not found.
      */
-    public function find_by_sub(string $sub, string $issuer, int $resourceid): ?user {
+    public function find_by_sub(string $sub, \moodle_url $issuer, int $resourceid): ?user {
         global $DB;
         try {
             // Find the lti advantage user record.
             $sql = "SELECT lu.id, u.id as localid, u.username, u.firstname, u.lastname, u.email, u.city, u.country,
                            u.institution, u.timezone, u.maildisplay, u.lang, lu.sourceid, lu.toolid, lu.lastgrade,
-                           lu.lastaccess, lu.deploymentid, lau.sub, lau.issuer, lau.legacymigrated
+                           lu.lastaccess, lu.ltideploymentid, lau.sub, lau.issuer, lau.legacymigrated
                       FROM {{$this->ltiadvantageusertable}} lau
                       JOIN {enrol_lti_users} lu
                         ON (lau.userid = lu.userid)
@@ -342,7 +336,7 @@ class user_repository {
                        AND lau.issuer = :issuer
                        AND lu.toolid = :resourceid";
 
-            $params = ['sub' => $sub, 'issuer' => $issuer, 'resourceid' => $resourceid];
+            $params = ['sub' => $sub, 'issuer' => $issuer->out(false), 'resourceid' => $resourceid];
             $record = $DB->get_record_sql($sql, $params, MUST_EXIST);
             return $this->user_from_record($record);
         } catch (\dml_missing_record_exception $ex) {
@@ -360,7 +354,7 @@ class user_repository {
         global $DB;
         $sql = "SELECT lu.id, u.id as localid, u.username, u.firstname, u.lastname, u.email, u.city, u.country,
                        u.institution, u.timezone, u.maildisplay, u.lang, lu.sourceid, lu.toolid, lu.lastgrade,
-                       lu.lastaccess, lu.deploymentid, lau.sub, lau.issuer, lau.legacymigrated
+                       lu.lastaccess, lu.ltideploymentid, lau.sub, lau.issuer, lau.legacymigrated
                   FROM {enrol_lti_users} lu
                   JOIN {{$this->ltiadvantageusertable}} lau
                     ON (lau.userid = lu.userid)
@@ -370,6 +364,31 @@ class user_repository {
               ORDER BY lu.lastaccess DESC";
 
         $records = $DB->get_records_sql($sql, ['resourceid' => $resourceid]);
+        return $this->users_from_records($records);
+    }
+
+    /**
+     * Get a list of users associated with the given resource link.
+     *
+     * @param int $resourcelinkid the id of the resource_link instance with which the users are associated.
+     * @return array the array of users, empty if none were found.
+     */
+    public function find_by_resource_link(int $resourcelinkid) {
+        global $DB;
+        $sql = "SELECT lu.id, u.id as localid, u.username, u.firstname, u.lastname, u.email, u.city, u.country,
+                       u.institution, u.timezone, u.maildisplay, u.lang, lu.sourceid, lu.toolid, lu.lastgrade,
+                       lu.lastaccess, lu.ltideploymentid, lau.sub, lau.issuer, lau.legacymigrated
+                  FROM {enrol_lti_users} lu
+                  JOIN {{$this->ltiadvantageusertable}} lau
+                    ON (lau.userid = lu.userid)
+                  JOIN {user} u
+                    ON (u.id = lu.userid)
+                  JOIN {{$this->userresourcelinkidtable}} url
+                    ON (url.ltiuserid = lu.id)
+                 WHERE url.resourcelinkid = :resourcelinkid
+              ORDER BY lu.lastaccess DESC";
+
+        $records = $DB->get_records_sql($sql, ['resourcelinkid' => $resourcelinkid]);
         return $this->users_from_records($records);
     }
 
@@ -402,6 +421,6 @@ class user_repository {
      */
     public function delete_by_deployment(int $deploymentid): void {
         global $DB;
-        $DB->delete_records($this->ltiuserstable, ['deploymentid' => $deploymentid]);
+        $DB->delete_records($this->ltiuserstable, ['ltideploymentid' => $deploymentid]);
     }
 }

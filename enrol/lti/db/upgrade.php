@@ -124,22 +124,6 @@ function xmldb_enrol_lti_upgrade($oldversion) {
     }
 
     if ($oldversion < 2021052504) {
-        // Add a new column 'deploymentid' to the enrol_lti_users table.
-        $table = new xmldb_table('enrol_lti_users');
-
-        // Define field deploymentid to be added to enrol_lti_users.
-        $field = new xmldb_field('deploymentid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'sourceid');
-
-        // Conditionally launch add field deploymentid.
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
-
-        // Lti savepoint reached.
-        upgrade_plugin_savepoint(true, 2021052504, 'enrol', 'lti');
-    }
-
-    if ($oldversion < 2021052505) {
         // Define table enrol_lti_deployment to be created.
         $table = new xmldb_table('enrol_lti_deployment');
 
@@ -164,6 +148,26 @@ function xmldb_enrol_lti_upgrade($oldversion) {
         }
 
         // Lti savepoint reached.
+        upgrade_plugin_savepoint(true, 2021052504, 'enrol', 'lti');
+    }
+
+    if ($oldversion < 2021052505) {
+        // Add a new column 'ltideploymentid' to the enrol_lti_users table.
+        $table = new xmldb_table('enrol_lti_users');
+
+        // Define field ltideploymentid to be added to enrol_lti_users.
+        $field = new xmldb_field('ltideploymentid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'sourceid');
+
+        // Conditionally launch add field deploymentid.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Launch add key ltideploymentid.
+        $key = new xmldb_key('ltideploymentid', XMLDB_KEY_FOREIGN, ['ltideploymentid'], 'enrol_lti_deployment', ['id']);
+        $dbman->add_key($table, $key);
+
+        // Lti savepoint reached.
         upgrade_plugin_savepoint(true, 2021052505, 'enrol', 'lti');
     }
 
@@ -175,8 +179,8 @@ function xmldb_enrol_lti_upgrade($oldversion) {
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
         $table->add_field('resourcelinkid', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
         $table->add_field('resourceid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('deploymentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('contextid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('ltideploymentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('lticontextid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
         $table->add_field('lineitemsservice', XMLDB_TYPE_CHAR, '1333', null, null, null, null);
         $table->add_field('lineitemservice', XMLDB_TYPE_CHAR, '1333', null, null, null, null);
         $table->add_field('lineitemscope', XMLDB_TYPE_CHAR, '255', null, null, null, null);
@@ -189,11 +193,11 @@ function xmldb_enrol_lti_upgrade($oldversion) {
 
         // Adding keys to table enrol_lti_resource_link.
         $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
-        $table->add_key('deploymentid', XMLDB_KEY_FOREIGN, ['deploymentid'], 'enrol_lti_deployment', ['id']);
-        $table->add_key('contextid', XMLDB_KEY_FOREIGN, ['contextid'], 'enrol_lti_context', ['id']);
+        $table->add_key('ltideploymentid', XMLDB_KEY_FOREIGN, ['ltideploymentid'], 'enrol_lti_deployment', ['id']);
+        $table->add_key('lticontextid', XMLDB_KEY_FOREIGN, ['lticontextid'], 'enrol_lti_context', ['id']);
 
-        // Add unique index on resourcelinkid, deploymentid.
-        $table->add_index('resourcelinkdid-deploymentid', XMLDB_INDEX_UNIQUE, ['resourcelinkid', 'deploymentid']);
+        // Add unique index on resourcelinkid, ltideploymentid.
+        $table->add_index('resourcelinkdid-ltideploymentid', XMLDB_INDEX_UNIQUE, ['resourcelinkid', 'ltideploymentid']);
 
         // Conditionally launch create table for enrol_lti_resource_link.
         if (!$dbman->table_exists($table)) {
@@ -211,17 +215,17 @@ function xmldb_enrol_lti_upgrade($oldversion) {
         // Adding fields to table enrol_lti_context.
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
         $table->add_field('contextid', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('deploymentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('ltideploymentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
         $table->add_field('type', XMLDB_TYPE_TEXT, null, null, null, null, null);
         $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
         $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
 
         // Adding keys to table enrol_lti_context.
         $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
-        $table->add_key('deploymentid', XMLDB_KEY_FOREIGN, ['deploymentid'], 'enrol_lti_deployment', ['id']);
+        $table->add_key('ltideploymentid', XMLDB_KEY_FOREIGN, ['ltideploymentid'], 'enrol_lti_deployment', ['id']);
 
-        // Add unique index on deploymentid, contextid.
-        $table->add_index('deploymentid-contextid', XMLDB_INDEX_UNIQUE, ['deploymentid', 'contextid']);
+        // Add unique index on ltideploymentid, contextid.
+        $table->add_index('ltideploymentid-contextid', XMLDB_INDEX_UNIQUE, ['ltideploymentid', 'contextid']);
 
         // Conditionally launch create table for enrol_lti_context.
         if (!$dbman->table_exists($table)) {

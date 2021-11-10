@@ -13,21 +13,15 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
-/**
- * Contains the published_resource_repository class.
- *
- * @package enrol_lti
- * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-namespace enrol_lti\local\ltiadvantage\repository;
 
+namespace enrol_lti\local\ltiadvantage\repository;
 use core_availability\info_module;
 use enrol_lti\local\ltiadvantage\viewobject\published_resource;
 
 /**
  * Class published_resource_repository for fetching the published_resource instances from the store.
  *
+ * @package enrol_lti
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -81,8 +75,6 @@ class published_resource_repository {
                 $resource->name = format_string($resource->coursefullname, true, ['context' => $resource->contextid]);
                 $resource->coursefullname = $resource->name;
                 $resource->iscourse = true;
-
-                // TODO: Does a course always support grades?
                 $resource->supportsgrades = true;
 
                 $coursegradeitem = \grade_item::fetch_course_item($resource->courseid);
@@ -101,17 +93,24 @@ class published_resource_repository {
 
                             $resource->iscourse = false;
                             $resource->name = $mod->name;
-                            // TODO: Probably need to also exclude activities which have incompatible grading methods.
-                            $resource->supportsgrades = plugin_supports('mod', $mod->modname, FEATURE_GRADE_HAS_GRADE);
+                            $resource->supportsgrades = false;
+                            $resource->grademax = null;
 
-                            if ($resource->supportsgrades) {
-                                $gradinginfo = grade_get_grades($resource->courseid, 'mod', $mod->modname,
-                                    $mod->instance);
-                                $resource->grademax = (int)$gradinginfo->items[0]->grademax;
-                            } else {
-                                $resource->grademax = null;
+                            // Only activities with GRADE_TYPE_VALUE are valid.
+                            if (plugin_supports('mod', $mod->modname, FEATURE_GRADE_HAS_GRADE)) {
+                                $gradeitem = \grade_item::fetch([
+                                    'courseid' => $resource->courseid,
+                                    'itemtype' => 'mod',
+                                    'itemmodule' => $mod->modname,
+                                    'iteminstance' => $mod->instance
+                                ]);
+                                if ($gradeitem && $gradeitem->gradetype == GRADE_TYPE_VALUE) {
+                                    $gradinginfo = grade_get_grades($resource->courseid, 'mod', $mod->modname,
+                                        $mod->instance);
+                                    $resource->supportsgrades = true;
+                                    $resource->grademax = (int) $gradinginfo->items[0]->grademax;
+                                }
                             }
-
                             $availableresources[] = $resource;
                         }
                     }

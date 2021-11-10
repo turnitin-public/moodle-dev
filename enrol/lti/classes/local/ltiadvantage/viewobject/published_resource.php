@@ -14,22 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Contains the published_resource class definition.
- *
- * @package    enrol_lti
- * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
 namespace enrol_lti\local\ltiadvantage\viewobject;
 
 /**
  * The class published_resource, instances of which represent a specific VIEW of a published resource.
  *
- * This class performs no validation and is only meant to be used as a slice of the existing data for for use in the
+ * This class performs no validation and is only meant to be used as a slice of the existing data for use in the
  * content selection flow.
  *
+ * @package    enrol_lti
  * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

@@ -14,13 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Contains the launch_cache_session class.
- *
- * @package    enrol_lti
- * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 namespace enrol_lti\local\ltiadvantage;
 
 use IMSGlobal\LTI13\Cache;
@@ -31,6 +24,7 @@ use IMSGlobal\LTI13\Cache;
  * This is used to store the launch information while the user is transitioned through the Moodle authentication flows
  * and back to the deep linking launch handler (launch_deeplink.php).
  *
+ * @package    enrol_lti
  * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

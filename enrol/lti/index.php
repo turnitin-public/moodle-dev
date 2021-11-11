@@ -46,7 +46,7 @@ require_capability('moodle/course:enrolreview', $context);
 
 $ltiplugin = enrol_get_plugin('lti');
 $canconfig = has_capability('moodle/course:enrolconfig', $context);
-$pageurl = new moodle_url('/enrol/lti/index.php', array('courseid' => $courseid));
+$pageurl = new moodle_url('/enrol/lti/index.php', array('courseid' => $courseid, 'legacy' => $legacy));
 
 $PAGE->set_url($pageurl);
 $PAGE->set_title(get_string('course') . ': ' . $course->fullname);
@@ -153,9 +153,10 @@ if ($legacy) {
 if ($ltiplugin->can_add_instance($course->id)) {
     echo $OUTPUT->single_button(new moodle_url('/enrol/editinstance.php',
         array(
+            'legacy' => $legacy,
             'type' => 'lti',
             'courseid' => $course->id,
-            'returnurl' => new moodle_url('/enrol/lti/index.php', array('courseid' => $course->id)))
+            'returnurl' => new moodle_url('/enrol/lti/index.php', ['courseid' => $course->id, 'legacy' => $legacy]))
         ),
         get_string('add'));
 }

@@ -234,6 +234,10 @@ class enrol_lti_plugin extends enrol_plugin {
         ];
         $mform->addElement('select', 'ltiversion', get_string('ltiversion', 'enrol_lti'), $versionoptions);
         $mform->addHelpButton('ltiversion', 'ltiversion', 'enrol_lti');
+        if (empty($instance->id)) {
+            $legacy = optional_param('legacy', false, PARAM_INT);
+            $mform->setDefault('ltiversion', $legacy ? 'LTI-1p0/LTI-2p0' : 'LTI-1p3');
+        }
 
         $nameattribs = array('size' => '20', 'maxlength' => '255');
         $mform->addElement('text', 'name', get_string('custominstancename', 'enrol'), $nameattribs);

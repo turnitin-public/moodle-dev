@@ -182,7 +182,8 @@ class manage_table extends \table_sql {
         $strenable = get_string('enable');
         $strdisable = get_string('disable');
 
-        $url = new \moodle_url('/enrol/lti/index.php', array('sesskey' => sesskey(), 'courseid' => $this->courseid));
+        $url = new \moodle_url('/enrol/lti/index.php',
+            array('sesskey' => sesskey(), 'courseid' => $this->courseid, 'legacy' => 1));
 
         if ($this->ltiplugin->can_delete_instance($instance)) {
             $aurl = new \moodle_url($url, array('action' => 'delete', 'instanceid' => $instance->id));
@@ -206,7 +207,8 @@ class manage_table extends \table_sql {
             $linkparams = array(
                 'courseid' => $instance->courseid,
                 'id' => $instance->id, 'type' => $instance->enrol,
-                'returnurl' => new \moodle_url('/enrol/lti/index.php', array('courseid' => $this->courseid))
+                'returnurl' => new \moodle_url('/enrol/lti/index.php',
+                    array('courseid' => $this->courseid, 'legacy' => 1))
             );
             $editlink = new \moodle_url("/enrol/editinstance.php", $linkparams);
             $buttons[] = $OUTPUT->action_icon($editlink, new \pix_icon('t/edit', get_string('edit'), 'core',

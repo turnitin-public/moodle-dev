@@ -36,6 +36,12 @@ class behat_enrol_lti_generator extends behat_generator_base {
                 'datagenerator' => 'application_registration',
                 'required' => ['name', 'platformid', 'clientid', 'authrequesturl', 'jwksurl', 'accesstokenurl']
             ],
+            'published resources' => [
+                'singular' => 'published resource',
+                'datagenerator' => 'published_resource',
+                'required' => ['name', 'activity', 'course'],
+                'switchids' => ['activity' => 'activityid', 'course' => 'courseid']
+            ]
         ];
     }
 }

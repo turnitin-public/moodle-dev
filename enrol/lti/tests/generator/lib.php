@@ -37,7 +37,7 @@ class enrol_lti_generator extends component_generator_base {
     public function create_application_registration(array $data): application_registration {
         $registration = application_registration::create(
             $data['name'],
-            $data['platformid'],
+            new moodle_url($data['platformid']),
             $data['clientid'],
             new moodle_url($data['authrequesturl']),
             new moodle_url($data['jwksurl']),
@@ -54,5 +54,35 @@ class enrol_lti_generator extends component_generator_base {
         }
 
         return $createdregistration;
+    }
+
+    /**
+     * Test method to generate a published resource for a course.
+     *
+     * @param array $data the data required to publish the resource.
+     * @return stdClass the enrol_lti_tools record, representing the published resource.
+     */
+    public function create_published_resource(array $data): stdClass {
+
+        if (!empty($data['ltiversion']) && !in_array($data['ltiversion'], ['LTI-1p3', 'LTI-1p0/LTI-2p0'])) {
+            throw new coding_exception("The field 'ltiversion' must be either 'LTI-1p3' or 'LTI-1p0/LTI-2p0'.");
+        }
+
+        $instancedata = (object) [
+            'name' => $data['name'],
+            'courseid' => $data['courseid'],
+            'cmid' => $data['activityid'],
+            'ltiversion' => $data['ltiversion'] ?? 'LTI-1p3'
+        ];
+        $tool = $this->datagenerator->create_lti_tool($instancedata);
+
+        if (empty($data['uuid'])) {
+            return $tool;
+        }
+
+        // Allow tests to create predictable uuids.
+        global $DB;
+        $DB->set_field('enrol_lti_tools', 'uuid', $data['uuid']);
+        return enrol_lti\helper::get_lti_tool($tool->id);
     }
 }

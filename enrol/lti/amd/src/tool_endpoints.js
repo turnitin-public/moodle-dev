@@ -38,7 +38,7 @@ const SELECTORS = {
     GENERATE_REGISTRATION_URL_BUTTON: '[id^="lti_generate_registration_url"]',
     REGISTRATION_URL_TABLE: '[id^="lti_registration_url_table_"]',
     URL_VALUE: '[id^="lti_tool_endpoint_url_"]',
-    URL_INFO: '[id^="lti_tool_endpoint_url_info_"]',
+    URL_INFO: '[id^="lti_tool_endpoint_info_"]',
     URL_COPY_TO_CLIPBOARD: '[data-action="copytoclipboard"]',
     URL_DELETE: '[data-action="delete"]'
 };
@@ -202,7 +202,7 @@ export const init = () => {
     ]);
 
     // Event capturing supporting the select on focus behaviour (with text selection permitted on subsequent clicks).
-    document.addEventListener('focus', focusURLHandler, true);
+    document.addEventListener('focusin', focusURLHandler);
 
     // And delegation for deleting the URL.
     document.addEventListener('click', deleteClickHandler);

@@ -17,8 +17,7 @@
 /**
  * LTI Advantage Initiate Dynamic Registration endpoint.
  *
- * Spec is currently Member Candidate Final and is not publicly available.
- * TODO: link spec here once public.
+ * https://www.imsglobal.org/spec/lti-dr/v1p0
  *
  * This endpoint handles the Registration Initiation Launch, in which a platform (via the user agent) sends their
  * OpenID config URL and an optional registration token (to be used as the access token in the registration request).
@@ -83,6 +82,9 @@ if ($errno !== 0) {
     throw new coding_exception("Error '{$errno}' while getting OpenID config from platform: {$openidconfig}");
 }
 $openidconfig = json_decode($openidconfig);
+if (json_last_error() !== JSON_ERROR_NONE) {
+    throw new moodle_exception('ltiadvdynregerror:invalidopenidconfigjson', 'enrol_lti');
+}
 
 $regendpoint = $openidconfig->registration_endpoint ?? null;
 if (empty($regendpoint)) {
@@ -102,7 +104,7 @@ $regrequest = (object) [
         $CFG->wwwroot . '/enrol/lti/launch.php',
         $CFG->wwwroot . '/enrol/lti/launch_deeplink.php',
     ],
-     // TODO: Consider whether to support client_name#ja syntax for multi language support.
+     // TODO: Consider whether to support client_name#ja syntax for multi language support - see MDL-73109.
     'client_name' => get_string('moodle', 'enrol_lti'),
     'jwks_uri' => $CFG->wwwroot . '/enrol/lti/jwks.php',
     'logo_uri' => $OUTPUT->image_url('moodlelogo')->out(false),
@@ -131,7 +133,7 @@ $regrequest = (object) [
                 'type' => 'LtiDeepLinkingRequest',
                 'allowLearner' => false,
                 'target_link_uri' => $CFG->wwwroot . '/enrol/lti/launch_deeplink.php',
-                 // TODO: Consider whether to support label#ja syntax for multi language support.
+                 // TODO: Consider whether to support label#ja syntax for multi language support - see MDL-73109.
                 'label' => get_string('registrationdeeplinklabel', 'enrol_lti'),
                 'placements' => [
                     "ContentArea"
@@ -141,7 +143,7 @@ $regrequest = (object) [
                 'type' => 'LtiResourceLinkRequest',
                 'allowLearner' => true,
                 'target_link_uri' => $CFG->wwwroot . '/enrol/lti/launch.php',
-                // TODO: Consider whether to support label#ja syntax for multi language support.
+                // TODO: Consider whether to support label#ja syntax for multi language support - see MDL-73109.
                 'label' => get_string('registrationresourcelinklabel', 'enrol_lti'),
                 'placements' => [
                     "ContentArea"
@@ -172,7 +174,7 @@ if ($regresponse) {
         // Registration of the tool on the platform was successful. Now save the platform registration.
         $appreg = application_registration::create(
             $openidconfig->issuer,
-            $openidconfig->issuer,
+            new moodle_url($openidconfig->issuer),
             $regresponse->client_id,
             new moodle_url($openidconfig->authorization_endpoint),
             new moodle_url($openidconfig->jwks_uri),

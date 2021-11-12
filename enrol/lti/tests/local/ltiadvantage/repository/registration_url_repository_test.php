@@ -15,7 +15,6 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace enrol_lti\local\ltiadvantage\repository;
-
 use enrol_lti\local\ltiadvantage\entity\registration_url;
 
 /**
@@ -25,18 +24,12 @@ use enrol_lti\local\ltiadvantage\entity\registration_url;
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class registration_url_repository_testcase extends \advanced_testcase {
-    /**
-     * Setup run for each test case.
-     */
-    protected function setUp(): void {
-        $this->resetAfterTest();
-    }
-
+class registration_url_repository_test extends \advanced_testcase {
     /**
      * Test saving a new registration_url instance.
      */
     public function test_save_new() {
+        $this->resetAfterTest();
         global $DB;
         $regurl = new registration_url(3600, 'token');
         $regurlrepo = new registration_url_repository();
@@ -52,6 +45,7 @@ class registration_url_repository_testcase extends \advanced_testcase {
      * Test saving an existing registration_url instance.
      */
     public function test_save_existing() {
+        $this->resetAfterTest();
         global $DB;
         $regurl = new registration_url(time() + 3600, 'token');
         $regurlrepo = new registration_url_repository();
@@ -64,11 +58,13 @@ class registration_url_repository_testcase extends \advanced_testcase {
 
     /**
      * Test finding the registration_url.
+     *
      * @dataProvider find_data_provider
      * @param int $expirytime the expiry time of the registration URL.
      * @param bool $found whether the find() method is expected to return the URL or not.
      */
     public function test_find(int $expirytime, bool $found) {
+        $this->resetAfterTest();
         $regurl = new registration_url($expirytime, 'token');
         $regurlrepo = new registration_url_repository();
 
@@ -107,6 +103,7 @@ class registration_url_repository_testcase extends \advanced_testcase {
      * Test finding a registration URL by its token.
      */
     public function test_find_by_token() {
+        $this->resetAfterTest();
         $regurl = new registration_url(time() + 3600, 'token');
         $regurlrepo = new registration_url_repository();
 
@@ -124,6 +121,7 @@ class registration_url_repository_testcase extends \advanced_testcase {
      * Test deleting the registration_url.
      */
     public function test_delete() {
+        $this->resetAfterTest();
         global $DB;
         $regurl = new registration_url(time() + 3600, 'token');
         $regurlrepo = new registration_url_repository();

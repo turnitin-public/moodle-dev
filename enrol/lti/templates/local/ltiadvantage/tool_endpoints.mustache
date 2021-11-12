@@ -70,7 +70,7 @@
         {{#dynamic_registration_url}}
         <div id="lti_registration_endpoint" aria-live="polite">
             <div id="lti_registration_url_table_{{id}}"  class="{{^url}}hidden{{/url}}">
-                <span class="bold">Registration URL</span>
+                <label class="bold" for="lti_tool_endpoint_url_{{id}}">Registration URL</label>
                 <hr>
                 <div class="input-group col-md-6 ml-0 pl-0">
                     <input class="form-control" type="text" value="{{url}}" aria-label="{{url}}" id="lti_tool_endpoint_url_{{id}}" readonly>
@@ -102,7 +102,7 @@
                     </div>
                 </div>
                 <br>
-                <span class="font-italic" id="lti_tool_endpoint_url_info_{{id}}">
+                <span class="font-italic" id="lti_tool_endpoint_info_{{id}}">
                     {{#expiryinfo}}
                         {{.}}
                     {{/expiryinfo}}
@@ -130,7 +130,7 @@
                 <tbody>
                 {{#manual_registration_urls}}
                 <tr>
-                    <th id="lti_tool_endpoint_name_{{id}}">{{name}}</th>
+                    <th id="lti_tool_endpoint_name_{{id}}"><label for="lti_tool_endpoint_url_{{id}}">{{name}}</label></th>
                     <td>
                         <div class="input-group col-md-6 ml-0 pl-0">
                             <input class="form-control" type="text" value="{{url}}" aria-label="{{url}}" id="lti_tool_endpoint_url_{{id}}" readonly>

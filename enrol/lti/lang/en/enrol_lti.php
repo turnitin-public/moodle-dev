@@ -66,6 +66,7 @@ $string['invalidrequest'] = 'Invalid request';
 $string['invalidtoolconsumer'] = 'Invalid tool consumer.';
 $string['jwksurl'] = 'JWKS URL';
 $string['loginurl'] = 'Initiate login URL';
+$string['ltiadvdynregerror:invalidopenidconfigjson'] = "There was a problem fetching the OpenID configuration from the platform. The result was not valid JSON. This may also be caused by blocked hosts configuration. Please make sure your site is configured to connect to the platform domain and try again using a new registration URL.";
 $string['ltiadvlauncherror:missingid'] = 'Invalid launch data. The custom claim field \'id\' is required to launch an activity or resource over LTI Advantage.';
 $string['ltiadvlauncherror:invalidid'] = 'Invalid launch data. The resource \'{$a}\' is unavailable or does not exist.';
 $string['ltiadvlauncherror:invalidregistration'] = 'Invalid launch data or tool configuration. A platform registration could not be found (issuer: {$a->platform}, clientid: {$a->clientid}).';

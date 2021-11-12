@@ -33,7 +33,6 @@ use external_warnings;
 use external_single_structure;
 use external_function_parameters;
 
-
 /**
  * This is the external method for deleting a registration URL for use with LTI Advantage Dynamic Registration.
  *
@@ -87,10 +86,10 @@ class delete_registration_url extends external_api {
      */
     public static function execute_returns() {
         return new external_single_structure(
-            array(
+            [
                 'status' => new external_value(PARAM_BOOL, 'True if the URL was deleted, false otherwise.'),
                 'warnings' => new external_warnings()
-            )
+            ]
         );
     }
 }

@@ -14,16 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Contains tests for the application_registration_service.
- *
- * @package enrol_lti
- * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 namespace enrol_lti\local\ltiadvantage\service;
-
-defined('MOODLE_INTERNAL') || die();
 
 use enrol_lti\helper;
 use enrol_lti\local\ltiadvantage\entity\registration_url;
@@ -33,23 +24,18 @@ use enrol_lti\local\ltiadvantage\repository\deployment_repository;
 use enrol_lti\local\ltiadvantage\repository\resource_link_repository;
 use enrol_lti\local\ltiadvantage\repository\user_repository;
 
+defined('MOODLE_INTERNAL') || die();
+
 require_once(__DIR__ . '/../lti_advantage_testcase.php');
 
 /**
  * Tests for the application_registration_service.
  *
+ * @package enrol_lti
  * @copyright 2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class application_registration_service_testcase extends \lti_advantage_testcase {
-
-    /**
-     * Setup run for each test case.
-     */
-    protected function setUp(): void {
-        $this->resetAfterTest();
-    }
-
+class application_registration_service_test extends \lti_advantage_testcase {
     /**
      * Helper to get an application_registration_service instance.
      * @return application_registration_service
@@ -68,6 +54,7 @@ class application_registration_service_testcase extends \lti_advantage_testcase 
      * Test the use case "As an admin, I can register an application as an LTI consumer (platform)".
      */
     public function test_register_application() {
+        $this->resetAfterTest();
         $reg = (object) [
             'name' => 'Example LMS application',
             'platformid' => 'https://lms.example.org',
@@ -85,9 +72,34 @@ class application_registration_service_testcase extends \lti_advantage_testcase 
     }
 
     /**
+<<<<<<< Updated upstream
+=======
+     * Test verifying that the service cannot save two identical (same issuer and clientid) application registrations.
+     */
+    public function test_register_application_unique_constraints() {
+        $this->resetAfterTest();
+        $reg = (object) [
+            'name' => 'Example LMS application',
+            'platformid' => 'https://lms.example.org',
+            'clientid' => '123',
+            'authenticationrequesturl' => new \moodle_url('https://example.org/authrequesturl'),
+            'jwksurl' => new \moodle_url('https://example.org/jwksurl'),
+            'accesstokenurl' => new \moodle_url('https://example.org/accesstokenurl')
+        ];
+
+        $service = $this->get_application_registration_service();
+        $service->create_application_registration($reg);
+
+        $this->expectException(\moodle_exception::class);
+        $service->create_application_registration($reg);
+    }
+
+    /**
+>>>>>>> Stashed changes
      * Test the use case "As an admin, I can update an application registered as an LTI consumer (platform)".
      */
     public function test_update_application_registration() {
+        $this->resetAfterTest();
         $reg = (object) [
             'name' => 'Example LMS application',
             'platformid' => 'https://lms.example.org',
@@ -112,6 +124,7 @@ class application_registration_service_testcase extends \lti_advantage_testcase 
      * Test verifying that the service requires an object id.
      */
     public function test_update_application_registration_missing_id() {
+        $this->resetAfterTest();
         $reg = (object) [
             'name' => 'Example LMS application',
             'platformid' => 'https://lms.example.org',
@@ -134,6 +147,7 @@ class application_registration_service_testcase extends \lti_advantage_testcase 
      * Test that removing an application registration also removes all associated data.
      */
     public function test_delete_application_registration() {
+        $this->resetAfterTest();
         // Setup.
         $registrationrepo = new application_registration_repository();
         $deploymentrepo = new deployment_repository();
@@ -196,6 +210,7 @@ class application_registration_service_testcase extends \lti_advantage_testcase 
      * @param array $expected the array of expected values/results.
      */
     public function test_create_registration_url(?int $duration, array $expected) {
+        $this->resetAfterTest();
         $appregservice = $this->get_application_registration_service();
         if ($expected['exception']) {
             $this->expectException($expected['exception']);
@@ -244,6 +259,7 @@ class application_registration_service_testcase extends \lti_advantage_testcase 
      * Test getting the current registration url.
      */
     public function test_get_registration_url() {
+        $this->resetAfterTest();
         $appregservice = $this->get_application_registration_service();
 
         // Check when not existing.
@@ -259,6 +275,7 @@ class application_registration_service_testcase extends \lti_advantage_testcase 
      * Test getting a registration URL by its token.
      */
     public function test_get_registration_url_using_token() {
+        $this->resetAfterTest();
         $appregservice = $this->get_application_registration_service();
         $createdregurl = $appregservice->create_registration_url();
 
@@ -275,6 +292,7 @@ class application_registration_service_testcase extends \lti_advantage_testcase 
      * Test deletion of the current registration URL.
      */
     public function test_delete_registration_url() {
+        $this->resetAfterTest();
         $appregservice = $this->get_application_registration_service();
 
         // Deletion when no URL exists.

@@ -14,21 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Includes tests for enrol_lti\local\ltiadvantage\external\delete_registration_url.
- *
- * @package    enrol_lti
- * @category   external
- * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
 namespace enrol_lti\local\ltiadvantage\external;
-
-defined('MOODLE_INTERNAL') || die();
-
-global $CFG;
-require_once($CFG->dirroot . '/webservice/tests/helpers.php');
 
 use enrol_lti\local\ltiadvantage\repository\application_registration_repository;
 use enrol_lti\local\ltiadvantage\repository\context_repository;
@@ -38,13 +24,19 @@ use enrol_lti\local\ltiadvantage\repository\user_repository;
 use enrol_lti\local\ltiadvantage\service\application_registration_service;
 use external_api;
 
+defined('MOODLE_INTERNAL') || die();
+
+global $CFG;
+require_once($CFG->dirroot . '/webservice/tests/helpers.php');
+
 /**
  * Test class for enrol_lti\local\ltiadvantage\external\delete_registration_url.
  *
+ * @package    enrol_lti
  * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class delete_registration_url_testcase extends \externallib_advanced_testcase {
+class delete_registration_url_test extends \externallib_advanced_testcase {
 
     /**
      * Setup for the test cases.

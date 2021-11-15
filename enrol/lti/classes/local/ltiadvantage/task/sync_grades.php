@@ -14,14 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Contains an LTI Advantage-specific task responsible for pushing grades to tool platforms.
- *
- * @package    enrol_lti
- * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
 namespace enrol_lti\local\ltiadvantage\task;
+
 use core\task\scheduled_task;
 use enrol_lti\helper;
 use enrol_lti\local\ltiadvantage\issuer_database;
@@ -36,6 +30,7 @@ use IMSGlobal\LTI13\LTI_Service_Connector;
 /**
  * LTI Advantage task responsible for pushing grades to tool platforms.
  *
+ * @package    enrol_lti
  * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -146,8 +141,10 @@ class sync_grades extends scheduled_task {
                         $appregistration = $appregistrationrepo->find_by_deployment(
                             $userresourcelink->get_deploymentid()
                         );
-                        $registration = $issuerdb->find_registration_by_issuer($appregistration->get_platformid(),
-                            $appregistration->get_clientid());
+                        $registration = $issuerdb->find_registration_by_issuer(
+                            $appregistration->get_platformid()->out(false),
+                            $appregistration->get_clientid()
+                        );
                         $sc = new LTI_Service_Connector($registration);
 
                         $lineitemurl = $gradeservice->get_lineitemurl();
@@ -157,7 +154,7 @@ class sync_grades extends scheduled_task {
                             'scope' => $gradeservice->get_scopes(),
                         ];
 
-                        $ags = new LTI_Assignments_Grades_Service($sc, $servicedata);
+                        $ags = $this->get_ags($sc, $servicedata);
                         $ltigrade = LTI_Grade::new()
                             ->set_score_given($grade)
                             ->set_score_maximum($grademax)
@@ -193,6 +190,17 @@ class sync_grades extends scheduled_task {
     }
 
     /**
+     * Get an ags instance to make the call to the platform.
+     *
+     * @param LTI_Service_Connector $sc a service connector instance.
+     * @param array $sd the service data.
+     * @return LTI_Assignments_Grades_Service
+     */
+    protected function get_ags(LTI_Service_Connector $sc, array $sd): LTI_Assignments_Grades_Service {
+        return new LTI_Assignments_Grades_Service($sc, $sd);
+    }
+
+    /**
      * Performs the synchronisation of grades from the tool to any registered platforms.
      *
      * @return bool|void
@@ -213,11 +221,19 @@ class sync_grades extends scheduled_task {
             return true;
         }
 
-        foreach (helper::get_lti_tools(['status' => ENROL_INSTANCE_ENABLED, 'gradesync' => 1]) as $resource) {
-            if ($resource->ltiversion != 'LTI-1p3') {
-                continue;
-            }
+        $resources = helper::get_lti_tools([
+            'status' => ENROL_INSTANCE_ENABLED,
+            'gradesync' => 1,
+            'ltiversion' => 'LTI-1p3'
+        ]);
+        if (empty($resources)) {
+            mtrace('Skipping task - There are no resources with grade sync enabled.');
+            return true;
+        }
+
+        foreach ($resources as $resource) {
             mtrace("Starting - LTI Advantage grade sync for shared resource '$resource->id' in course '$resource->courseid'.");
+
             [$usercount, $sendcount] = $this->sync_grades_for_resource($resource);
 
             mtrace("Completed - Synced grades for tool '$resource->id' in the course '$resource->courseid'. " .

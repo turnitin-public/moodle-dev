@@ -45,15 +45,21 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
      * @param array $ids the platform user_ids for the users.
      * @return array the users list.
      */
-    protected function get_mock_launch_users_with_ids(array $ids): array {
+    protected function get_mock_launch_users_with_ids(array $ids, bool $includepicture = false,
+            string $role = 'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'): array {
+
         $users = [];
         foreach ($ids as $id) {
             $user = [
                 'user_id' => $id,
                 'given_name' => 'Firstname' . $id,
                 'family_name' => 'Surname' . $id,
-                'email' => "firstname.surname{$id}@lms.example.org"
+                'email' => "firstname.surname{$id}@lms.example.org",
+                'roles' => [$role]
             ];
+            if ($includepicture) {
+                $user['picture'] = $this->getExternalTestFileUrl('/test.jpg');
+            }
             $users[] = $user;
         }
         return $users;
@@ -65,11 +71,12 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
      * @param \stdClass $resource the resource record, allowing the mock to generate a link to this.
      * @param array $mockuser the user on the platform who is performing the launch.
      * @param string|null $resourcelinkid the id of resource link in the platform, if desired.
+     * @param bool $ags whether to include a mock AGS claim or not.
      * @param array|null $migrationclaiminfo contains consumer key, secret and any fields which are sent in the claim.
      * @return LTI_Message_Launch the mock launch object with test launch data.
      */
     protected function get_mock_launch(\stdClass $resource, array $mockuser,
-            ?string $resourcelinkid = null, ?array $migrationclaiminfo = null): LTI_Message_Launch {
+            ?string $resourcelinkid = null, bool $ags = true, ?array $migrationclaiminfo = null): LTI_Message_Launch {
 
         $mocklaunch = $this->getMockBuilder(LTI_Message_Launch::class)
             ->onlyMethods(['get_launch_data'])
@@ -77,7 +84,8 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
             ->getMock();
         $mocklaunch->expects($this->any())
             ->method('get_launch_data')
-            ->will($this->returnCallback(function() use ($resource, $mockuser, $resourcelinkid, $migrationclaiminfo) {
+            ->will($this->returnCallback(
+                function() use ($resource, $mockuser, $resourcelinkid, $migrationclaiminfo, $ags) {
                 // This simulates the data in the jwt['body'] of a real resource link launch.
                 // Real launches would of course have this data and authenticity of the user verified.
                 $rltitle = $resourcelinkid ? "Resource link $resourcelinkid in platform" : "Resource link in platform";
@@ -89,9 +97,8 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
                     'exp' => time() + 60,
                     'nonce' => 'some-nonce-value-123',
                     'https://purl.imsglobal.org/spec/lti/claim/deployment_id' => '1', // Must match registration.
-                    'https://purl.imsglobal.org/spec/lti/claim/roles' => [
-                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'
-                    ],
+                    'https://purl.imsglobal.org/spec/lti/claim/roles' =>
+                        $mockuser['roles'] ?? ['http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'],
                     'https://purl.imsglobal.org/spec/lti/claim/resource_link' => [
                         'title' => $rltitle,
                         'id' => $rlid, // Arbitrary, will be mapped to the user during resource link launch.
@@ -116,6 +123,22 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
                         'service_versions' => ['2.0']
                     ]
                 ];
+
+                if ($ags) {
+                    $data["https://purl.imsglobal.org/spec/lti-ags/claim/endpoint"] = [
+                        "scope" => [
+                            "https://purl.imsglobal.org/spec/lti-ags/scope/lineitem",
+                            "https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly",
+                            "https://purl.imsglobal.org/spec/lti-ags/scope/score"
+                        ],
+                        "lineitems" => "https://platform.example.com/10/lineitems/",
+                        "lineitem" => "https://platform.example.com/10/lineitems/45/lineitem"
+                    ];
+                }
+
+                if (!empty($mockuser['picture'])) {
+                    $data['picture'] = $mockuser['picture'];
+                }
 
                 if ($migrationclaiminfo) {
                     $base = [
@@ -161,7 +184,11 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
      * @return array array of objects for use in individual tests; courses, tools.
      */
     protected function create_test_environment(bool $enableauthplugin = true, bool $enableenrolplugin = true,
-            bool $membersync = true, int $membersyncmode = helper::MEMBER_SYNC_ENROL_AND_UNENROL) {
+            bool $membersync = true, int $membersyncmode = helper::MEMBER_SYNC_ENROL_AND_UNENROL,
+            bool $gradesync = true, bool $gradesynccompletion = false) {
+
+        global $CFG;
+        require_once($CFG->libdir . '/completionlib.php');
 
         if ($enableauthplugin) {
             $this->enable_auth();
@@ -186,27 +213,33 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
         $deployment = $deploymentrepo->save($deployment);
 
         $generator = $this->getDataGenerator();
-        $course = $generator->create_course();
+        $course = $generator->create_course(['enablecompletion' => 1]);
 
         // Create a module and publish it.
-        $mod = $generator->create_module('assign', ['course' => $course->id]);
+        $mod = $generator->create_module('assign', ['course' => $course->id, 'grade' => 100, 'completionsubmit' => 1,
+            'completion' => COMPLETION_TRACKING_AUTOMATIC]);
         $tooldata = [
             'cmid' => $mod->cmid,
             'courseid' => $course->id,
             'membersyncmode' => $membersyncmode,
             'membersync' => $membersync,
+            'gradesync' => $gradesync,
+            'gradesynccompletion' => $gradesynccompletion,
             'ltiversion' => 'LTI-1p3'
         ];
         $tool = $generator->create_lti_tool((object)$tooldata);
         $tool = helper::get_lti_tool($tool->id);
 
         // Create a second module and publish it.
-        $mod = $generator->create_module('assign', ['course' => $course->id]);
+        $mod = $generator->create_module('assign', ['course' => $course->id, 'grade' => 100, 'completionsubmit' => 1,
+            'completion' => COMPLETION_TRACKING_AUTOMATIC]);
         $tooldata = [
             'cmid' => $mod->cmid,
             'courseid' => $course->id,
             'membersyncmode' => $membersyncmode,
             'membersync' => $membersync,
+            'gradesync' => $gradesync,
+            'gradesynccompletion' => $gradesynccompletion,
             'ltiversion' => 'LTI-1p3'
         ];
         $tool2 = $generator->create_lti_tool((object)$tooldata);
@@ -217,6 +250,8 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
             'courseid' => $course->id,
             'membersyncmode' => $membersyncmode,
             'membersync' => $membersync,
+            'gradesync' => $gradesync,
+            'gradesynccompletion' => $gradesynccompletion,
             'ltiversion' => 'LTI-1p3'
         ];
         $tool3 = $generator->create_lti_tool((object)$tooldata);
@@ -309,5 +344,24 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
         }
 
         return [$tools, $consumerrecord, $legacyusers ?? null];
+    }
+
+    /**
+     * Verify the user's profile picture has been set, which is useful to verify picture syncs.
+     *
+     * @param int $userid the id of the Moodle user.
+     */
+    protected function verify_user_profile_image_updated(int $userid): void {
+        global $CFG;
+        $user = core_user::get_user($userid);
+        $usercontext = \context_user::instance($user->id);
+        $expected = $CFG->wwwroot . '/pluginfile.php/' . $usercontext->id . '/user/icon/boost/f2?rev='. $user->picture;
+
+        $page = new moodle_page();
+        $page->set_url('/user/profile.php');
+        $page->set_context(context_system::instance());
+        $renderer = $page->get_renderer('core');
+        $userpicture = new user_picture($user);
+        $this->assertEquals($expected, $userpicture->get_url($page, $renderer)->out(false));
     }
 }

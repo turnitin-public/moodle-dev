@@ -159,7 +159,7 @@ class lib_test extends \lti_advantage_testcase {
             'tool_consumer_instance_guid' => '12345-123',
             'resource_link_id' => '4b6fa'
         ];
-        $mocklaunch = $this->get_mock_launch($modresource, $mockuser, null, $migrationclaiminfo);
+        $mocklaunch = $this->get_mock_launch($modresource, $mockuser, null, true, true, $migrationclaiminfo);
         $launchservice = $this->get_tool_launch_service();
         $launchservice->user_launches_tool($mocklaunch);
 

@@ -38,7 +38,7 @@ require_once(__DIR__ . '/../../config.php');
 global $PAGE;
 
 // This is checked by the library. Just verify its existence here.
-$id_token = required_param('id_token', PARAM_RAW);
+$idtoken = required_param('id_token', PARAM_RAW);
 
 $launch = LTI_Message_Launch::new(
     new issuer_database(new application_registration_repository(), new deployment_repository()),

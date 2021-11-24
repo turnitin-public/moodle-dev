@@ -76,6 +76,33 @@ $auth->complete_login(
 );
 
 require_login(null, false);
+global $USER, $CFG;
+// Service code will now do the work of creating domain objects, making updates to the user record, etc.
+// TODO: move this to service code. -------
+// Do the following only if the user is auth='lti' i.e. auto provisioned.
+// If the user was preexisting, we don't want to change anything.
+// - update user->firstname
+// - update user->lastname
+// - update user->email
+// - update user profile image.
+if ($USER->auth == 'lti') {
+    $launchdata = $launch->get_launch_data();
+    $userupdate = (object) [
+        'id' => $USER->id,
+        'firstname' => $launchdata['given_name'] ?? $launchdata['sub'],
+        'lastname' => $launchdata['family_name'] ?? $launchdata['iss'],
+        'email' => !empty($launchdata['email']) ? $launchdata['email'] :
+            'enrol_lti_13_' . sha1($launchdata['iss'] . '_' . $launchdata['sub']) . '@example.com'
+    ];
+    require_once($CFG->dirroot . '/user/lib.php');
+    user_update_user($userupdate);
+
+    if (!empty($launchdata['picture'])) {
+        \enrol_lti\helper::update_user_profile_image($USER->id, $launchdata['picture']);
+    }
+}
+// TODO: end move -------
+
 
 $PAGE->set_context(context_system::instance());
 $url = new moodle_url('/enrol/lti/launch_deeplink.php');

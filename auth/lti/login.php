@@ -72,7 +72,7 @@ if ($newaccount) {
     } else {
         // Create a new confirmed account.
         $auth = get_auth_plugin('lti');
-        $newuser = $auth->create_new_account($launchdata);
+        $newuser = $auth->find_or_create_user_from_launch($launchdata);
         complete_user_login($newuser);
 
         $PAGE->set_context(context_system::instance());

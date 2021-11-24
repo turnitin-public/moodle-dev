@@ -282,43 +282,34 @@ class sync_members extends scheduled_task {
     }
 
     /**
-     * Creates a user object from a member entry.
+     * Creates an lti user object from a member entry.
      *
-     * @param application_registration $appregistration application_registration to which the resourcelink belongs.
+     * @param stdClass $user the Moodle user record representing this member.
      * @param stdClass $resource the locally published resource record, used for setting user defaults.
      * @param resource_link $resourcelink the resource_link instance.
      * @param array $member the member information from the NRPS service call.
      * @return user the lti user instance.
      */
-    protected function user_from_member(application_registration $appregistration, stdClass $resource,
+    protected function ltiuser_from_member(stdClass $user, stdClass $resource,
             resource_link $resourcelink, array $member): user {
 
-        if ($user = $this->userrepo->find_by_sub($member['user_id'],
-                $appregistration->get_platformid(), $resource->id)) {
-            // Update existing user.
-            $user->set_firstname($member['given_name'] ?? $member['user_id']);
-            $user->set_lastname($member['family_name'] ?? $resource->contextid);
-            $user->set_email($member['email'] ?? '');
-        } else {
+        if (!$ltiuser = $this->userrepo->find_single_user_by_resource($user->id, $resource->id)) {
             // New user, so create them.
-            $user = user::create(
+            $ltiuser = user::create(
                 $resourcelink->get_resourceid(),
-                $appregistration->get_platformid(),
+                $user->id,
                 $resourcelink->get_deploymentid(),
                 $member['user_id'],
-                $member['given_name'] ?? $member['user_id'],
-                $member['family_name'] ?? $resource->contextid,
                 $resource->lang,
                 $resource->timezone,
-                $member['email'] ?? '',
                 $resource->city ?? '',
                 $resource->country ?? '',
                 $resource->institution ?? '',
                 $resource->maildisplay
             );
         }
-        $user->set_lastaccess(time());
-        return $user;
+        $ltiuser->set_lastaccess(time());
+        return $ltiuser;
     }
 
     /**
@@ -338,35 +329,45 @@ class sync_members extends scheduled_task {
 
         // Get the verified legacy consumer key, if mapped, from the resource link's tool deployment.
         // This will be used to locate legacy user accounts and link them to LTI 1.3 users.
+        // A launch must have been made in order to get the legacy consumer key from the lti1p1 migration claim.
         $deployment = $this->deploymentrepo->find($resourcelink->get_deploymentid());
-        $legacyconsumerkey = $deployment->get_legacy_consumer_key();
+        $legacyconsumerkey = $deployment->get_legacy_consumer_key() ?? '';
 
         foreach ($members as $member) {
 
-            $user = $this->user_from_member($appregistration, $resource, $resourcelink, $member);
+            $auth = get_auth_plugin('lti');
+            $user = $auth->find_or_create_user_from_membership($member, $appregistration->get_platformid()->out(false),
+                $legacyconsumerkey);
+            // TODO: consider how we can report the non-sync of user fields here when it's handled by auth as part of
+            //  the above call. E.g. How to get something like so:
+            //  mtrace("Skipping update of profile fields for user '$user->id'. This is not an auto provisioned user account and is ".
+            //    "not eligible for update.");
+
+            $ltiuser = $this->ltiuser_from_member($user, $resource, $resourcelink, $member);
 
             // If the tool has been migrated, get the legacy user information.
             // Only try to migrate users who don't already have a mapping.
-            if ($legacyconsumerkey && is_null($user->get_localid())) {
+            // TODO: Another migration part that can be removed once we have migration support in the auth code.
+            /*if ($legacyconsumerkey && is_null($ltiuser->get_localid())) {
                 $legacyuserid = $member['lti11_legacy_user_id'] ?? $member['user_id'];
                 $legacyusername = helper::create_username($legacyconsumerkey, $legacyuserid);
                 global $DB;
                 $legacyuserid = $DB->get_field('user', 'id', ['username' => $legacyusername]);
                 if ($legacyuserid !== false) {
-                    $user->set_localid($legacyuserid);
+                    $ltiuser->set_localid($legacyuserid);
                 }
-            }
+            }*/
 
             if ($this->should_sync_enrol($resource->membersyncmode)) {
 
-                $user->set_resourcelinkid($resourcelink->get_id());
-                $user = $this->userrepo->save($user);
+                $ltiuser->set_resourcelinkid($resourcelink->get_id());
+                $ltiuser = $this->userrepo->save($ltiuser);
                 if (isset($member['picture'])) {
-                    $this->userphotos[$user->get_localid()] = $member['picture'];
+                    $this->userphotos[$ltiuser->get_localid()] = $member['picture'];
                 }
 
                 // Enrol the user in the course.
-                if (helper::enrol_user($resource, $user->get_localid()) === helper::ENROLMENT_SUCCESSFUL) {
+                if (helper::enrol_user($resource, $ltiuser->get_localid()) === helper::ENROLMENT_SUCCESSFUL) {
                     $enrolcount++;
                 }
             }
@@ -374,8 +375,8 @@ class sync_members extends scheduled_task {
             // If the member has been created, or exists locally already, mark them as valid so as to not unenrol them
             // when syncing memberships for shared resources configured as either MEMBER_SYNC_ENROL_AND_UNENROL or
             // MEMBER_SYNC_UNENROL_MISSING.
-            if ($user->get_localid()) {
-                $userids[] = $user->get_localid();
+            if ($ltiuser->get_localid()) {
+                $userids[] = $ltiuser->get_localid();
             }
         }
 

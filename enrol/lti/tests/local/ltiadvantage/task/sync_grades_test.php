@@ -160,15 +160,19 @@ class sync_grades_test extends \lti_advantage_testcase {
 
         // Launch the resource for an instructor which will create the domain objects needed for service calls.
         $teachermocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'], false)[0]);
-        [$teacherid, $resource] = $launchservice->user_launches_tool($teachermocklaunch);
+        $instructoruser = $this->getDataGenerator()->create_user();
+        [$teacherid, $resource] = $launchservice->user_launches_tool($instructoruser, $teachermocklaunch);
 
         // Launch the resource for a few more users, creating those enrolments and allowing grading to take place.
         $studentusers = $this->get_mock_launch_users_with_ids(['2', '3'], false,
             'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner');
+
         $student1mocklaunch = $this->get_mock_launch($resource, $studentusers[0]);
         $student2mocklaunch = $this->get_mock_launch($resource, $studentusers[1]);
-        [$student1id] = $launchservice->user_launches_tool($student1mocklaunch);
-        [$student2id] = $launchservice->user_launches_tool($student2mocklaunch);
+        $student1user = $this->getDataGenerator()->create_user();
+        $student2user = $this->getDataGenerator()->create_user();
+        [$student1id] = $launchservice->user_launches_tool($student1user, $student1mocklaunch);
+        [$student2id] = $launchservice->user_launches_tool($student2user, $student2mocklaunch);
 
         // Grade student1 only.
         $expectedstudent1grade = $this->set_user_grade_for_resource($student1id, 65, $resource);
@@ -250,7 +254,8 @@ class sync_grades_test extends \lti_advantage_testcase {
 
         // Launch the resource for an instructor which will create the domain objects needed for service calls.
         $teachermocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'], false)[0]);
-        $launchservice->user_launches_tool($teachermocklaunch);
+        $instructoruser = $this->getDataGenerator()->create_user();
+        $launchservice->user_launches_tool($instructoruser, $teachermocklaunch);
 
         $task = $this->get_task_with_mocked_grade_service();
         $this->expectOutputRegex('/Skipping task - There are no resources with grade sync enabled./');
@@ -267,7 +272,8 @@ class sync_grades_test extends \lti_advantage_testcase {
 
         // Launch the resource for an instructor which will create the domain objects needed for service calls.
         $teachermocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'], false)[0]);
-        $launchservice->user_launches_tool($teachermocklaunch);
+        $instructoruser = $this->getDataGenerator()->create_user();
+        $launchservice->user_launches_tool($instructoruser, $teachermocklaunch);
 
         $task = $this->get_task_with_mocked_grade_service();
         $this->expectOutputRegex('/Skipping task - ' .
@@ -285,7 +291,8 @@ class sync_grades_test extends \lti_advantage_testcase {
 
         // Launch the resource for an instructor which will create the domain objects needed for service calls.
         $teachermocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'], false)[0]);
-        $launchservice->user_launches_tool($teachermocklaunch);
+        $instructoruser = $this->getDataGenerator()->create_user();
+        $launchservice->user_launches_tool($instructoruser, $teachermocklaunch);
 
         $task = $this->get_task_with_mocked_grade_service();
         $this->expectOutputRegex('/Skipping task - ' . get_string('enrolisdisabled', 'enrol_lti') . '/');
@@ -303,7 +310,8 @@ class sync_grades_test extends \lti_advantage_testcase {
         // Launch the resource for an instructor which will create the domain objects needed for service calls.
         $teachermocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'], false)[0],
             null, false);
-        [$userid] = $launchservice->user_launches_tool($teachermocklaunch);
+        $instructoruser = $this->getDataGenerator()->create_user();
+        [$userid] = $launchservice->user_launches_tool($instructoruser, $teachermocklaunch);
 
         $task = $this->get_task_with_mocked_grade_service();
         $this->expectOutputRegex(
@@ -326,7 +334,8 @@ class sync_grades_test extends \lti_advantage_testcase {
 
         // Launch the resource for an instructor which will create the domain objects needed for service calls.
         $teachermocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'], false)[0]);
-        [$userid] = $launchservice->user_launches_tool($teachermocklaunch);
+        $instructoruser = $this->getDataGenerator()->create_user();
+        [$userid] = $launchservice->user_launches_tool($instructoruser, $teachermocklaunch);
 
         global $CFG;
         require_once($CFG->dirroot . '/course/lib.php');
@@ -362,19 +371,22 @@ class sync_grades_test extends \lti_advantage_testcase {
 
         // Launch the resource for an instructor which will create the domain objects needed for service calls.
         $teachermocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'], false)[0]);
-        [$teacherid] = $launchservice->user_launches_tool($teachermocklaunch);
+        $instructoruser = $this->getDataGenerator()->create_user();
+        [$teacherid] = $launchservice->user_launches_tool($instructoruser, $teachermocklaunch);
 
         // Launch the resource for a few more users, creating those enrolments and allowing grading to take place.
         $studentusers = $this->get_mock_launch_users_with_ids(['2', '3'], false,
             'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner');
         $student1mocklaunch = $this->get_mock_launch($resource, $studentusers[0]);
         $student2mocklaunch = $this->get_mock_launch($resource, $studentusers[1]);
-        [$student1id] = $launchservice->user_launches_tool($student1mocklaunch);
-        [$student2id] = $launchservice->user_launches_tool($student2mocklaunch);
+        $student1user = $this->getDataGenerator()->create_user();
+        $student2user = $this->getDataGenerator()->create_user();
+        [$student1id] = $launchservice->user_launches_tool($student1user, $student1mocklaunch);
+        [$student2id] = $launchservice->user_launches_tool($student2user, $student2mocklaunch);
 
         // Launch the published course as student2.
         $student2mockcourselaunch = $this->get_mock_launch($publishedcourse, $studentusers[1], '23456');
-        $launchservice->user_launches_tool($student2mockcourselaunch);
+        $launchservice->user_launches_tool($student2user, $student2mockcourselaunch);
 
         // Grade student1 in the assign resource.
         $expectedstudent1grade = $this->set_user_grade_for_resource($student1id, 65, $resource);
@@ -525,13 +537,15 @@ class sync_grades_test extends \lti_advantage_testcase {
 
         // Launch the resource for an instructor which will create the domain objects needed for service calls.
         $teachermocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'], false)[0]);
-        [$teacherid] = $launchservice->user_launches_tool($teachermocklaunch);
+        $instructoruser = $this->getDataGenerator()->create_user();
+        [$teacherid] = $launchservice->user_launches_tool($instructoruser, $teachermocklaunch);
 
         // Launch the resource for a student, creating the enrolment and allowing grading to take place.
         $studentusers = $this->get_mock_launch_users_with_ids(['2', '3'], false,
             'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner');
         $student1mocklaunch = $this->get_mock_launch($resource, $studentusers[0]);
-        [$student1id] = $launchservice->user_launches_tool($student1mocklaunch);
+        $student1user = $this->getDataGenerator()->create_user();
+        [$student1id] = $launchservice->user_launches_tool($student1user, $student1mocklaunch);
 
         // Grade student1 in the assign resource.
         $expectedstudent1grade = $this->set_user_grade_for_resource($student1id, 65, $resource);

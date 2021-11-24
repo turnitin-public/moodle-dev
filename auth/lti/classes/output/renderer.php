@@ -33,7 +33,9 @@ class renderer extends \plugin_renderer_base {
      */
     public function render_account_binding_options_page(): string {
         $formaction = new \moodle_url('/auth/lti/login.php');
+        $notification = new notification("It looks like this is your first time here. Please select from one of the account options below.", \core\notification::INFO, false);
         $context = [
+            'info' => $notification->export_for_template($this),
             'formaction' => $formaction->out(),
             'sesskey' => sesskey(),
         ];

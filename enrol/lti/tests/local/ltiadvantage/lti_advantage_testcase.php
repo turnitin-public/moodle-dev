@@ -33,6 +33,64 @@ use IMSGlobal\LTI13\LTI_Message_Launch;
  */
 abstract class lti_advantage_testcase extends \advanced_testcase {
 
+    /** @var string the default issuer for tests extending this class. */
+    protected $issuer = 'https://lms.example.org';
+
+    /**
+     * Helper to return a user which has been bound to the LTI credentials provided and it deemed a valid linked user.
+     *
+     * @param string $sub the subject id string
+     * @return stdClass the user record.
+     */
+    protected function lti_advantage_user_authenticates(string $sub, array $migrationclaiminfo = []): \stdClass {
+        $auth = get_auth_plugin('lti');
+
+        $mockjwt = [
+            'iss' => $this->issuer,
+            'sub' => $sub,
+            'https://purl.imsglobal.org/spec/lti/claim/deployment_id' => '1222', // Must match deployment in create_test_env.
+            'aud' => '123', // Must match registration in create_test_environment.
+            'exp' => time() + 60,
+            'nonce' => 'some-nonce-value-123',
+            'given_name' => 'John',
+            'family_name' => 'Smith',
+            'email' => 'smithj@example.org'
+        ];
+        if (!empty($migrationclaiminfo)) {
+            if (isset($migrationclaiminfo['consumer_key'])) {
+                $base = [
+                    $migrationclaiminfo['consumer_key'],
+                    $mockjwt['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
+                    $mockjwt['iss'],
+                    $mockjwt['aud'],
+                    $mockjwt['exp'],
+                    $mockjwt['nonce']
+                ];
+                $basestring = implode('&', $base);
+
+                $mockjwt['https://purl.imsglobal.org/spec/lti/claim/lti1p1'] = [
+                    'oauth_consumer_key' => $migrationclaiminfo['consumer_key'],
+                ];
+
+                if (isset($migrationclaiminfo['signing_secret'])) {
+                    $sig = base64_encode(hash_hmac('sha256', $basestring, $migrationclaiminfo['signing_secret']));
+                    $mockjwt['https://purl.imsglobal.org/spec/lti/claim/lti1p1']['oauth_consumer_key_sign'] = $sig;
+                }
+            }
+
+            $claimprops = ['user_id', 'context_id', 'tool_consumer_instance_guid', 'resource_link_id'];
+            foreach ($claimprops as $prop) {
+                if (!empty($migrationclaiminfo[$prop])) {
+                    $mockjwt['https://purl.imsglobal.org/spec/lti/claim/lti1p1'][$prop] =
+                        $migrationclaiminfo[$prop];
+                }
+            }
+        }
+
+        $secrets = !empty($migrationclaiminfo['signing_secret']) ? [$migrationclaiminfo['signing_secret']] : [];
+        return $auth->find_or_create_user_from_launch($mockjwt, $secrets);
+    }
+
     /**
      * Get a list of users ready for use with mock launches by providing an array of user ids.
      *
@@ -91,7 +149,7 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
                     $rltitle = $resourcelinkid ? "Resource link $resourcelinkid in platform" : "Resource link in platform";
                     $rlid = $resourcelinkid ?: '12345';
                     $data = [
-                        'iss' => 'https://lms.example.org', // Must match registration in create_test_environment.
+                        'iss' => $this->issuer, // Must match registration in create_test_environment.
                         'aud' => '123', // Must match registration in create_test_environment.
                         'sub' => $mockuser['user_id'], // User id on the platform site.
                         'exp' => time() + 60,
@@ -213,7 +271,7 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
         // Set up the registration and deployment.
         $reg = application_registration::create(
             'Example LMS application',
-            new moodle_url('https://lms.example.org'),
+            new moodle_url($this->issuer),
             '123',
             new moodle_url('https://example.org/authrequesturl'),
             new moodle_url('https://example.org/jwksurl'),

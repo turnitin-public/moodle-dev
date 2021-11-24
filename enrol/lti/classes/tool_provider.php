@@ -86,7 +86,7 @@ class tool_provider extends ToolProvider {
         parent::__construct($dataconnector);
 
         // Override debugMode and set to the configured value.
-        $this->debugMode = $CFG->debugdeveloper;
+        //$this->debugMode = $CFG->debugdeveloper;
 
         $this->baseUrl = $CFG->wwwroot;
         $toolpath = helper::get_launch_url($toolid);

@@ -46,14 +46,15 @@ class user_repository {
     private function user_from_record(\stdClass $userrecord): user {
         return user::create(
             $userrecord->toolid,
-            new \moodle_url($userrecord->issuer),
+            $userrecord->localid,
+            //new \moodle_url($userrecord->issuer),
             $userrecord->ltideploymentid,
             $userrecord->sourceid,
-            $userrecord->firstname,
-            $userrecord->lastname,
+            //$userrecord->firstname,
+            //$userrecord->lastname,
             $userrecord->lang,
             $userrecord->timezone,
-            $userrecord->email,
+            //$userrecord->email,
             $userrecord->city,
             $userrecord->country,
             $userrecord->institution,
@@ -61,7 +62,6 @@ class user_repository {
             $userrecord->lastgrade,
             $userrecord->lastaccess,
             $userrecord->resourcelinkid ?? null,
-            (int) $userrecord->localid,
             (int) $userrecord->id
         );
     }
@@ -88,20 +88,21 @@ class user_repository {
      */
     private function user_record_from_user(user $user): \stdClass {
         $record = [
-            'firstname' => $user->get_firstname(),
-            'lastname' => $user->get_lastname(),
-            'email' => $user->get_email(),
+            //'firstname' => $user->get_firstname(),
+            //'lastname' => $user->get_lastname(),
+            //'email' => $user->get_email(),
             'city' => $user->get_city(),
             'country' => $user->get_country(),
             'institution' => $user->get_institution(),
             'timezone' => $user->get_timezone(),
             'maildisplay' => $user->get_maildisplay(),
-            'mnethostid' => $user->get_mnethostid(),
-            'confirmed' => $user->get_confirmed(),
+            //'mnethostid' => $user->get_mnethostid(),
+            //'confirmed' => $user->get_confirmed(),
             'lang' => $user->get_lang(),
-            'auth' => $user->get_auth(),
+            //'auth' => $user->get_auth(),
         ];
 
+        // TODO consider that we'll now ALWAYS have a local id upfront.
         if (!is_null($localid = $user->get_localid())) {
             $record['id'] = $localid;
         }
@@ -135,6 +136,7 @@ class user_repository {
      *
      * @param user $user the user instance.
      * @return \stdClass the lti advantage specific user info record.
+     * // TODO can likely remove this.
      */
     private function lti_advantage_user_record_from_user(user $user): \stdClass {
         return (object) [
@@ -159,16 +161,14 @@ class user_repository {
         // The user can still be found by checking their lti advantage user creds and correlating that to the relevant
         // lti_user entry (where tool matches the user object's resource).
         global $DB;
-        $isskey = hash('sha256', $user->get_issuer());
-        $subkey = hash('sha256', $user->get_sourceid());
+        // TODO clean this up.
+        //$isskey = hash('sha256', $user->get_issuer());
+        //$subkey = hash('sha256', $user->get_sourceid());
         $uniquesql = "SELECT lu.id
                         FROM {{$this->ltiuserstable}} lu
-                        JOIN {{$this->ltiadvantageusertable}} lau
-                          ON (lau.userid = lu.userid)
-                       WHERE lau.issuer256 = :issuer256
-                         AND lau.sub256 = :sub256
-                         AND lu.toolid = :toolid";
-        $params = ['issuer256' => $isskey, 'sub256' => $subkey, 'toolid' => $user->get_resourceid()];
+                       WHERE lu.toolid = :toolid
+                         AND lu.userid = :userid";
+        $params = ['toolid' => $user->get_resourceid(), 'userid' => $user->get_localid()];
         return $DB->record_exists_sql($uniquesql, $params);
     }
 
@@ -188,7 +188,7 @@ class user_repository {
 
         $userrecord = $this->user_record_from_user($user);
         $ltiuserrecord = $this->lti_user_record_from_user($user);
-        $ltiadvantageuserrecord = $this->lti_advantage_user_record_from_user($user);
+        //$ltiadvantageuserrecord = $this->lti_advantage_user_record_from_user($user);
         $timenow = time();
         global $CFG;
         require_once($CFG->dirroot . '/user/lib.php');
@@ -198,7 +198,7 @@ class user_repository {
             // Warn about localid vs ltiuser->userid mismatches here. Callers shouldn't be able to force updates using
             // localid. Only new user associations can be created that way.
             if (!empty($userrecord->id) && $userid != $userrecord->id) {
-                throw new \coding_exception("Cannot update user mapping. Lti user '{$ltiuser->id}' is already mapped " .
+                throw new \coding_exception("Cannot update user mapping. LTI user '{$ltiuser->id}' is already mapped " .
                     "to user '{$ltiuser->userid}' and can't be associated with another user '{$userrecord->id}'.");
             }
 
@@ -211,17 +211,23 @@ class user_repository {
             $DB->update_record($this->ltiuserstable, $ltiuserrecord);
         } else {
             // This is a new LTI advantage user. Make a username for LTI Advantage.
-            $userrecord->username = 'enrol_lti_13_' . sha1($user->get_issuer() . '_' . $user->get_sourceid());
+            // TODO: we need a way to have the issuer that we just removed - d'oh!
+            //  Can we move username creation into the user constructor (makes sense) and then only save it here
+            //  when we're dealing with inserts?
+            //  update: in fact, we don't even need username, do we? We've already authenticated so can leave it alone.
+            //$userrecord->username = 'enrol_lti_13_' . sha1($user->get_issuer() . '_' . $user->get_sourceid());
 
             // Validate uniqueness of the lti user, in the case of a stale object coming in to be saved.
+            // TODO consider how to rewrite the following method
             if ($this->user_exists_for_tool($user)) {
-                throw new \coding_exception("Cannot create duplicate lti user '{$userrecord->username}' for resource " .
+                throw new \coding_exception("Cannot create duplicate LTI user '{$user->get_localid()}' for resource " .
                     "'{$user->get_resourceid()}'.");
             }
 
             // The user record may already exist based on prior user saves, despite the lti user not being present.
             // Attempt to find this user, based on the unique lti advantage user identifier.
-            $advantageuserrecordexists = false;
+            // TODO: what happens if there isn't a userrecord->id. Can that even happen now that we're doing auth upfront?
+            /*$advantageuserrecordexists = false;
             if (!isset($userrecord->id)) {
                 $userid = $DB->get_field($this->ltiadvantageusertable, 'userid',
                     ['issuer' => $user->get_issuer()->out(false), 'sub' => $user->get_sourceid()]);
@@ -229,11 +235,13 @@ class user_repository {
                     $advantageuserrecordexists = true;
                     $userrecord->id = $userid;
                 }
-            }
+            }*/
 
-            // Create/modify the user record holding lti user details.
+            // Create/modify the Moodle user account with information from the LTI user instance.
             if (isset($userrecord->id)) {
                 // A local user record id is defined. Make sure it exists before updating.
+                // TODO: we're already authenticated now, so don't need to check for user existence any more.
+                // TODO: Also make sure no tests come through this code. If they do, they're not testing this properly.
                 if (!$DB->record_exists('user', ['id' => $userrecord->id])) {
                     \debugging("Attempt to associate LTI user '{$user->get_sourceid()}' to local user " .
                         "'{$userrecord->id}' failed. The local user could not be found. A new user " .
@@ -242,11 +250,12 @@ class user_repository {
                     $userid = \user_create_user($userrecord);
                 } else {
                     $userid = $userrecord->id; // Never update username, only insert.
-                    unset($userrecord->username);
+                    //unset($userrecord->username); // TODO: we removed this set above so don't need this.
                     \user_update_user($userrecord);
                     unset($userrecord->id);
                 }
             } else {
+                //  TODO we'll also never get here anymore.
                 $userid = \user_create_user($userrecord);
             }
 
@@ -257,12 +266,13 @@ class user_repository {
 
             // Create the lti_adv_user record holding platform details of the user and having a lifespan equal to that
             // of the user record itself.
-            if (!$advantageuserrecordexists && !$DB->record_exists($this->ltiadvantageusertable,
+            // TODO remove this too once we're sure the auth code replaces it.
+            /*if (!$advantageuserrecordexists && !$DB->record_exists($this->ltiadvantageusertable,
                     ['issuer' => $user->get_issuer()->out(false), 'sub' => $user->get_sourceid()])) {
                 $ltiadvantageuserrecord->timecreated = $ltiadvantageuserrecord->timemodified = $timenow;
                 $ltiadvantageuserrecord->userid = $userid;
                 $DB->insert_record($this->ltiadvantageusertable, $ltiadvantageuserrecord);
-            }
+            }*/
         }
 
         // If the user was created via a resource_link, create that association.
@@ -278,7 +288,7 @@ class user_repository {
         $record = (object) array_merge(
             (array) $userrecord,
             (array) $ltiuserrecord,
-            (array) $ltiadvantageuserrecord,
+            //(array) $ltiadvantageuserrecord,
             $resourcelinkmap,
             ['localid' => $userid]
         );
@@ -297,15 +307,34 @@ class user_repository {
         try {
             $sql = "SELECT lu.id, u.id as localid, u.username, u.firstname, u.lastname, u.email, u.city, u.country,
                            u.institution, u.timezone, u.maildisplay, u.lang, lu.sourceid, lu.toolid, lu.lastgrade,
-                           lu.lastaccess, lu.ltideploymentid, lau.sub, lau.issuer, lau.legacymigrated
-                      FROM {enrol_lti_users} lu
+                           lu.lastaccess, lu.ltideploymentid
+                      FROM {{$this->ltiuserstable}} lu
                       JOIN {user} u
                         ON (u.id = lu.userid)
-                      JOIN {{$this->ltiadvantageusertable}} lau
-                        ON (lau.userid = lu.userid)
                      WHERE lu.id = :id";
 
             $record = $DB->get_record_sql($sql, ['id' => $id], MUST_EXIST);
+            return $this->user_from_record($record);
+        } catch (\dml_missing_record_exception $ex) {
+            return null;
+        }
+    }
+
+    public function find_single_user_by_resource(int $userid, int $resourceid): ?user {
+        global $DB;
+        try {
+            // Find the lti advantage user record.
+            $sql = "SELECT lu.id, u.id as localid, u.username, u.firstname, u.lastname, u.email, u.city, u.country,
+                           u.institution, u.timezone, u.maildisplay, u.lang, lu.sourceid, lu.toolid, lu.lastgrade,
+                           lu.lastaccess, lu.ltideploymentid
+                      FROM {{$this->ltiuserstable}} lu
+                      JOIN {user} u
+                        ON (u.id = lu.userid)
+                     WHERE lu.userid = :userid
+                       AND lu.toolid = :resourceid";
+
+            $params = ['userid' => $userid, 'resourceid' => $resourceid];
+            $record = $DB->get_record_sql($sql, $params, MUST_EXIST);
             return $this->user_from_record($record);
         } catch (\dml_missing_record_exception $ex) {
             return null;
@@ -354,10 +383,8 @@ class user_repository {
         global $DB;
         $sql = "SELECT lu.id, u.id as localid, u.username, u.firstname, u.lastname, u.email, u.city, u.country,
                        u.institution, u.timezone, u.maildisplay, u.lang, lu.sourceid, lu.toolid, lu.lastgrade,
-                       lu.lastaccess, lu.ltideploymentid, lau.sub, lau.issuer, lau.legacymigrated
-                  FROM {enrol_lti_users} lu
-                  JOIN {{$this->ltiadvantageusertable}} lau
-                    ON (lau.userid = lu.userid)
+                       lu.lastaccess, lu.ltideploymentid
+                  FROM {{$this->ltiuserstable}} lu
                   JOIN {user} u
                     ON (u.id = lu.userid)
                  WHERE lu.toolid = :resourceid
@@ -377,10 +404,8 @@ class user_repository {
         global $DB;
         $sql = "SELECT lu.id, u.id as localid, u.username, u.firstname, u.lastname, u.email, u.city, u.country,
                        u.institution, u.timezone, u.maildisplay, u.lang, lu.sourceid, lu.toolid, lu.lastgrade,
-                       lu.lastaccess, lu.ltideploymentid, lau.sub, lau.issuer, lau.legacymigrated
-                  FROM {enrol_lti_users} lu
-                  JOIN {{$this->ltiadvantageusertable}} lau
-                    ON (lau.userid = lu.userid)
+                       lu.lastaccess, lu.ltideploymentid
+                  FROM {{$this->ltiuserstable}} lu
                   JOIN {user} u
                     ON (u.id = lu.userid)
                   JOIN {{$this->userresourcelinkidtable}} url

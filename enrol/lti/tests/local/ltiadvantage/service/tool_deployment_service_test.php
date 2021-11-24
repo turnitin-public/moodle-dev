@@ -125,8 +125,9 @@ class tool_deployment_service_test extends \lti_advantage_testcase {
 
         // Launch the tool for a user.
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0]);
+        $instructoruser = $this->getDataGenerator()->create_user();
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
 
         // Check all the expected data exists for the deployment after setup.
         $registrations = $registrationrepo->find_all();

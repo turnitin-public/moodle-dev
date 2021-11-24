@@ -50,15 +50,6 @@ class user {
     /** @var int|null the id of the user in the tool site, or null if the instance hasn't been stored yet. */
     private $localid;
 
-    /** @var string user first name. */
-    private $firstname;
-
-    /** @var string user last name. */
-    private $lastname;
-
-    /** @var string email address of the user. */
-    private $email;
-
     /** @var string city of the user. */
     private $city;
 
@@ -77,15 +68,6 @@ class user {
     /** @var string language code of the user. */
     private $lang;
 
-    /** @var string auth type of the user. */
-    private $auth;
-
-    /** @var int mnethostid of the user. */
-    private $mnethostid;
-
-    /** @var int Whether the user is confirmed or not. */
-    private $confirmed;
-
     /** @var float the user's last grade value. */
     private $lastgrade;
 
@@ -95,20 +77,14 @@ class user {
     /** @var int|null the id of the resource_link instance, or null if the user doesn't originate from one. */
     private $resourcelinkid;
 
-    /** @var string issuer the issuer from which this user originates. */
-    private $issuer;
-
     /**
      * Private constructor.
      *
      * @param int $resourceid the id of the published resource to which this user belongs.
-     * @param \moodle_url $issuer the issuer from which the user originates.
+     * @param int $userid the id of the Moodle user to which this LTI user relates.
      * @param int $deploymentid the local id of the deployment instance to which this user belongs.
      * @param string $sourceid the id of the user in the platform site.
-     * @param string $firstname user first name.
-     * @param string $lastname user last name.
      * @param string $lang the user's language code.
-     * @param string $email the user's email.
      * @param string $city the user's city.
      * @param string $country the user's country.
      * @param string $institution the user's institution.
@@ -117,26 +93,23 @@ class user {
      * @param float|null $lastgrade the user's last grade value.
      * @param int|null $lastaccess the user's last access time, or null if they haven't accessed the resource.
      * @param int|null $resourcelinkid the id of the resource link to link to the user, or null if not applicable.
-     * @param int|null $localid the local id of the user, or null if it's a not-yet-persisted object.
      * @param int|null $id the id of this object instance, or null if it's a not-yet-persisted object.
+     * @throws \coding_exception
      */
-    private function __construct(int $resourceid, \moodle_url $issuer, int $deploymentid, string $sourceid,
-            string $firstname, string $lastname, string $lang, string $email, string $city, string $country,
+    private function __construct(int $resourceid, int $userid, int $deploymentid, string $sourceid,
+            string $lang, string $city, string $country,
             string $institution, string $timezone, ?int $maildisplay, ?float $lastgrade, ?int $lastaccess,
-            ?int $resourcelinkid = null, ?int $localid = null, ?int $id = null) {
+            ?int $resourcelinkid = null, ?int $id = null) {
 
         global $CFG;
         $this->resourceid = $resourceid;
-        $this->issuer = $issuer;
+        $this->localid = $userid;
         $this->deploymentid = $deploymentid;
         if (empty($sourceid)) {
             throw new \coding_exception('Invalid sourceid value. Cannot be an empty string.');
         }
         $this->sourceid = $sourceid;
-        $this->set_firstname($firstname);
-        $this->set_lastname($lastname);
         $this->set_lang($lang);
-        $this->set_email($email);
         $this->set_city($city);
         $this->set_country($country);
         $this->set_institution($institution);
@@ -146,11 +119,10 @@ class user {
         $this->lastgrade = $lastgrade ?? 0.0;
         $this->lastaccess = $lastaccess;
         $this->resourcelinkid = $resourcelinkid;
-        $this->localid = $localid;
         $this->id = $id;
-        $this->mnethostid = $CFG->mnet_localhost_id;
-        $this->confirmed = 1;
-        $this->auth = 'lti';
+        //$this->mnethostid = $CFG->mnet_localhost_id;
+        //$this->confirmed = 1;
+        //$this->auth = 'lti';
     }
 
     /**
@@ -158,26 +130,23 @@ class user {
      *
      * @param int $resourcelinkid the local id of the resource link instance to link to the user.
      * @param int $resourceid the id of the published resource to which this user belongs.
-     * @param \moodle_url $issuer the issuer from which the user originates.
+     * @param int $userid the id of the Moodle user to which this LTI user relates.
      * @param int $deploymentid the local id of the deployment instance to which this user belongs.
      * @param string $sourceid the id of the user in the platform site.
-     * @param string $firstname user first name.
-     * @param string $lastname user last name.
      * @param string $lang the user's language code.
      * @param string $timezone the user's timezone.
-     * @param string $email the user's email.
      * @param string $city the user's city.
      * @param string $country the user's country.
      * @param string $institution the user's institution.
      * @param int|null $maildisplay the user's maildisplay, or null to select defaults.
      * @return user the user instance.
      */
-    public static function create_from_resource_link(int $resourcelinkid, int $resourceid, \moodle_url $issuer,
-            int $deploymentid, string $sourceid, string $firstname, string $lastname, string $lang, string $timezone,
-            string $email = '', string $city = '', string $country = '', string $institution = '',
+    public static function create_from_resource_link(int $resourcelinkid, int $resourceid, int $userid,
+            int $deploymentid, string $sourceid, string $lang, string $timezone,
+            string $city = '', string $country = '', string $institution = '',
             ?int $maildisplay = null): user {
 
-        return new self($resourceid, $issuer, $deploymentid, $sourceid, $firstname, $lastname, $lang, $email, $city,
+        return new self($resourceid, $userid, $deploymentid, $sourceid, $lang, $city,
             $country, $institution, $timezone, $maildisplay, null, null, $resourcelinkid);
     }
 
@@ -185,14 +154,11 @@ class user {
      * Factory method for creating a user.
      *
      * @param int $resourceid the id of the published resource to which this user belongs.
-     * @param \moodle_url $issuer the issuer from which the user originates.
+     * @param int $userid the id of the Moodle user to which this LTI user relates.
      * @param int $deploymentid the local id of the deployment instance to which this user belongs.
      * @param string $sourceid the id of the user in the platform site.
-     * @param string $firstname user first name.
-     * @param string $lastname user last name.
      * @param string $lang the user's language code.
      * @param string $timezone the user's timezone.
-     * @param string $email the user's email.
      * @param string $city the user's city.
      * @param string $country the user's country.
      * @param string $institution the user's institution.
@@ -200,17 +166,16 @@ class user {
      * @param float|null $lastgrade the user's last grade value.
      * @param int|null $lastaccess the user's last access time, or null if they haven't accessed the resource.
      * @param int|null $resourcelinkid the local id of the resource link instance associated with the user.
-     * @param int|null $localid the local id of the user, or null if it's a not-yet-persisted object.
      * @param int|null $id the id of this lti user instance, or null if it's a not-yet-persisted object.
      * @return user the user instance.
      */
-    public static function create(int $resourceid, \moodle_url $issuer, int $deploymentid, string $sourceid,
-            string $firstname, string $lastname, string $lang, string $timezone, string $email = '', string $city = '',
+    public static function create(int $resourceid, int $userid, int $deploymentid, string $sourceid,
+            string $lang, string $timezone, string $city = '',
             string $country = '', string $institution = '', ?int $maildisplay = null, ?float $lastgrade = null,
-            ?int $lastaccess = null, ?int $resourcelinkid = null, ?int $localid = null, int $id = null): user {
+            ?int $lastaccess = null, ?int $resourcelinkid = null, int $id = null): user {
 
-        return new self($resourceid, $issuer, $deploymentid, $sourceid, $firstname, $lastname, $lang, $email, $city,
-            $country, $institution, $timezone, $maildisplay, $lastgrade, $lastaccess, $resourcelinkid, $localid, $id);
+        return new self($resourceid, $userid, $deploymentid, $sourceid, $lang, $city,
+            $country, $institution, $timezone, $maildisplay, $lastgrade, $lastaccess, $resourcelinkid, $id);
     }
 
     /**
@@ -253,15 +218,6 @@ class user {
     }
 
     /**
-     * Get the issuer from which this user originates.
-     *
-     * @return \moodle_url the issuer url.
-     */
-    public function get_issuer(): \moodle_url {
-        return $this->issuer;
-    }
-
-    /**
      * Get the id of the deployment instance to which this user belongs.
      *
      * @return int id of the deployment instance.
@@ -298,70 +254,6 @@ class user {
             throw new \coding_exception("Invalid localid '$localid' provided. Must be > 0.");
         }
         $this->localid = $localid;
-    }
-
-    /**
-     * Get the firstname of the user.
-     *
-     * @return string the user's first name
-     */
-    public function get_firstname(): string {
-        return $this->firstname;
-    }
-
-    /**
-     * Set the first name of the user.
-     *
-     * @param string $firstname the new first name.
-     */
-    public function set_firstname(string $firstname): void {
-        if (empty($firstname)) {
-            throw new \coding_exception('Invalid firstname value. Cannot be an empty string.');
-        }
-        $this->firstname = $firstname;
-    }
-
-    /**
-     * Get the last name of the user.
-     *
-     * @return string the user's last name.
-     */
-    public function get_lastname(): string {
-        return $this->lastname;
-    }
-
-    /**
-     * Sets the last name of the user.
-     *
-     * @param string $lastname the new last name.
-     */
-    public function set_lastname(string $lastname): void {
-        if (empty($lastname)) {
-            throw new \coding_exception('Invalid lastname value. Cannot be an empty string.');
-        }
-        $this->lastname = $lastname;
-    }
-
-    /**
-     * Get the email of this user.
-     *
-     * @return string the email address.
-     */
-    public function get_email(): string {
-        return $this->email;
-    }
-
-    /**
-     * Set the email address of this user.
-     *
-     * @param string $email an email address string.
-     */
-    public function set_email(string $email): void {
-        $this->email = \core_user::clean_field($email, 'email');
-        // If the email was stripped/not set then fill it with a default one.
-        // This stops the user from being redirected to edit their profile page.
-        $this->email = $this->email ?:
-            'enrol_lti_13_' . sha1($this->issuer->out(false) . '_' . $this->sourceid) . "@example.com";
     }
 
     /**
@@ -497,33 +389,6 @@ class user {
             throw new \coding_exception("Invalid lang '$langcode' provided.");
         }
         $this->lang = $langcode;
-    }
-
-    /**
-     * Get the auth plugin for the user.
-     *
-     * @return string the auth plugin.
-     */
-    public function get_auth(): string {
-        return $this->auth;
-    }
-
-    /**
-     * Get the mnethostid for this user.
-     *
-     * @return mixed mnnethostid of the user.
-     */
-    public function get_mnethostid() {
-        return $this->mnethostid;
-    }
-
-    /**
-     * Get whether this user is confirmed or not.
-     *
-     * @return int 1 for confirmed user, 0 for non-confirmed.
-     */
-    public function get_confirmed(): int {
-        return $this->confirmed;
     }
 
     /**

@@ -193,16 +193,19 @@ class sync_members_test extends \lti_advantage_testcase {
 
         // Launch the tool for a user.
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0]);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
 
         // Sync members.
         $task = $this->get_mock_task_resource_link_level();
-        ob_start();
         $task->execute();
-        ob_end_clean();
 
         // Verify 2 users and their corresponding course enrolments exist.
+        $this->expectOutputRegex(
+            "/Completed - Synced members for tool '$resource->id' in the course '$course->id'. ".
+            "Processed 2 users; enrolled 2 members; unenrolled 0 members./"
+        );
         $userrepo = new user_repository();
         $ltiusers = $userrepo->find_by_resource($resource->id);
         $this->assertCount(2, $ltiusers);
@@ -218,10 +221,11 @@ class sync_members_test extends \lti_advantage_testcase {
 
         // Launch twice - once from each resource link in the platform.
         $launchservice = $this->get_tool_launch_service();
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0], '123');
-        $launchservice->user_launches_tool($mocklaunch);
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0], '456');
-        $launchservice->user_launches_tool($mocklaunch);
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
 
         // Now, grab the resource links.
         $rlrepo = new resource_link_repository();
@@ -262,7 +266,8 @@ class sync_members_test extends \lti_advantage_testcase {
         // Launch the tool for a user.
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0]);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
 
         // Sync members.
         $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(['1'], null, true, true, true, true));
@@ -290,7 +295,8 @@ class sync_members_test extends \lti_advantage_testcase {
         // Launch the tool for a user.
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0]);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
 
         // Sync members.
         $task = $this->get_mock_task_context_level();
@@ -316,7 +322,8 @@ class sync_members_test extends \lti_advantage_testcase {
         // Launch the tool for a user.
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0]);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
 
         // Sync members.
         $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(range(1, 5), null, false, false));
@@ -333,15 +340,16 @@ class sync_members_test extends \lti_advantage_testcase {
         // Since user data wasn't included in the response, the users will have been synced using fallbacks,
         // so verify these.
         foreach ($ltiusers as $ltiuser) {
+            $user = \core_user::get_user($ltiuser->get_localid());
             // Firstname falls back to sourceid.
-            $this->assertEquals($ltiuser->get_sourceid(), $ltiuser->get_firstname());
+            $this->assertEquals($ltiuser->get_sourceid(), $user->firstname);
 
             // Lastname falls back to resource context id.
-            $this->assertEquals($resource->contextid, $ltiuser->get_lastname());
+            $this->assertEquals($appreg->get_platformid(), $user->lastname);
 
             // Email falls back to example.com.
             $issuersubhash = sha1($appreg->get_platformid() . '_' . $ltiuser->get_sourceid());
-            $this->assertEquals("enrol_lti_13_{$issuersubhash}@example.com", $ltiuser->get_email());
+            $this->assertEquals("enrol_lti_13_{$issuersubhash}@example.com", $user->email);
         }
 
         // Sync again, this time with user data included.
@@ -357,11 +365,12 @@ class sync_members_test extends \lti_advantage_testcase {
         $this->assertCount(5, $ltiusers);
         $this->verify_course_enrolments($course, $ltiusers);
         foreach ($ltiusers as $ltiuser) {
+            $user = \core_user::get_user($ltiuser->get_localid());
             $mockmemberindex = array_search($ltiuser->get_sourceid(), array_column($mockmembers, 'user_id'));
             $mockmember = $mockmembers[$mockmemberindex];
-            $this->assertEquals($mockmember['given_name'], $ltiuser->get_firstname());
-            $this->assertEquals($mockmember['family_name'], $ltiuser->get_lastname());
-            $this->assertEquals($mockmember['email'], $ltiuser->get_email());
+            $this->assertEquals($mockmember['given_name'], $user->firstname);
+            $this->assertEquals($mockmember['family_name'], $user->lastname);
+            $this->assertEquals($mockmember['email'], $user->email);
         }
     }
 
@@ -376,7 +385,8 @@ class sync_members_test extends \lti_advantage_testcase {
         $mockuser = $this->get_mock_launch_users_with_ids(['1'])[0];
         $mocklaunch = $this->get_mock_launch($resource, $mockuser);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
 
         // Sync members.
         $task = $this->get_mock_task_with_users($this->get_mock_launch_users_with_ids(range(1, 4)));
@@ -405,7 +415,8 @@ class sync_members_test extends \lti_advantage_testcase {
         $mockuser = $this->get_mock_launch_users_with_ids(['1'])[0];
         $mocklaunch = $this->get_mock_launch($resource, $mockuser);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
 
         // Sync members.
         $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(range(1, 3)));
@@ -449,7 +460,8 @@ class sync_members_test extends \lti_advantage_testcase {
         // Launch the tool for a user.
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids([1])[0]);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
         $this->assertCount(1, $userrepo->find_by_resource($resource->id));
 
         // Sync members using a payload which doesn't include the original launch user (User id = 1).
@@ -475,7 +487,8 @@ class sync_members_test extends \lti_advantage_testcase {
         // Launch the tool for a user.
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids([1])[0]);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
         $this->assertCount(1, $userrepo->find_by_resource($resource->id));
 
         // Sync members using a payload which includes two new members only (i.e. not the original launching user).
@@ -502,19 +515,16 @@ class sync_members_test extends \lti_advantage_testcase {
         // Launch the tool for a user.
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids([1])[0]);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
         $this->assertCount(1, $userrepo->find_by_resource($resource->id));
 
         // If the task were to run, this would trigger 1 unenrolment (the launching user) and 3 enrolments.
         $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(range(2, 2)));
-
-        ob_start();
         $task->execute();
-        $output = ob_get_contents();
-        ob_end_clean();
 
         // Verify that the sync didn't take place.
-        $this->assertStringContainsString("Skipping task - Authentication plugin 'LTI' is not enabled", $output);
+        $this->expectOutputRegex("/Skipping task - Authentication plugin 'LTI' is not enabled/");
         $this->assertCount(1, $userrepo->find_by_resource($resource->id));
     }
 
@@ -529,19 +539,16 @@ class sync_members_test extends \lti_advantage_testcase {
         // Launch the tool for a user.
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids([1])[0]);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
         $this->assertCount(1, $userrepo->find_by_resource($resource->id));
 
         // If the task were to run, this would trigger 1 unenrolment of the launching user and enrolment of 3 users.
         $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(range(2, 2)));
-
-        ob_start();
         $task->execute();
-        $output = ob_get_contents();
-        ob_end_clean();
 
         // Verify that the sync didn't take place.
-        $this->assertStringContainsString("Skipping task - The 'Publish as LTI tool' plugin is disabled", $output);
+        $this->expectOutputRegex("/Skipping task - The 'Publish as LTI tool' plugin is disabled/");
         $this->assertCount(1, $userrepo->find_by_resource($resource->id));
     }
 
@@ -557,7 +564,8 @@ class sync_members_test extends \lti_advantage_testcase {
         $mockinstructor = $this->get_mock_launch_users_with_ids([1])[0];
         $mocklaunch = $this->get_mock_launch($resource, $mockinstructor, null, false, false);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
         $this->assertCount(1, $userrepo->find_by_resource($resource->id));
 
         // The task would sync an additional 2 users if the link had NRPS service support.
@@ -565,13 +573,13 @@ class sync_members_test extends \lti_advantage_testcase {
 
         // We expect the task to report that it is skipping the resource due to a lack of NRPS support.
         $task->execute();
+
+        // Verify no enrolments or unenrolments.
         $this->expectOutputRegex(
             "/Skipping - No names and roles service found.\n".
             "Completed - Synced members for tool '{$resource->id}' in the course '{$course->id}'. ".
             "Processed 0 users; enrolled 0 members; unenrolled 0 members./"
         );
-
-        // Verify no enrolments or unenrolments.
         $this->assertCount(1, $userrepo->find_by_resource($resource->id));
     }
 
@@ -599,7 +607,14 @@ class sync_members_test extends \lti_advantage_testcase {
             $launchdata['launch_migration_claim']);
 
         // Perform the launch.
-        $this->get_tool_launch_service()->user_launches_tool($mocklaunch);
+        // TODO: this next call causes the problem since it doesn't properly simulate an auth
+        //  call in which migration takes place - resulting in a new user account instead of finding a legacy one.
+        //  we need to improve the auth mocking function to support migration-enabled launches.
+        $instructoruser = $this->lti_advantage_user_authenticates(
+            $launchdata['user']['user_id'],
+            $launchdata['launch_migration_claim'] ?? []
+        );
+        $this->get_tool_launch_service()->user_launches_tool($instructoruser, $mocklaunch);
 
         // Prepare the sync task, with a stubbed list of members.
         $task = $this->get_mock_task_with_users($syncmembers);
@@ -624,6 +639,7 @@ class sync_members_test extends \lti_advantage_testcase {
             } else {
                 // Those members who were either already migrated during launch, or were migrated during the sync,
                 // will be mapped to their legacy user accounts.
+                // TODO: Check this passes once we update auth code with the migration stuff.
                 $this->assertContains((string)$ltiuser->get_localid(), $legacyuserids);
             }
         }

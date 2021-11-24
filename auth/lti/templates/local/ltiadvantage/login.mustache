@@ -35,11 +35,58 @@
         TODO
     }
 }}
-<div id="lti_adv_account_binding_options">
-    <h2>Which account would you like to use?</h2>
+<div id="lti_adv_account_binding_options" class="p">
     <form action="{{formaction}}" method="POST">
         <input type="hidden" name="sesskey" value="{{sesskey}}">
-        <input type="submit" class="btn btn-secondary" name="new_account" value="Create a new account">
-        <input type="submit" class="btn btn-secondary" name="existing_account" value="Use an existing account">
+
+        <!--div class="card-columns"-->
+        <div class="container-fluid">
+            <h2>Welcome!</h2>
+            {{#info}}
+                {{> core/notification}}
+            {{/info}}
+            <div class="row">
+                <div class="col-sm-6 d-flex">
+                    <div class="card w-100">
+                        <div class="card-header">
+                            I have an existing account
+                        </div>
+                        <!--img class="card-img-top" src="..." alt="Card image cap"-->
+                        <div class="card-body text-center d-flex flex-column">
+                            <i class="fa fa-user-circle-o fa-2x link"></i>
+                            <h4 class="card-title">Use existing account</h4>
+
+                            <p class="card-text text-muted">Log in to your existing account.</p>
+                            <input type="submit" class="btn btn-primary mt-auto" name="existing_account" value="Log in">
+                        </div>
+                        <!--div class="text-muted">Doing this will blah blah blah blah blah....etc and more and more and more and more and more.</div-->
+                    </div>
+                </div>
+                <div class="col-sm-6 d-flex">
+                    <div class="card w-100">
+                        <div class="card-header">
+                            I'd like to create a new account
+                        </div>
+                        <!--img class="card-img-top" src="..." alt="Card image cap"-->
+                        <div class="card-body text-center d-flex flex-column">
+                            <i class="fa fa-user-plus fa-2x"></i>
+                            <h4 class="card-title">Create account</h4>
+                            <p class="card-text text-muted">Get started with a new account</p>
+                            <input type="submit" class="btn btn-secondary mt-auto" name="new_account" value="Create an account for me">
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--div class="row">
+                <div class="col-sm-6 p-0">
+                    <span class="font-weight-bold small">This will link your existing account with the LMS</span>
+                </div>
+                <div class="col-sm-6 p-0">
+
+                </div>
+            </div-->
+        </div>
+
     </form>
 </div>

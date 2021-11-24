@@ -135,6 +135,7 @@ class enrol_lti_testcase extends lti_advantage_testcase {
         ] = $this->create_test_environment();
 
         // Generate the legacy data, on which the user migration is based.
+        // TODO probably need to remove this legacy map stuff.
         $legacydata = [
             'users' => [
                 ['user_id' => '123-abc'],
@@ -159,12 +160,16 @@ class enrol_lti_testcase extends lti_advantage_testcase {
             'resource_link_id' => '4b6fa'
         ];
         $mocklaunch = $this->get_mock_launch($modresource, $mockuser, null, true, true, $migrationclaiminfo);
+        $instructoruser = $this->getDataGenerator()->create_user();
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
 
         // Verify data exists.
         global $DB;
-        $this->assertEquals(1, $DB->count_records('enrol_lti_adv_user'));
+
+        // TODO Remove this once we're sure the table isn't in use at all.
+        //$this->assertEquals(1, $DB->count_records('enrol_lti_adv_user'));
+
         $this->assertEquals(1, $DB->count_records('enrol_lti_user_resource_link'));
         $this->assertEquals(1, $DB->count_records('enrol_lti_resource_link'));
         $this->assertEquals(1, $DB->count_records('enrol_lti_app_registration'));
@@ -182,7 +187,10 @@ class enrol_lti_testcase extends lti_advantage_testcase {
         $this->assertEquals(0, $DB->count_records('enrol_lti_users'));
 
         // App registration, Deployment, Context and the LTI Adv User tables are not affected by instance removal.
-        $this->assertEquals(1, $DB->count_records('enrol_lti_adv_user')); // Records here share lifecycle of the user.
+
+        // TODO Remove this once we're sure the table isn't in use at all.
+        //$this->assertEquals(1, $DB->count_records('enrol_lti_adv_user'));
+
         $this->assertEquals(1, $DB->count_records('enrol_lti_app_registration'));
         $this->assertEquals(1, $DB->count_records('enrol_lti_deployment'));
         $this->assertEquals(1, $DB->count_records('enrol_lti_context'));

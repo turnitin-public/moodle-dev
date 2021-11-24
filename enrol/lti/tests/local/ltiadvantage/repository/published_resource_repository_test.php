@@ -16,6 +16,8 @@
 
 namespace enrol_lti\local\ltiadvantage\repository;
 
+use enrol_lti\helper;
+
 /**
  * Tests for published_resource_repository objects.
  *
@@ -68,11 +70,16 @@ class published_resource_repository_test extends \advanced_testcase {
             'membersync' => 1,
             'ltiversion' => 'LTI-1p3'
         ];
-        $tool = $generator->create_lti_tool($courseresourcedata);
-        $tool2 = $generator->create_lti_tool($moduleresourcedata);
-        $tool3 = $generator->create_lti_tool($module2resourcedata);
-        $tool4 = $generator->create_lti_tool($module3resourcedata);
-        return [$user, $user2, $user3, $course, $course2, $mod, $mod2, $mod3, $tool, $tool2, $tool3, $tool4];
+        $coursetool = $generator->create_lti_tool($courseresourcedata);
+        $coursetool = helper::get_lti_tool($coursetool->id);
+        $modtool = $generator->create_lti_tool($moduleresourcedata);
+        $modtool = helper::get_lti_tool($modtool->id);
+        $mod2tool = $generator->create_lti_tool($module2resourcedata);
+        $mod2tool = helper::get_lti_tool($mod2tool->id);
+        $mod3tool = $generator->create_lti_tool($module3resourcedata);
+        $mod3tool = helper::get_lti_tool($mod3tool->id);
+        return [$user, $user2, $user3, $course, $course2, $mod, $mod2, $mod3, $coursetool, $modtool, $mod2tool,
+            $mod3tool];
     }
 
     /**
@@ -116,7 +123,7 @@ class published_resource_repository_test extends \advanced_testcase {
 
         $resources = $resourcerepo->find_all_by_ids_for_user([$tool2->id, $tool3->id, $tool4->id], $user->id);
         $this->assertCount(2, $resources);
-        usort($resources, function($a, $b) {
+        usort($resources, function ($a, $b) {
             return strcmp($a->get_contextid(), $b->get_contextid());
         });
         $this->assertEquals($resources[0]->get_contextid(), \context_module::instance($mod->cmid)->id);
@@ -131,5 +138,37 @@ class published_resource_repository_test extends \advanced_testcase {
 
         $this->assertEmpty($resourcerepo->find_all_by_ids_for_user([$tool2->id], $user2->id));
         $this->assertEmpty($resourcerepo->find_all_by_ids_for_user([], $user2->id));
+    }
+
+    /**
+     * Test finding published resources for different roles having different capabilities at the course level.
+     */
+    public function test_find_all_for_user_no_permissions() {
+        global $DB;
+        [$user, $user2, $user3, $course, $course2, $mod, $mod2, $coursetool, $modtool, $mod2tool]
+            = $this->generate_published_resources();
+
+        // Grant the user permissions as an editing teacher in a specific module within the course,
+        // as if the user had launched into the module via LTI enrolment, with an instructor role of 'editingteacher'.
+        $modaccessonlyuser = $this->getDataGenerator()->create_user();
+        helper::enrol_user($modtool, $modaccessonlyuser->id); // Enrolment only, no role.
+        $editingteacherrole = $DB->get_record('role', array('shortname' => 'editingteacher'));
+        role_assign($editingteacherrole->id, $modaccessonlyuser->id, $modtool->contextid);
+
+        // Verify that without a course role of editing teacher (not module role), the published content isn't visible.
+        $resourcerepo = new published_resource_repository();
+        $resources = $resourcerepo->find_all_for_user($modaccessonlyuser->id);
+        $this->assertCount(0, $resources);
+
+        // Now, give the user a course role of 'editingteacher' and confirm they can see the published content.
+        $this->getDataGenerator()->enrol_user($modaccessonlyuser->id, $course->id, 'editingteacher');
+        $resources = $resourcerepo->find_all_for_user($modaccessonlyuser->id);
+        $this->assertCount(2, $resources);
+
+        // Check other course level roles without the capability, e.g. 'teacher'.
+        role_unassign($editingteacherrole->id, $modaccessonlyuser->id, \context_course::instance($course->id)->id);
+        $this->getDataGenerator()->enrol_user($modaccessonlyuser->id, $course->id, 'teacher');
+        $resources = $resourcerepo->find_all_for_user($modaccessonlyuser->id);
+        $this->assertCount(0, $resources);
     }
 }

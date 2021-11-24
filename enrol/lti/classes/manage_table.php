@@ -206,7 +206,9 @@ class manage_table extends \table_sql {
         if ($this->ltienabled && $this->canconfig) {
             $linkparams = array(
                 'courseid' => $instance->courseid,
-                'id' => $instance->id, 'type' => $instance->enrol,
+                'id' => $instance->id,
+                'type' => $instance->enrol,
+                'legacy' => 1,
                 'returnurl' => new \moodle_url('/enrol/lti/index.php',
                     array('courseid' => $this->courseid, 'legacy' => 1))
             );

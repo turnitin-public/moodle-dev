@@ -19,6 +19,11 @@
  *
  * See enrol/lti/launch_deeplink.php for deep linking launches.
  *
+ * There are 2 pathways through this page:
+ * 1. When first making a resource linking launch from the platform. The launch data is cached at this point, pending user
+ * authentication, and the page is set such that the post-authentication redirect will return here.
+ * 2. The post-authentication redirect. The launch data is fetched from the session launch cache, and the resource is displayed.
+ *
  * @package    enrol_lti
  * @copyright  2021 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -28,27 +33,18 @@ use enrol_lti\local\ltiadvantage\launch_cache_session;
 use enrol_lti\local\ltiadvantage\repository\application_registration_repository;
 use enrol_lti\local\ltiadvantage\repository\context_repository;
 use enrol_lti\local\ltiadvantage\repository\deployment_repository;
+use enrol_lti\local\ltiadvantage\repository\legacy_consumer_repository;
 use enrol_lti\local\ltiadvantage\repository\resource_link_repository;
 use enrol_lti\local\ltiadvantage\repository\user_repository;
 use enrol_lti\local\ltiadvantage\service\tool_launch_service;
 use enrol_lti\local\ltiadvantage\issuer_database;
+use enrol_lti\local\ltiadvantage\utility\message_helper;
 use IMSGlobal\LTI13\LTI_Message_Launch;
 
 require_once(__DIR__ . '/../../config.php');
-global $PAGE;
 
-// This is checked by the library. Just verify its existence here.
-$idtoken = required_param('id_token', PARAM_RAW);
-
-$launch = LTI_Message_Launch::new(
-    new issuer_database(new application_registration_repository(), new deployment_repository()),
-    new launch_cache_session())
-    ->validate();
-
-$PAGE->set_context(context_system::instance());
-$PAGE->set_url(new moodle_url('/enrol/lti/launch.php'));
-$PAGE->set_pagelayout('popup'); // Same layout as the tool.php page in Legacy 1.1/2.0 launches.
-$PAGE->set_title(get_string('opentool', 'enrol_lti'));
+$idtoken = optional_param('id_token', null, PARAM_RAW);
+$launchid = optional_param('launchid', null, PARAM_RAW);
 
 if (!is_enabled_auth('lti')) {
     throw new moodle_exception('pluginnotenabled', 'auth', '', get_string('pluginname', 'auth_lti'));
@@ -56,17 +52,70 @@ if (!is_enabled_auth('lti')) {
 if (!enrol_is_enabled('lti')) {
     throw new moodle_exception('enrolisdisabled', 'enrol_lti');
 }
+if (empty($idtoken) && empty($launchid)) {
+    throw new coding_exception('Error: launch requires id_token');
+}
 
-$toollauchservice = new tool_launch_service(
+// Support caching the launch and retrieving it after the account binding process described in auth::complete_login().
+$sessionlaunchcache = new launch_cache_session();
+$issuerdb = new issuer_database(new application_registration_repository(), new deployment_repository());
+if ($idtoken) {
+    $launch = LTI_Message_Launch::new($issuerdb, $sessionlaunchcache)
+        ->validate();
+}
+if ($launchid) {
+    $launch = LTI_Message_Launch::from_cache($launchid, $issuerdb, $sessionlaunchcache);
+}
+if (empty($launch)) {
+    throw new moodle_exception('Bad launch. Deep linking launch data could not be found');
+}
+
+// Authenticate the platform user, which could be an instructor, an admin or a learner.
+// Auth code needs to be told about consumer secrets for the purposes of migration, since these reside in enrol_lti.
+$launchdata = $launch->get_launch_data();
+if (!empty($launchdata['https://purl.imsglobal.org/spec/lti/claim/lti1p1']['oauth_consumer_key'])) {
+    $legacyconsumerrepo = new legacy_consumer_repository();
+    $legacyconsumersecrets = $legacyconsumerrepo->get_consumer_secrets(
+        $launchdata['https://purl.imsglobal.org/spec/lti/claim/lti1p1']['oauth_consumer_key']
+    );
+}
+
+// To authenticate, we need the resource's account provisioning mode for the given LTI role.
+if (empty($launchdata['https://purl.imsglobal.org/spec/lti/claim/custom']['id'])) {
+    throw new \moodle_exception('ltiadvlauncherror:missingid', 'enrol_lti');
+}
+$resourceuuid = $launchdata['https://purl.imsglobal.org/spec/lti/claim/custom']['id'];
+$resource = array_values(\enrol_lti\helper::get_lti_tools(['uuid' => $resourceuuid]));
+$resource = $resource[0] ?? null;
+if (empty($resource) || $resource->status != ENROL_INSTANCE_ENABLED) {
+    throw new \moodle_exception('ltiadvlauncherror:invalidid', 'enrol_lti', '', $resourceuuid);
+}
+
+$provisioningmode = message_helper::is_instructor_launch($launchdata) ? $resource->provisioningmodeinstructor
+    : $resource->provisioningmodelearner;
+$auth = get_auth_plugin('lti');
+$auth->complete_login(
+    $launch->get_launch_data(),
+    new moodle_url('/enrol/lti/launch.php', ['launchid' => $launch->get_launch_id()]),
+    $provisioningmode,
+    $legacyconsumersecrets ?? []
+);
+
+require_login(null, false);
+global $USER, $CFG, $PAGE;
+$PAGE->set_context(context_system::instance());
+$PAGE->set_url(new moodle_url('/enrol/lti/launch.php'));
+$PAGE->set_pagelayout('popup'); // Same layout as the tool.php page in Legacy 1.1/2.0 launches.
+$PAGE->set_title(get_string('opentool', 'enrol_lti'));
+
+$toollaunchservice = new tool_launch_service(
     new deployment_repository(),
     new application_registration_repository(),
     new resource_link_repository(),
     new user_repository(),
     new context_repository()
 );
-[$userid, $resource] = $toollauchservice->user_launches_tool($launch);
-
-complete_user_login(\core_user::get_user($userid));
+[$userid, $resource] = $toollaunchservice->user_launches_tool($USER, $launch);
 
 $context = context::instance_by_id($resource->contextid);
 if ($context->contextlevel == CONTEXT_COURSE) {

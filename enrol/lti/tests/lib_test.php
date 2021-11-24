@@ -125,6 +125,7 @@ class lib_test extends \lti_advantage_testcase {
      * Test confirming that relevant data is removed after enrol instance removal.
      */
     public function test_delete_instance_lti_advantage() {
+        global $DB;
         // Setup.
         [
             $course,
@@ -135,37 +136,14 @@ class lib_test extends \lti_advantage_testcase {
             $deployment
         ] = $this->create_test_environment();
 
-        // Generate the legacy data, on which the user migration is based.
-        $legacydata = [
-            'users' => [
-                ['user_id' => '123-abc'],
-                ['user_id' => '234-def'],
-            ],
-            'consumer_key' => 'CONSUMER_1',
-            'tools' => [
-                ['secret' => 'toolsecret1'],
-                ['secret' => 'toolsecret2'],
-            ]
-        ];
-        [$legacytools, $legacyconsumer, $legacyusers] = $this->setup_legacy_data($course, $legacydata);
-
-        // Launch the tool, including a change in user ids which will result in map records.
+        // Launch the tool.
         $mockuser = $this->get_mock_launch_users_with_ids(['1p3_1'])[0];
-        $migrationclaiminfo = [
-            'consumer_key' => 'CONSUMER_1',
-            'signing_secret' => 'toolsecret1',
-            'user_id' => '123-abc',
-            'context_id' => 'd345b',
-            'tool_consumer_instance_guid' => '12345-123',
-            'resource_link_id' => '4b6fa'
-        ];
-        $mocklaunch = $this->get_mock_launch($modresource, $mockuser, null, true, true, $migrationclaiminfo);
+        $mocklaunch = $this->get_mock_launch($modresource, $mockuser);
+        $instructoruser = $this->getDataGenerator()->create_user();
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
 
         // Verify data exists.
-        global $DB;
-        $this->assertEquals(1, $DB->count_records('enrol_lti_adv_user'));
         $this->assertEquals(1, $DB->count_records('enrol_lti_user_resource_link'));
         $this->assertEquals(1, $DB->count_records('enrol_lti_resource_link'));
         $this->assertEquals(1, $DB->count_records('enrol_lti_app_registration'));
@@ -182,8 +160,7 @@ class lib_test extends \lti_advantage_testcase {
         $this->assertEquals(0, $DB->count_records('enrol_lti_resource_link'));
         $this->assertEquals(0, $DB->count_records('enrol_lti_users'));
 
-        // App registration, Deployment, Context and the LTI Adv User tables are not affected by instance removal.
-        $this->assertEquals(1, $DB->count_records('enrol_lti_adv_user')); // Records here share lifecycle of the user.
+        // App registration, Deployment and Context tables are not affected by instance removal.
         $this->assertEquals(1, $DB->count_records('enrol_lti_app_registration'));
         $this->assertEquals(1, $DB->count_records('enrol_lti_deployment'));
         $this->assertEquals(1, $DB->count_records('enrol_lti_context'));

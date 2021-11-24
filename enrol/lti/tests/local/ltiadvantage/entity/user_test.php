@@ -40,21 +40,14 @@ class user_test extends \advanced_testcase {
             $this->assertEquals($expectations['localid'], $user->get_localid());
             $this->assertEquals($expectations['resourcelinkid'], $user->get_resourcelinkid());
             $this->assertEquals($expectations['resourceid'], $user->get_resourceid());
-            $this->assertEquals($expectations['issuer'], $user->get_issuer());
             $this->assertEquals($expectations['deploymentid'], $user->get_deploymentid());
             $this->assertEquals($expectations['sourceid'], $user->get_sourceid());
-            $this->assertEquals($expectations['firstname'], $user->get_firstname());
-            $this->assertEquals($expectations['lastname'], $user->get_lastname());
             $this->assertEquals($expectations['lang'], $user->get_lang());
             $this->assertEquals($expectations['timezone'], $user->get_timezone());
-            $this->assertEquals($expectations['email'], $user->get_email());
             $this->assertEquals($expectations['city'], $user->get_city());
             $this->assertEquals($expectations['country'], $user->get_country());
             $this->assertEquals($expectations['institution'], $user->get_institution());
             $this->assertEquals($expectations['maildisplay'], $user->get_maildisplay());
-            $this->assertEquals($expectations['auth'], $user->get_auth());
-            $this->assertEquals($expectations['mnethostid'], $user->get_mnethostid());
-            $this->assertEquals($expectations['confirmed'], $user->get_confirmed());
             $this->assertEquals($expectations['lastgrade'], $user->get_lastgrade());
             $this->assertEquals($expectations['lastaccess'], $user->get_lastaccess());
         } else {
@@ -70,31 +63,23 @@ class user_test extends \advanced_testcase {
      * @return array the data for testing.
      */
     public function create_data_provider(): array {
-        global $CFG;
         return [
             'Valid create, only required args provided' => [
                 'args' => [
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
+                    'userid' => 2,
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'en',
                     'timezone' => '99'
                 ],
                 'expectations' => [
                     'valid' => true,
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'en',
                     'timezone' => '99',
-                    'email' => 'enrol_lti_13_' . sha1('https://platform.example.com' . '_' . 'user-id-123') .
-                        '@example.com',
                     'city' => '',
                     'country' => '',
                     'institution' => '',
@@ -102,24 +87,18 @@ class user_test extends \advanced_testcase {
                     'lastgrade' => 0.0,
                     'lastaccess' => null,
                     'id' => null,
-                    'localid' => null,
+                    'localid' => 2,
                     'resourcelinkid' => null,
-                    'auth' => 'lti',
-                    'mnethostid' => $CFG->mnet_localhost_id,
-                    'confirmed' => true
                 ]
             ],
             'Valid create, all args provided explicitly' => [
                 'args' => [
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
+                    'userid' => 2,
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'en',
                     'timezone' => '99',
-                    'email' => 'sjohn@example.com',
                     'city' => 'Melbourne',
                     'country' => 'AU',
                     'institution' => 'My institution',
@@ -127,20 +106,15 @@ class user_test extends \advanced_testcase {
                     'lastgrade' => 50.55,
                     'lastaccess' => 14567888,
                     'resourcelinkid' => 44,
-                    'localid' => 34,
                     'id' => 22
                 ],
                 'expectations' => [
                     'valid' => true,
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'en',
                     'timezone' => '99',
-                    'email' => 'sjohn@example.com',
                     'city' => 'Melbourne',
                     'country' => 'AU',
                     'institution' => 'My institution',
@@ -148,24 +122,18 @@ class user_test extends \advanced_testcase {
                     'lastgrade' => 50.55,
                     'lastaccess' => 14567888,
                     'resourcelinkid' => 44,
-                    'localid' => 34,
+                    'localid' => 2,
                     'id' => 22,
-                    'auth' => 'lti',
-                    'mnethostid' => $CFG->mnet_localhost_id,
-                    'confirmed' => true
                 ]
             ],
             'Valid create, optional args explicitly nulled for default values' => [
                 'args' => [
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
+                    'userid' => 2,
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'en',
                     'timezone' => '99',
-                    'email' => 'sjohn@example.com',
                     'city' => 'Melbourne',
                     'country' => 'AU',
                     'institution' => 'My institution',
@@ -173,21 +141,16 @@ class user_test extends \advanced_testcase {
                     'lastgrade' => null,
                     'lastaccess' => null,
                     'resourcelinkid' => null,
-                    'localid' => null,
                     'id' => null
 
                 ],
                 'expectations' => [
                     'valid' => true,
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'en',
                     'timezone' => '99',
-                    'email' => 'sjohn@example.com',
                     'city' => 'Melbourne',
                     'country' => 'AU',
                     'institution' => 'My institution',
@@ -195,21 +158,16 @@ class user_test extends \advanced_testcase {
                     'lastgrade' => 0.0,
                     'lastaccess' => null,
                     'resourcelinkid' => null,
-                    'localid' => null,
-                    'id' => null,
-                    'auth' => 'lti',
-                    'mnethostid' => $CFG->mnet_localhost_id,
-                    'confirmed' => true
+                    'localid' => 2,
+                    'id' => null
                 ]
             ],
-            'Invalid create, lang with bad value' => [
+            'Invalid create, lang with bad value (fr not installed)' => [
                 'args' => [
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
+                    'userid' => 2,
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'fr',
                     'timezone' => '99',
                 ],
@@ -222,11 +180,9 @@ class user_test extends \advanced_testcase {
             'Invalid create, timezone with bad value' => [
                 'args' => [
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
+                    'userid' => 2,
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'en',
                     'timezone' => 'NOT/FOUND',
                 ],
@@ -239,14 +195,11 @@ class user_test extends \advanced_testcase {
             'Invalid create, explicitly provided country with bad value' => [
                 'args' => [
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
+                    'userid' => 2,
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'en',
                     'timezone' => '99',
-                    'email' => '',
                     'city' => '',
                     'country' => 'FFF',
                 ],
@@ -259,14 +212,11 @@ class user_test extends \advanced_testcase {
             'Invalid create, explicit maildisplay with bad value' => [
                 'args' => [
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
+                    'userid' => 2,
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'en',
                     'timezone' => '99',
-                    'email' => '',
                     'city' => '',
                     'country' => '',
                     'institution' => '',
@@ -278,40 +228,6 @@ class user_test extends \advanced_testcase {
                     'exceptionmessage' => "Invalid maildisplay value '3'. Must be in the range {0..2}."
                 ]
             ],
-            'Invalid create, firstname empty string' => [
-                'args' => [
-                    'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
-                    'deploymentid' => 33,
-                    'sourceid' => 'user-id-123',
-                    'firstname' => '',
-                    'lastname' => 'Smith',
-                    'lang' => 'en',
-                    'timezone' => '99',
-                ],
-                'expectations' => [
-                    'valid' => false,
-                    'exception' => \coding_exception::class,
-                    'exceptionmessage' => "Invalid firstname value. Cannot be an empty string."
-                ]
-            ],
-            'Invalid create, lastname empty string' => [
-                'args' => [
-                    'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
-                    'deploymentid' => 33,
-                    'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => '',
-                    'lang' => 'en',
-                    'timezone' => '99',
-                ],
-                'expectations' => [
-                    'valid' => false,
-                    'exception' => \coding_exception::class,
-                    'exceptionmessage' => "Invalid lastname value. Cannot be an empty string."
-                ]
-            ]
         ];
     }
 
@@ -330,21 +246,14 @@ class user_test extends \advanced_testcase {
             $this->assertEquals($expectations['localid'], $user->get_localid());
             $this->assertEquals($expectations['resourcelinkid'], $user->get_resourcelinkid());
             $this->assertEquals($expectations['resourceid'], $user->get_resourceid());
-            $this->assertEquals($expectations['issuer'], $user->get_issuer());
             $this->assertEquals($expectations['deploymentid'], $user->get_deploymentid());
             $this->assertEquals($expectations['sourceid'], $user->get_sourceid());
-            $this->assertEquals($expectations['firstname'], $user->get_firstname());
-            $this->assertEquals($expectations['lastname'], $user->get_lastname());
             $this->assertEquals($expectations['lang'], $user->get_lang());
-            $this->assertEquals($expectations['email'], $user->get_email());
             $this->assertEquals($expectations['city'], $user->get_city());
             $this->assertEquals($expectations['country'], $user->get_country());
             $this->assertEquals($expectations['institution'], $user->get_institution());
             $this->assertEquals($expectations['timezone'], $user->get_timezone());
             $this->assertEquals($expectations['maildisplay'], $user->get_maildisplay());
-            $this->assertEquals($expectations['auth'], $user->get_auth());
-            $this->assertEquals($expectations['mnethostid'], $user->get_mnethostid());
-            $this->assertEquals($expectations['confirmed'], $user->get_confirmed());
             $this->assertEquals($expectations['lastgrade'], $user->get_lastgrade());
             $this->assertEquals($expectations['lastaccess'], $user->get_lastaccess());
         } else {
@@ -360,20 +269,16 @@ class user_test extends \advanced_testcase {
      * @return array the data for testing.
      */
     public function create_from_resource_link_data_provider(): array {
-        global $CFG;
         return [
             'Valid creation, all args provided explicitly' => [
                 'args' => [
                     'resourcelinkid' => 11,
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
+                    'userid' => 2,
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'en',
                     'timezone' => '99',
-                    'email' => 'sjohn@platform.example.com',
                     'city' => 'Melbourne',
                     'country' => 'AU',
                     'institution' => 'platform',
@@ -382,24 +287,17 @@ class user_test extends \advanced_testcase {
                 'expectations' => [
                     'valid' => true,
                     'id' => null,
-                    'localid' => null,
+                    'localid' => 2,
                     'resourcelinkid' => 11,
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'en',
                     'timezone' => '99',
-                    'email' => 'sjohn@platform.example.com',
                     'city' => 'Melbourne',
                     'country' => 'AU',
                     'institution' => 'platform',
                     'maildisplay' => 1,
-                    'auth' => 'lti',
-                    'mnethostid' => $CFG->mnet_localhost_id,
-                    'confirmed' => true,
                     'lastgrade' => 0.0,
                     'lastaccess' => null
                 ]
@@ -408,36 +306,26 @@ class user_test extends \advanced_testcase {
                 'args' => [
                     'resourcelinkid' => 11,
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
+                    'userid' => 2,
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'en',
                     'timezone' => 'UTC'
                 ],
                 'expectations' => [
                     'valid' => true,
                     'id' => null,
-                    'localid' => null,
+                    'localid' => 2,
                     'resourcelinkid' => 11,
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'en',
                     'timezone' => 'UTC',
-                    'email' => 'enrol_lti_13_' . sha1('https://platform.example.com' . '_' . 'user-id-123') .
-                        '@example.com',
                     'city' => '',
                     'country' => '',
                     'institution' => '',
                     'maildisplay' => 2,
-                    'auth' => 'lti',
-                    'mnethostid' => $CFG->mnet_localhost_id,
-                    'confirmed' => true,
                     'lastgrade' => 0.0,
                     'lastaccess' => null
                 ]
@@ -446,11 +334,9 @@ class user_test extends \advanced_testcase {
                 'args' => [
                     'resourcelinkid' => 11,
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
+                    'user' => 2,
                     'deploymentid' => 33,
                     'sourceid' => '',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'en',
                     'timezone' => 'UTC'
                 ],
@@ -460,51 +346,13 @@ class user_test extends \advanced_testcase {
                     'exceptionmessage' => 'Invalid sourceid value. Cannot be an empty string.'
                 ]
             ],
-            'Invalid creation, only required args provided, empty firstname' => [
-                'args' => [
-                    'resourcelinkid' => 11,
-                    'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
-                    'deploymentid' => 33,
-                    'sourceid' => 'user-id-123',
-                    'firstname' => '',
-                    'lastname' => 'Smith',
-                    'lang' => 'en',
-                    'timezone' => 'UTC'
-                ],
-                'expectations' => [
-                    'valid' => false,
-                    'exception' => \coding_exception::class,
-                    'exceptionmessage' => 'Invalid firstname value. Cannot be an empty string.'
-                ]
-            ],
-            'Invalid creation, only required args provided, empty lastname' => [
-                'args' => [
-                    'resourcelinkid' => 11,
-                    'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
-                    'deploymentid' => 33,
-                    'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => '',
-                    'lang' => 'en',
-                    'timezone' => 'UTC'
-                ],
-                'expectations' => [
-                    'valid' => false,
-                    'exception' => \coding_exception::class,
-                    'exceptionmessage' => 'Invalid lastname value. Cannot be an empty string.'
-                ]
-            ],
             'Invalid creation, only required args provided, empty lang' => [
                 'args' => [
                     'resourcelinkid' => 11,
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
+                    'user' => 2,
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => '',
                     'timezone' => 'UTC'
                 ],
@@ -518,11 +366,9 @@ class user_test extends \advanced_testcase {
                 'args' => [
                     'resourcelinkid' => 11,
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
+                    'userid' => 2,
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'en',
                     'timezone' => ''
                 ],
@@ -532,15 +378,13 @@ class user_test extends \advanced_testcase {
                     'exceptionmessage' => 'Invalid timezone value. Cannot be an empty string.'
                 ]
             ],
-            'Invalid creation, only required args provided, invalid lang' => [
+            'Invalid creation, only required args provided, invalid lang (fr not installed)' => [
                 'args' => [
                     'resourcelinkid' => 11,
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
+                    'userid' => 2,
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'fr',
                     'timezone' => 'UTC'
                 ],
@@ -554,11 +398,9 @@ class user_test extends \advanced_testcase {
                 'args' => [
                     'resourcelinkid' => 11,
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
+                    'userid' => 2,
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'en',
                     'timezone' => 'NOT/FOUND'
                 ],
@@ -572,14 +414,11 @@ class user_test extends \advanced_testcase {
                 'args' => [
                     'resourcelinkid' => 11,
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
+                    'userid' => 2,
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'en',
                     'timezone' => '99',
-                    'email' => 'sjohn@platform.example.com',
                     'city' => 'Melbourne',
                     'country' => 'FFF',
                     'institution' => 'platform',
@@ -595,14 +434,11 @@ class user_test extends \advanced_testcase {
                 'args' => [
                     'resourcelinkid' => 11,
                     'resourceid' => 22,
-                    'issuer' => new \moodle_url('https://platform.example.com'),
+                    'userid' => 2,
                     'deploymentid' => 33,
                     'sourceid' => 'user-id-123',
-                    'firstname' => 'John',
-                    'lastname' => 'Smith',
                     'lang' => 'en',
                     'timezone' => '99',
-                    'email' => 'sjohn@platform.example.com',
                     'city' => 'Melbourne',
                     'country' => 'AU',
                     'institution' => 'platform',
@@ -626,11 +462,9 @@ class user_test extends \advanced_testcase {
         $args = [
             'resourcelinkid' => 11,
             'resourceid' => 22,
-            'issuer' => new \moodle_url('https://platform.example.com'),
+            'userid' => 2,
             'deploymentid' => 33,
             'sourceid' => 'user-id-123',
-            'firstname' => 'John',
-            'lastname' => 'Smith',
             'lang' => 'en',
             'timezone' => 'UTC'
         ];
@@ -639,7 +473,7 @@ class user_test extends \advanced_testcase {
 
 
     /**
-     * Test the behaviour of the user setters.
+     * Test the behaviour of the user setters and getters.
      *
      * @dataProvider setters_getters_data_provider
      * @param string $methodname the name of the setter
@@ -686,70 +520,6 @@ class user_test extends \advanced_testcase {
                     'valid' => false,
                     'exception' => \coding_exception::class,
                     'exceptionmessage' => "Invalid resourcelinkid '-1' provided. Must be > 0."
-                ]
-            ],
-            'Testing set_localid with valid id' => [
-                'methodname' => 'localid',
-                'arg' => 8,
-                'expectations' => [
-                    'valid' => true,
-                ]
-            ],
-            'Testing set_localid with invalid id' => [
-                'methodname' => 'localid',
-                'arg' => 0,
-                'expectations' => [
-                    'valid' => false,
-                    'exception' => \coding_exception::class,
-                    'exceptionmessage' => "Invalid localid '0' provided. Must be > 0."
-                ]
-            ],
-            'Testing set_firstname with valid string' => [
-                'methodname' => 'firstname',
-                'arg' => 'Magnus',
-                'expectations' => [
-                    'valid' => true,
-                ]
-            ],
-            'Testing set_firstname with empty string' => [
-                'methodname' => 'firstname',
-                'arg' => '',
-                'expectations' => [
-                    'valid' => false,
-                    'exception' => \coding_exception::class,
-                    'exceptionmessage' => "Invalid firstname value. Cannot be an empty string."
-                ]
-            ],
-            'Testing set_lastname with valid string' => [
-                'methodname' => 'lastname',
-                'arg' => 'Carlsen',
-                'expectations' => [
-                    'valid' => true,
-                ]
-            ],
-            'Testing set_lastname with empty string' => [
-                'methodname' => 'lastname',
-                'arg' => '',
-                'expectations' => [
-                    'valid' => false,
-                    'exception' => \coding_exception::class,
-                    'exceptionmessage' => "Invalid lastname value. Cannot be an empty string."
-                ]
-            ],
-            'Testing set_email with valid string' => [
-                'methodname' => 'email',
-                'arg' => 'magnus@platform.example.com',
-                'expectations' => [
-                    'valid' => true,
-                ]
-            ],
-            'Testing set_email with empty string' => [
-                'methodname' => 'email',
-                'arg' => '',
-                'expectations' => [
-                    'valid' => true,
-                    'expectedvalue' => 'enrol_lti_13_' . sha1('https://platform.example.com_user-id-123') .
-                        '@example.com'
                 ]
             ],
             'Testing set_city with a non-empty string' => [

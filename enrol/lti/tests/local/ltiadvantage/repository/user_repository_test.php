@@ -60,13 +60,11 @@ class user_repository_test extends \advanced_testcase {
             $savedcontext->get_id());
         $savedresourcelink = $resourcelinkrepo->save($resourcelink);
 
-        $user = $savedresourcelink->add_user(
-            $createdregistration->get_platformid(),
+        $user = $this->getDataGenerator()->create_user();
+        $ltiuser = $savedresourcelink->add_user(
+            $user->id,
             'source-id-123',
-            'Simon',
-            'McTest',
             'en',
-            'simon@example.com',
             'Perth',
             'AU',
             'An Example Institution',
@@ -74,9 +72,9 @@ class user_repository_test extends \advanced_testcase {
             2,
         );
 
-        $user->set_lastgrade(67.33333333);
+        $ltiuser->set_lastgrade(67.33333333);
 
-        return $user;
+        return $ltiuser;
     }
 
     /**
@@ -87,20 +85,13 @@ class user_repository_test extends \advanced_testcase {
      * @param bool $checkresourcelink whether or not to confirm the resource link value matches too.
      */
     protected function assert_same_user_values(user $expected, user $check, bool $checkresourcelink = false): void {
-        $this->assertEquals($expected->get_issuer(), $check->get_issuer());
         $this->assertEquals($expected->get_deploymentid(), $check->get_deploymentid());
-        $this->assertEquals($expected->get_firstname(), $check->get_firstname());
-        $this->assertEquals($expected->get_lastname(), $check->get_lastname());
-        $this->assertEquals($expected->get_email(), $check->get_email());
         $this->assertEquals($expected->get_city(), $check->get_city());
         $this->assertEquals($expected->get_country(), $check->get_country());
         $this->assertEquals($expected->get_institution(), $check->get_institution());
         $this->assertEquals($expected->get_timezone(), $check->get_timezone());
         $this->assertEquals($expected->get_maildisplay(), $check->get_maildisplay());
-        $this->assertEquals($expected->get_mnethostid(), $check->get_mnethostid());
-        $this->assertEquals($expected->get_confirmed(), $check->get_confirmed());
         $this->assertEquals($expected->get_lang(), $check->get_lang());
-        $this->assertEquals($expected->get_auth(), $check->get_auth());
         if ($checkresourcelink) {
             $this->assertEquals($expected->get_resourcelinkid(), $check->get_resourcelinkid());
         }
@@ -120,18 +111,12 @@ class user_repository_test extends \advanced_testcase {
                     ON (lu.userid = u.id)
                  WHERE lu.id = :id";
         $userrecord = $DB->get_record_sql($sql, ['id' => $expected->get_id()]);
-        $this->assertEquals($expected->get_firstname(), $userrecord->firstname);
-        $this->assertEquals($expected->get_lastname(), $userrecord->lastname);
-        $this->assertEquals($expected->get_email(), $userrecord->email);
         $this->assertEquals($expected->get_city(), $userrecord->city);
         $this->assertEquals($expected->get_country(), $userrecord->country);
         $this->assertEquals($expected->get_institution(), $userrecord->institution);
         $this->assertEquals($expected->get_timezone(), $userrecord->timezone);
         $this->assertEquals($expected->get_maildisplay(), $userrecord->maildisplay);
-        $this->assertEquals($expected->get_mnethostid(), $userrecord->mnethostid);
-        $this->assertEquals($expected->get_confirmed(), $userrecord->confirmed);
         $this->assertEquals($expected->get_lang(), $userrecord->lang);
-        $this->assertEquals($expected->get_auth(), $userrecord->auth);
 
         $ltiuserrecord = $DB->get_record('enrol_lti_users', ['id' => $expected->get_id()]);
         $this->assertEquals($expected->get_id(), $ltiuserrecord->id);
@@ -175,8 +160,8 @@ class user_repository_test extends \advanced_testcase {
         $userrepo = new user_repository();
         $saveduser = $userrepo->save($user);
 
-        $saveduser->set_firstname('Martin');
-        $saveduser->set_firstname('Fowler');
+        $saveduser->set_city('New City');
+        $saveduser->set_country('NZ');
         $saveduser->set_lastgrade(99.99999999);
         $saveduser2 = $userrepo->save($saveduser);
 
@@ -186,25 +171,53 @@ class user_repository_test extends \advanced_testcase {
     }
 
     /**
+     * Test saving an instance which exists by id, but has a different localid to the data in the store.
+     */
+    public function test_save_existing_localid_mismatch() {
+        $this->resetAfterTest();
+        $user = $this->generate_user();
+        $userrepo = new user_repository();
+        $saveduser = $userrepo->save($user);
+
+        $user2 = user::create(
+            $saveduser->get_resourceid(),
+            999999,
+            $saveduser->get_deploymentid(),
+            $saveduser->get_sourceid(),
+            $saveduser->get_lang(),
+            $saveduser->get_timezone(),
+            '',
+            '',
+            '',
+            null,
+            null,
+            null,
+            null,
+            $saveduser->get_id()
+        );
+        $this->expectException(\coding_exception::class);
+        $this->expectExceptionMessage("Cannot update user mapping. LTI user '{$saveduser->get_id()}' is already mapped " .
+            "to user '{$saveduser->get_localid()}' and can't be associated with another user '999999'.");
+        $userrepo->save($user2);
+    }
+
+    /**
      * Test trying to save a user with an id that is invalid.
      */
     public function test_save_stale_id() {
         $this->resetAfterTest();
+        $instructoruser = $this->getDataGenerator()->create_user();
         $userrepo = new user_repository();
         $user = user::create(
             4,
-            new \moodle_url('https://lms.example.com'),
+            $instructoruser->id,
             5,
             'source-id-123',
-            'John',
-            'Smith',
             'en',
             '99',
             '',
             '',
             '',
-            '',
-            null,
             null,
             null,
             null,
@@ -218,57 +231,6 @@ class user_repository_test extends \advanced_testcase {
     }
 
     /**
-     * Test saving a user instance mapped to a legacy moodle user, facilitating account re-use after tool upgrade.
-     */
-    public function test_save_new_migrating_user() {
-        $this->resetAfterTest();
-        global $DB;
-
-        // Represents a Moodle user from a legacy launch.
-        $muser = $this->getDataGenerator()->create_user();
-        $totalmusers = $DB->count_records('user');
-
-        // Create an lti user, linking them to a user account derived from a legacy launch.
-        $user = $this->generate_user();
-        $userrepo = new user_repository();
-        $user->set_localid($muser->id);
-        $saveduser = $userrepo->save($user);
-
-        $this->assertIsInt($saveduser->get_id());
-        $this->assert_same_user_values($user, $saveduser, true);
-
-        // Verify the lti user reused the existing moodle user.
-        $this->assertEquals($totalmusers, $DB->count_records('user'));
-        $this->assertEquals($muser->id, $saveduser->get_localid());
-    }
-
-    /**
-     * Test saving a user instance which has been associated with a non-existent local account.
-     */
-    public function test_save_new_user_linking_failed() {
-        $this->resetAfterTest();
-        global $DB;
-        // Represents a Moodle user from a legacy launch.
-        $muser = $this->getDataGenerator()->create_user();
-        $totalmusers = $DB->count_records('user');
-        $legacyuserids = array_column($DB->get_records('user', null, '', 'id'), 'id');
-
-        // Create an lti user, linking them to a user account derived from a legacy launch.
-        $user = $this->generate_user();
-        $userrepo = new user_repository();
-        $user->set_localid(999999);
-        $saveduser = $userrepo->save($user);
-        $expecteddebugmsg = "Attempt to associate LTI user '{$user->get_sourceid()}' to local user " .
-            "'{$user->get_localid()}' failed. The local user could not be found. A new user " .
-            "account will be created.";
-        $this->assertDebuggingCalled($expecteddebugmsg);
-
-        // Verify the returned lti user resulted in the creation of a new moodle user.
-        $this->assertEquals($totalmusers + 1, $DB->count_records('user'));
-        $this->assertNotContains($saveduser->get_localid(), $legacyuserids);
-    }
-
-    /**
      * Verify that trying to save a stale object results in an exception referring to unique constraint violation.
      */
     public function test_save_uniqueness_constraint() {
@@ -278,26 +240,7 @@ class user_repository_test extends \advanced_testcase {
         $userrepo->save($user);
 
         $this->expectException(\coding_exception::class);
-        $this->expectExceptionMessageMatches("/Cannot create duplicate lti user '[a-z0-9_]*' for resource '[0-9]*'/");
-        $userrepo->save($user);
-    }
-
-    /**
-     * Verify that trying to save a stale user instance representing a legacy mapped user results in an exception.
-     */
-    public function test_save_uniqueness_constraint_legacy_mapped_user() {
-        $this->resetAfterTest();
-        // Represents a Moodle user from a legacy launch.
-        $muser = $this->getDataGenerator()->create_user();
-
-        // Create an lti user, linking them to a user account derived from a legacy launch.
-        $user = $this->generate_user();
-        $userrepo = new user_repository();
-        $user->set_localid($muser->id);
-        $userrepo->save($user);
-
-        $this->expectException(\coding_exception::class);
-        $this->expectExceptionMessageMatches("/Cannot create duplicate lti user '[a-z0-9_]*' for resource '[0-9]*'/");
+        $this->expectExceptionMessageMatches("/Cannot create duplicate LTI user '[a-z0-9_]*' for resource '[0-9]*'/");
         $userrepo->save($user);
     }
 
@@ -318,64 +261,6 @@ class user_repository_test extends \advanced_testcase {
     }
 
     /**
-     * Test checking that finding a legacy mapped user returns the appropriate user.
-     */
-    public function test_find_legacy_mapped_user() {
-        $this->resetAfterTest();
-        // Represents a Moodle user from a legacy launch.
-        $muser = $this->getDataGenerator()->create_user();
-
-        // Create an lti user, linking them to a user account derived from a legacy launch.
-        $user = $this->generate_user();
-        $userrepo = new user_repository();
-        $user->set_localid($muser->id);
-        $saveduser = $userrepo->save($user);
-
-        // Verify the finding the user, by id, returns a user that is mapped to the legacy moodle user.
-        $founduser = $userrepo->find($saveduser->get_id());
-        $this->assert_same_user_values($saveduser, $founduser);
-        $this->assertEquals($muser->id, $founduser->get_localid());
-    }
-
-    /**
-     * Test finding a user by sub.
-     */
-    public function test_find_by_sub() {
-        $this->resetAfterTest();
-        $mockresourceid = 25;
-        $user = $this->generate_user($mockresourceid);
-        $userrepo = new user_repository();
-        $saveduser = $userrepo->save($user);
-
-        $founduser = $userrepo->find_by_sub($saveduser->get_sourceid(), $saveduser->get_issuer(), $mockresourceid);
-        $this->assertIsInt($founduser->get_id());
-        $this->assert_same_user_values($saveduser, $founduser);
-
-        $this->assertNull($userrepo->find_by_sub('not_present', new \moodle_url('http://bad.example'), $mockresourceid));
-    }
-
-    /**
-     * Test confirming that finding a legacy mapped user by sub returns information about the legacy user.
-     */
-    public function test_find_by_sub_legacy_mapped_user() {
-        $this->resetAfterTest();
-        // Represents a Moodle user from a legacy launch.
-        $muser = $this->getDataGenerator()->create_user();
-
-        // Create an lti user, linking them to a user account derived from a legacy launch.
-        $mockresourceid = 33;
-        $user = $this->generate_user($mockresourceid);
-        $userrepo = new user_repository();
-        $user->set_localid($muser->id);
-        $saveduser = $userrepo->save($user);
-
-        // Verify the finding the user, by id, returns a user that is mapped to the legacy moodle user.
-        $founduser = $userrepo->find_by_sub($saveduser->get_sourceid(), $saveduser->get_issuer(), $mockresourceid);
-        $this->assert_same_user_values($saveduser, $founduser);
-        $this->assertEquals($muser->id, $founduser->get_localid());
-    }
-
-    /**
      * Test finding all of users associated with a given published resource.
      */
     public function test_find_by_resource() {
@@ -383,17 +268,15 @@ class user_repository_test extends \advanced_testcase {
         $user = $this->generate_user();
         $userrepo = new user_repository();
         $saveduser = $userrepo->save($user);
+        $instructoruser = $this->getDataGenerator()->create_user();
 
         $user2 = user::create(
             $saveduser->get_resourceid(),
-            $saveduser->get_issuer(),
+            $instructoruser->id,
             $saveduser->get_deploymentid(),
             'another-user-123',
-            'Another',
-            'User',
             'en',
             '99',
-            'simon@example.com',
             'Perth',
             'AU',
             'An Example Institution',
@@ -406,50 +289,6 @@ class user_repository_test extends \advanced_testcase {
         $this->assertCount(2, $foundusers);
         foreach ($foundusers as $founduser) {
             $this->assert_same_user_values($savedusers[$founduser->get_id()], $founduser);
-        }
-    }
-
-    /**
-     * Test finding all of users associated with a given published resource, including legacy mapped users.
-     */
-    public function test_find_by_resource_legacy_mapped() {
-        $this->resetAfterTest();
-        // Represents a Moodle user from a legacy launch.
-        $muser = $this->getDataGenerator()->create_user();
-
-        // Create an lti user, linking them to a user account derived from a legacy launch.
-        $mockresourceid = 33;
-        $user = $this->generate_user($mockresourceid);
-        $userrepo = new user_repository();
-        $user->set_localid($muser->id);
-        $saveduser = $userrepo->save($user);
-
-        $user2 = user::create(
-            $saveduser->get_resourceid(),
-            $saveduser->get_issuer(),
-            $saveduser->get_deploymentid(),
-            'another-user-123',
-            'Another',
-            'User',
-            'en',
-            '99',
-            'simon@example.com',
-            'Perth',
-            'AU',
-            'An Example Institution',
-            2
-        );
-        $saveduser2 = $userrepo->save($user2);
-        $savedusers = [$saveduser->get_id() => $saveduser, $saveduser2->get_id() => $saveduser2];
-
-        $foundusers = $userrepo->find_by_resource($saveduser->get_resourceid());
-        $this->assertCount(2, $foundusers);
-        foreach ($foundusers as $founduser) {
-            $this->assert_same_user_values($savedusers[$founduser->get_id()], $founduser);
-            if ($founduser->get_id() == $saveduser->get_id()) {
-                // Verify the user is mapped to the legacy moodle user.
-                $this->assertEquals($muser->id, $founduser->get_localid());
-            }
         }
     }
 
@@ -460,20 +299,17 @@ class user_repository_test extends \advanced_testcase {
         $this->resetAfterTest();
         $user = $this->generate_user();
         $user->set_resourcelinkid(33);
-
         $userrepo = new user_repository();
         $saveduser = $userrepo->save($user);
 
+        $instructoruser = $this->getDataGenerator()->create_user();
         $user2 = user::create(
             $saveduser->get_resourceid(),
-            $saveduser->get_issuer(),
+            $instructoruser->id,
             $saveduser->get_deploymentid(),
             'another-user-123',
-            'Another',
-            'User',
             'en',
             '99',
-            'simon@example.com',
             'Perth',
             'AU',
             'An Example Institution',
@@ -534,36 +370,32 @@ class user_repository_test extends \advanced_testcase {
         $user = $this->generate_user();
         $userrepo = new user_repository();
         $saveduser = $userrepo->save($user);
+        $instructoruser = $this->getDataGenerator()->create_user();
+        $instructor2user = $this->getDataGenerator()->create_user();
 
         $user2 = user::create(
             $saveduser->get_resourceid(),
-            $saveduser->get_issuer(),
+            $instructoruser->id,
             $saveduser->get_deploymentid(),
             'another-user-123',
-            'Another',
-            'User',
             'en',
             '99',
-            'simon@example.com',
             'Perth',
             'AU',
-            'An Example Institution'
+            'An Example Institution',
         );
         $saveduser2 = $userrepo->save($user2);
 
         $user3 = user::create(
             $saveduser->get_resourceid(),
-            $saveduser->get_issuer(),
+            $instructor2user->id,
             $saveduser->get_deploymentid() + 1,
             'another-user-678',
-            'Test',
-            'Student',
             'en',
             '99',
-            'simon@example.com',
             'Melbourne',
             'AU',
-            'An Example Institution'
+            'An Example Institution',
         );
         $saveduser3 = $userrepo->save($user3);
         $this->assertTrue($userrepo->exists($saveduser->get_id()));
@@ -574,23 +406,6 @@ class user_repository_test extends \advanced_testcase {
         $this->assertFalse($userrepo->exists($saveduser->get_id()));
         $this->assertFalse($userrepo->exists($saveduser2->get_id()));
         $this->assertTrue($userrepo->exists($saveduser3->get_id()));
-    }
-
-    /**
-     * Confirms localid is can only be used when lti users don't already exist, i.e. a one time use mapping mechanism.
-     */
-    public function test_localid_insertion_only() {
-        $this->resetAfterTest();
-        $user = $this->generate_user();
-        $userrepo = new user_repository();
-        $saveduser = $userrepo->save($user);
-        $this->assertIsInt($saveduser->get_localid());
-
-        $saveduser->set_localid(12345);
-
-        $this->expectException(\coding_exception::class);
-        $this->expectExceptionMessageMatches("/Cannot update user mapping. Lti user '[0-9]*' is already mapped /");
-        $userrepo->save($saveduser);
     }
 
     /**

@@ -259,34 +259,6 @@ function xmldb_enrol_lti_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2021052508, 'enrol', 'lti');
     }
 
-    if ($oldversion < 2021052511) {
-        // Define table enrol_lti_adv_user to be created.
-        $table = new xmldb_table('enrol_lti_adv_user');
-
-        // Adding fields to table enrol_lti_adv_user.
-        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('issuer', XMLDB_TYPE_CHAR, '1333', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('issuer256', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('sub', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('sub256', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('legacymigrated', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
-        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-
-        // Adding keys to table enrol_lti_adv_user.
-        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
-        $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
-        $table->add_key('issuer256_sub256', XMLDB_KEY_UNIQUE, ['issuer256', 'sub256']);
-
-        // Conditionally launch create table for enrol_lti_adv_user.
-        if (!$dbman->table_exists($table)) {
-            $dbman->create_table($table);
-        }
-
-        upgrade_plugin_savepoint(true, 2021052511, 'enrol', 'lti');
-    }
-
     if ($oldversion < 2021052512) {
         // Define field legacyconsumerkey to be added to enrol_lti_deployment.
         $table = new xmldb_table('enrol_lti_deployment');
@@ -319,6 +291,31 @@ function xmldb_enrol_lti_upgrade($oldversion) {
         }
 
         upgrade_plugin_savepoint(true, 2021052513, 'enrol', 'lti');
+    }
+
+    if ($oldversion < 2021052514) {
+        // Add a new column 'provisioningmodelearner' to the enrol_lti_tools table.
+        $table = new xmldb_table('enrol_lti_tools');
+
+        // Define field provisioningmodelearner to be added to enrol_lti_tools.
+        $field = new xmldb_field('provisioningmodelearner', XMLDB_TYPE_INTEGER, 2, null, null, null, null, 'uuid');
+
+        // Conditionally launch add field provisioningmodelearner.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define field provisioningmodeinstructor to be added to enrol_lti_tools.
+        $field = new xmldb_field('provisioningmodeinstructor', XMLDB_TYPE_INTEGER, 2, null, null, null, null,
+            'provisioningmodelearner');
+
+        // Conditionally launch add field provisioningmodeinstructor.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Lti savepoint reached.
+        upgrade_plugin_savepoint(true, 2021052514, 'enrol', 'lti');
     }
 
     return true;

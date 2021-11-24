@@ -33,6 +33,65 @@ use IMSGlobal\LTI13\LTI_Message_Launch;
  */
 abstract class lti_advantage_testcase extends \advanced_testcase {
 
+    /** @var string the default issuer for tests extending this class. */
+    protected $issuer = 'https://lms.example.org';
+
+    /**
+     * Helper to return a user which has been bound to the LTI credentials provided and is deemed a valid linked user.
+     *
+     * @param string $sub the subject id string
+     * @param array $migrationclaiminfo mocked migration claim information, allowing the mock auth to bind to an existing user.
+     * @return stdClass the user record.
+     */
+    protected function lti_advantage_user_authenticates(string $sub, array $migrationclaiminfo = []): \stdClass {
+        $auth = get_auth_plugin('lti');
+
+        $mockjwt = [
+            'iss' => $this->issuer,
+            'sub' => $sub,
+            'https://purl.imsglobal.org/spec/lti/claim/deployment_id' => '1222', // Must match deployment in create_test_env.
+            'aud' => '123', // Must match registration in create_test_environment.
+            'exp' => time() + 60,
+            'nonce' => 'some-nonce-value-123',
+            'given_name' => 'John',
+            'family_name' => 'Smith',
+            'email' => 'smithj@example.org'
+        ];
+        if (!empty($migrationclaiminfo)) {
+            if (isset($migrationclaiminfo['consumer_key'])) {
+                $base = [
+                    $migrationclaiminfo['consumer_key'],
+                    $mockjwt['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
+                    $mockjwt['iss'],
+                    $mockjwt['aud'],
+                    $mockjwt['exp'],
+                    $mockjwt['nonce']
+                ];
+                $basestring = implode('&', $base);
+
+                $mockjwt['https://purl.imsglobal.org/spec/lti/claim/lti1p1'] = [
+                    'oauth_consumer_key' => $migrationclaiminfo['consumer_key'],
+                ];
+
+                if (isset($migrationclaiminfo['signing_secret'])) {
+                    $sig = base64_encode(hash_hmac('sha256', $basestring, $migrationclaiminfo['signing_secret']));
+                    $mockjwt['https://purl.imsglobal.org/spec/lti/claim/lti1p1']['oauth_consumer_key_sign'] = $sig;
+                }
+            }
+
+            $claimprops = ['user_id', 'context_id', 'tool_consumer_instance_guid', 'resource_link_id'];
+            foreach ($claimprops as $prop) {
+                if (!empty($migrationclaiminfo[$prop])) {
+                    $mockjwt['https://purl.imsglobal.org/spec/lti/claim/lti1p1'][$prop] =
+                        $migrationclaiminfo[$prop];
+                }
+            }
+        }
+
+        $secrets = !empty($migrationclaiminfo['signing_secret']) ? [$migrationclaiminfo['signing_secret']] : [];
+        return $auth->find_or_create_user_from_launch($mockjwt, false, $secrets);
+    }
+
     /**
      * Get a list of users ready for use with mock launches by providing an array of user ids.
      *
@@ -91,7 +150,7 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
                     $rltitle = $resourcelinkid ? "Resource link $resourcelinkid in platform" : "Resource link in platform";
                     $rlid = $resourcelinkid ?: '12345';
                     $data = [
-                        'iss' => 'https://lms.example.org', // Must match registration in create_test_environment.
+                        'iss' => $this->issuer, // Must match registration in create_test_environment.
                         'aud' => '123', // Must match registration in create_test_environment.
                         'sub' => $mockuser['user_id'], // User id on the platform site.
                         'exp' => time() + 60,
@@ -194,11 +253,14 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
      * @param bool $gradesync whether or not to enabled gradesync on the published resources.
      * @param bool $gradesynccompletion whether or not to require gradesynccompletion on the published resources.
      * @param int $enrolstartdate the unix time when the enrolment starts, or 0 for no start time.
+     * @param int $provisioningmodeinstructor the teacher provisioning mode for all created resources, 0 for default (prompt).
+     * @param int $provisioningmodelearner the student provisioning mode for all created resources, 0 for default (auto).
      * @return array array of objects for use in individual tests; courses, tools.
      */
     protected function create_test_environment(bool $enableauthplugin = true, bool $enableenrolplugin = true,
             bool $membersync = true, int $membersyncmode = helper::MEMBER_SYNC_ENROL_AND_UNENROL,
-            bool $gradesync = true, bool $gradesynccompletion = false, int $enrolstartdate = 0) {
+            bool $gradesync = true, bool $gradesynccompletion = false, int $enrolstartdate = 0, int $provisioningmodeinstructor = 0,
+            int $provisioningmodelearner = 0) {
 
         global $CFG;
         require_once($CFG->libdir . '/completionlib.php');
@@ -213,7 +275,7 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
         // Set up the registration and deployment.
         $reg = application_registration::create(
             'Example LMS application',
-            new moodle_url('https://lms.example.org'),
+            new moodle_url($this->issuer),
             '123',
             new moodle_url('https://example.org/authrequesturl'),
             new moodle_url('https://example.org/jwksurl'),
@@ -239,7 +301,9 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
             'gradesync' => $gradesync,
             'gradesynccompletion' => $gradesynccompletion,
             'ltiversion' => 'LTI-1p3',
-            'enrolstartdate' => $enrolstartdate
+            'enrolstartdate' => $enrolstartdate,
+            'provisioningmodeinstructor' => $provisioningmodeinstructor ?: auth_plugin_lti::PROVISIONING_MODE_PROMPT_NEW_EXISTING,
+            'provisioningmodelearner' => $provisioningmodelearner ?: auth_plugin_lti::PROVISIONING_MODE_AUTO_ONLY
         ];
         $tool = $generator->create_lti_tool((object)$tooldata);
         $tool = helper::get_lti_tool($tool->id);
@@ -255,7 +319,9 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
             'gradesync' => $gradesync,
             'gradesynccompletion' => $gradesynccompletion,
             'ltiversion' => 'LTI-1p3',
-            'enrolstartdate' => $enrolstartdate
+            'enrolstartdate' => $enrolstartdate,
+            'provisioningmodeinstructor' => $provisioningmodeinstructor ?: auth_plugin_lti::PROVISIONING_MODE_PROMPT_NEW_EXISTING,
+            'provisioningmodelearner' => $provisioningmodelearner ?: auth_plugin_lti::PROVISIONING_MODE_AUTO_ONLY
         ];
         $tool2 = $generator->create_lti_tool((object)$tooldata);
         $tool2 = helper::get_lti_tool($tool2->id);
@@ -268,7 +334,9 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
             'gradesync' => $gradesync,
             'gradesynccompletion' => $gradesynccompletion,
             'ltiversion' => 'LTI-1p3',
-            'enrolstartdate' => $enrolstartdate
+            'enrolstartdate' => $enrolstartdate,
+            'provisioningmodeinstructor' => $provisioningmodeinstructor ?: auth_plugin_lti::PROVISIONING_MODE_PROMPT_NEW_EXISTING,
+            'provisioningmodelearner' => $provisioningmodelearner ?: auth_plugin_lti::PROVISIONING_MODE_AUTO_ONLY
         ];
         $tool3 = $generator->create_lti_tool((object)$tooldata);
         $tool3 = helper::get_lti_tool($tool3->id);
@@ -352,32 +420,16 @@ abstract class lti_advantage_testcase extends \advanced_testcase {
         $DB->insert_records('enrol_lti_tool_consumer_map', $toolconsumermaprecords);
 
         // Legacy data: create the user who launched the tools over LTI 1.1.
-        $legacyusers = [];
-        foreach ($legacydata['users'] as $legacyuser) {
-            $legacyusers[] = $generator->create_user([
-                'username' => helper::create_username($consumerrecord->consumerkey256, $legacyuser['user_id'])
-            ]);
+        if (!empty($legacydata['users'])) {
+            $legacyusers = [];
+            foreach ($legacydata['users'] as $legacyuser) {
+                $legacyusers[] = $generator->create_user([
+                    'username' => helper::create_username($consumerrecord->consumerkey256, $legacyuser['user_id']),
+                    'auth' => 'lti',
+                ]);
+            }
         }
 
         return [$tools, $consumerrecord, $legacyusers ?? null];
-    }
-
-    /**
-     * Verify the user's profile picture has been set, which is useful to verify picture syncs.
-     *
-     * @param int $userid the id of the Moodle user.
-     */
-    protected function verify_user_profile_image_updated(int $userid): void {
-        global $CFG;
-        $user = core_user::get_user($userid);
-        $usercontext = \context_user::instance($user->id);
-        $expected = $CFG->wwwroot . '/pluginfile.php/' . $usercontext->id . '/user/icon/boost/f2?rev='. $user->picture;
-
-        $page = new moodle_page();
-        $page->set_url('/user/profile.php');
-        $page->set_context(context_system::instance());
-        $renderer = $page->get_renderer('core');
-        $userpicture = new user_picture($user);
-        $this->assertEquals($expected, $userpicture->get_url($page, $renderer)->out(false));
     }
 }

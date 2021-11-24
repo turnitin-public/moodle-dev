@@ -205,12 +205,9 @@ class resource_link {
      * This is useful for associating the user with the resource link and resource I.e. the user was created when
      * launching a specific resource link.
      *
-     * @param \moodle_url $issuer the issuer from which the user originates.
+     * @param int $userid the id of the Moodle user record.
      * @param string $sourceid the id of the user on the platform.
-     * @param string $firsname the user's first name.
-     * @param string $lastname the user's last name.
      * @param string $lang the user's lang code.
-     * @param string $email the user's email address.
      * @param string $city the user's city.
      * @param string $country the user's country.
      * @param string $institution the user's institution.
@@ -219,16 +216,16 @@ class resource_link {
      * @return user the user instance.
      * @throws \coding_exception if trying to add a user to an as-yet-unsaved resource_link instance.
      */
-    public function add_user(\moodle_url $issuer, string $sourceid, string $firsname, string $lastname, string $lang,
-            string $email, string $city, string $country, string $institution, string $timezone,
+    public function add_user(int $userid, string $sourceid, string $lang,
+            string $city, string $country, string $institution, string $timezone,
             ?int $maildisplay = null): user {
 
         if (empty($this->get_id())) {
             throw new \coding_exception('Can\'t add user to a resource_link that hasn\'t first been saved');
         }
 
-        return user::create_from_resource_link($this->get_id(), $this->get_resourceid(), $issuer,
-            $this->get_deploymentid(), $sourceid, $firsname, $lastname, $lang, $timezone, $email, $city, $country,
+        return user::create_from_resource_link($this->get_id(), $this->get_resourceid(), $userid,
+            $this->get_deploymentid(), $sourceid, $lang, $timezone, $city, $country,
             $institution, $maildisplay);
     }
 }

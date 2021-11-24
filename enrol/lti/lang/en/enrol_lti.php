@@ -111,19 +111,20 @@ $string['publishedcontent'] = 'Published content';
 $string['publishedcontent_help'] = 'A published resource or activity can be used in registered platforms via the content selection (deep linking) flow. Additionally, a resource link can be created manually in the platform by using the launch url and the custom properties provided.';
 $string['pluginname'] = 'Publish as LTI tool';
 $string['pluginname_desc'] = 'The \'Publish as LTI tool\' plugin, together with the LTI authentication plugin, allows remote users to access selected courses and activities. In other words, Moodle functions as an LTI tool provider.';
-$string['privacy:ltiadvantageuserpath'] = "LTI Advantage";
-$string['privacy:metadata:enrol_lti_adv_user'] = 'Holds information linking the platform identity to the local identity of a user for each lti advantage user';
-$string['privacy:metadata:enrol_lti_adv_user:userid'] = 'The ID of the moodle user to which this information corresponds.';
-$string['privacy:metadata:enrol_lti_adv_user:issuer'] = 'The issuer (iss) URL from which the user originated.';
-$string['privacy:metadata:enrol_lti_adv_user:sub'] = 'The unique id of the user on the issuer.';
-$string['privacy:metadata:enrol_lti_adv_user:legacymigrated'] = 'Whether the associated user account was reused across an lti 1.1 to 1.3 migration.';
-$string['privacy:metadata:enrol_lti_adv_user:timecreated'] = 'The time the record was created.';
-$string['privacy:metadata:enrol_lti_adv_user:timemodified'] = 'The time the record was modified.';
 $string['privacy:metadata:enrol_lti_users'] = 'The list of users enrolled via an LTI provider';
 $string['privacy:metadata:enrol_lti_users:userid'] = 'The ID of the user';
 $string['privacy:metadata:enrol_lti_users:lastgrade'] = 'The last grade the user was recorded of having';
 $string['privacy:metadata:enrol_lti_users:lastaccess'] = 'The time when the user last accessed the course';
 $string['privacy:metadata:enrol_lti_users:timecreated'] = 'The time when the user was enrolled';
+$string['provisioningmodestudentlaunch'] = 'Student first launch provisioning mode';
+$string['provisioningmodeteacherlaunch'] = 'Teacher first launch provisioning mode';
+$string['provisioningmode'] = 'Provisioning mode';
+$string['provisioningmode_help'] = 'This setting determines how accounts are handled on first launch. Several modes are supported:
+<ul>
+<li>New accounts only (automatic). Accounts will be automatically created for users launching from the platform. This is the default for student launches.</li>
+<li>Existing and new accounts (prompt). The user will be given a choice of what to do. They can decide to link an existing account, or have a new account created for them. This is the most flexible option and the default for Instructor launches.</li>
+<li>Existing accounts only (prompt). The user will be asked to link an existing account and cannot access the tool resources without doing so.</li>
+</ul>';
 $string['registerplatform:accesstokenurl'] = 'Access token URL';
 $string['registerplatform:accesstokenurl_help'] = 'The URL to which access token requests will be sent by the tool. Will be provided by the platform.';
 $string['registerplatform:authrequesturl'] = 'Authentication request URL';

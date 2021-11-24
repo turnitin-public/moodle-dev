@@ -33,6 +33,32 @@ require_once(__DIR__ . '/../lti_advantage_testcase.php');
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class sync_members_test extends \lti_advantage_testcase {
+
+    /**
+     * Verify the user's profile picture has been set, which is useful to verify picture syncs.
+     *
+     * @param int $userid the id of the Moodle user.
+     * @param bool $match true to verify a match, false to verify a non-match.
+     */
+    protected function verify_user_profile_image(int $userid, bool $match = true): void {
+        global $CFG;
+        $user = \core_user::get_user($userid);
+        $usercontext = \context_user::instance($user->id);
+        $expected = $CFG->wwwroot . '/pluginfile.php/' . $usercontext->id . '/user/icon/boost/f2?rev='. $user->picture;
+
+        $page = new \moodle_page();
+        $page->set_url('/user/profile.php');
+        $page->set_context(\context_system::instance());
+        $renderer = $page->get_renderer('core');
+        $userpicture = new \user_picture($user);
+        if ($match) {
+            $this->assertEquals($expected, $userpicture->get_url($page, $renderer)->out(false));
+        } else {
+            $this->assertNotEquals($expected, $userpicture->get_url($page, $renderer)->out(false));
+        }
+
+    }
+
     /**
      * Helper to get a list of mocked member entries for use in the mocked sync task.
      *
@@ -42,19 +68,24 @@ class sync_members_test extends \lti_advantage_testcase {
      * @param bool $emails whether to include email in the user data or not.
      * @param bool $linklevel whether to mock the user return data at link-level (true) or context-level (false).
      * @param bool $picture whether to mock a user's picture field in the return data.
+     * @param array $roles an array of IMS roles to include with each member which, if empty, defaults to just the learner role.
      * @return array the array of users.
      * @throws \Exception if the legacyuserids array doesn't contain the correct number of ids.
      */
     protected function get_mock_members_with_ids(array $userids, ?array $legacyuserids = null, $names = true,
-            $emails = true, bool $linklevel = true, bool $picture = false): array {
+            $emails = true, bool $linklevel = true, bool $picture = false, array $roles = []): array {
 
         if (!is_null($legacyuserids) && count($legacyuserids) != count($userids)) {
             throw new \Exception('legacyuserids must contain the same number of ids as $userids.');
         }
 
+        if (Empty($roles)) {
+            $roles = ['http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'];
+        }
+
         $users = [];
         foreach ($userids as $userid) {
-            $user = ['user_id' => (string) $userid];
+            $user = ['user_id' => (string) $userid, 'roles' => $roles];
             if ($picture) {
                 $user['picture'] = $this->getExternalTestFileUrl('/test.jpg', false);
             }
@@ -193,16 +224,19 @@ class sync_members_test extends \lti_advantage_testcase {
 
         // Launch the tool for a user.
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0]);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
 
         // Sync members.
         $task = $this->get_mock_task_resource_link_level();
-        ob_start();
         $task->execute();
-        ob_end_clean();
 
         // Verify 2 users and their corresponding course enrolments exist.
+        $this->expectOutputRegex(
+            "/Completed - Synced members for tool '$resource->id' in the course '$course->id'. ".
+            "Processed 2 users; enrolled 2 members; unenrolled 0 members./"
+        );
         $userrepo = new user_repository();
         $ltiusers = $userrepo->find_by_resource($resource->id);
         $this->assertCount(2, $ltiusers);
@@ -218,10 +252,11 @@ class sync_members_test extends \lti_advantage_testcase {
 
         // Launch twice - once from each resource link in the platform.
         $launchservice = $this->get_tool_launch_service();
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0], '123');
-        $launchservice->user_launches_tool($mocklaunch);
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0], '456');
-        $launchservice->user_launches_tool($mocklaunch);
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
 
         // Now, grab the resource links.
         $rlrepo = new resource_link_repository();
@@ -262,7 +297,8 @@ class sync_members_test extends \lti_advantage_testcase {
         // Launch the tool for a user.
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0]);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
 
         // Sync members.
         $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(['1'], null, true, true, true, true));
@@ -277,7 +313,7 @@ class sync_members_test extends \lti_advantage_testcase {
         $this->verify_course_enrolments($course, $ltiusers);
 
         // Verify user profile image has been updated.
-        $this->verify_user_profile_image_updated($ltiusers[0]->get_localid());
+        $this->verify_user_profile_image($ltiusers[0]->get_localid());
     }
 
     /**
@@ -290,7 +326,8 @@ class sync_members_test extends \lti_advantage_testcase {
         // Launch the tool for a user.
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0]);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
 
         // Sync members.
         $task = $this->get_mock_task_context_level();
@@ -316,7 +353,8 @@ class sync_members_test extends \lti_advantage_testcase {
         // Launch the tool for a user.
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids(['1'])[0]);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
 
         // Sync members.
         $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(range(1, 5), null, false, false));
@@ -333,15 +371,16 @@ class sync_members_test extends \lti_advantage_testcase {
         // Since user data wasn't included in the response, the users will have been synced using fallbacks,
         // so verify these.
         foreach ($ltiusers as $ltiuser) {
+            $user = \core_user::get_user($ltiuser->get_localid());
             // Firstname falls back to sourceid.
-            $this->assertEquals($ltiuser->get_sourceid(), $ltiuser->get_firstname());
+            $this->assertEquals($ltiuser->get_sourceid(), $user->firstname);
 
             // Lastname falls back to resource context id.
-            $this->assertEquals($resource->contextid, $ltiuser->get_lastname());
+            $this->assertEquals($appreg->get_platformid(), $user->lastname);
 
             // Email falls back to example.com.
             $issuersubhash = sha1($appreg->get_platformid() . '_' . $ltiuser->get_sourceid());
-            $this->assertEquals("enrol_lti_13_{$issuersubhash}@example.com", $ltiuser->get_email());
+            $this->assertEquals("enrol_lti_13_{$issuersubhash}@example.com", $user->email);
         }
 
         // Sync again, this time with user data included.
@@ -357,11 +396,12 @@ class sync_members_test extends \lti_advantage_testcase {
         $this->assertCount(5, $ltiusers);
         $this->verify_course_enrolments($course, $ltiusers);
         foreach ($ltiusers as $ltiuser) {
+            $user = \core_user::get_user($ltiuser->get_localid());
             $mockmemberindex = array_search($ltiuser->get_sourceid(), array_column($mockmembers, 'user_id'));
             $mockmember = $mockmembers[$mockmemberindex];
-            $this->assertEquals($mockmember['given_name'], $ltiuser->get_firstname());
-            $this->assertEquals($mockmember['family_name'], $ltiuser->get_lastname());
-            $this->assertEquals($mockmember['email'], $ltiuser->get_email());
+            $this->assertEquals($mockmember['given_name'], $user->firstname);
+            $this->assertEquals($mockmember['family_name'], $user->lastname);
+            $this->assertEquals($mockmember['email'], $user->email);
         }
     }
 
@@ -376,7 +416,8 @@ class sync_members_test extends \lti_advantage_testcase {
         $mockuser = $this->get_mock_launch_users_with_ids(['1'])[0];
         $mocklaunch = $this->get_mock_launch($resource, $mockuser);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
 
         // Sync members.
         $task = $this->get_mock_task_with_users($this->get_mock_launch_users_with_ids(range(1, 4)));
@@ -405,7 +446,8 @@ class sync_members_test extends \lti_advantage_testcase {
         $mockuser = $this->get_mock_launch_users_with_ids(['1'])[0];
         $mocklaunch = $this->get_mock_launch($resource, $mockuser);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
 
         // Sync members.
         $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(range(1, 3)));
@@ -449,7 +491,8 @@ class sync_members_test extends \lti_advantage_testcase {
         // Launch the tool for a user.
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids([1])[0]);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
         $this->assertCount(1, $userrepo->find_by_resource($resource->id));
 
         // Sync members using a payload which doesn't include the original launch user (User id = 1).
@@ -475,7 +518,8 @@ class sync_members_test extends \lti_advantage_testcase {
         // Launch the tool for a user.
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids([1])[0]);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
         $this->assertCount(1, $userrepo->find_by_resource($resource->id));
 
         // Sync members using a payload which includes two new members only (i.e. not the original launching user).
@@ -502,19 +546,16 @@ class sync_members_test extends \lti_advantage_testcase {
         // Launch the tool for a user.
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids([1])[0]);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
         $this->assertCount(1, $userrepo->find_by_resource($resource->id));
 
         // If the task were to run, this would trigger 1 unenrolment (the launching user) and 3 enrolments.
         $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(range(2, 2)));
-
-        ob_start();
         $task->execute();
-        $output = ob_get_contents();
-        ob_end_clean();
 
         // Verify that the sync didn't take place.
-        $this->assertStringContainsString("Skipping task - Authentication plugin 'LTI' is not enabled", $output);
+        $this->expectOutputRegex("/Skipping task - Authentication plugin 'LTI' is not enabled/");
         $this->assertCount(1, $userrepo->find_by_resource($resource->id));
     }
 
@@ -529,19 +570,16 @@ class sync_members_test extends \lti_advantage_testcase {
         // Launch the tool for a user.
         $mocklaunch = $this->get_mock_launch($resource, $this->get_mock_launch_users_with_ids([1])[0]);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
         $this->assertCount(1, $userrepo->find_by_resource($resource->id));
 
         // If the task were to run, this would trigger 1 unenrolment of the launching user and enrolment of 3 users.
         $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(range(2, 2)));
-
-        ob_start();
         $task->execute();
-        $output = ob_get_contents();
-        ob_end_clean();
 
         // Verify that the sync didn't take place.
-        $this->assertStringContainsString("Skipping task - The 'Publish as LTI tool' plugin is disabled", $output);
+        $this->expectOutputRegex("/Skipping task - The 'Publish as LTI tool' plugin is disabled/");
         $this->assertCount(1, $userrepo->find_by_resource($resource->id));
     }
 
@@ -557,7 +595,8 @@ class sync_members_test extends \lti_advantage_testcase {
         $mockinstructor = $this->get_mock_launch_users_with_ids([1])[0];
         $mocklaunch = $this->get_mock_launch($resource, $mockinstructor, null, false, false);
         $launchservice = $this->get_tool_launch_service();
-        $launchservice->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates('1');
+        $launchservice->user_launches_tool($instructoruser, $mocklaunch);
         $this->assertCount(1, $userrepo->find_by_resource($resource->id));
 
         // The task would sync an additional 2 users if the link had NRPS service support.
@@ -565,41 +604,88 @@ class sync_members_test extends \lti_advantage_testcase {
 
         // We expect the task to report that it is skipping the resource due to a lack of NRPS support.
         $task->execute();
+
+        // Verify no enrolments or unenrolments.
         $this->expectOutputRegex(
             "/Skipping - No names and roles service found.\n".
             "Completed - Synced members for tool '{$resource->id}' in the course '{$course->id}'. ".
             "Processed 0 users; enrolled 0 members; unenrolled 0 members./"
         );
-
-        // Verify no enrolments or unenrolments.
         $this->assertCount(1, $userrepo->find_by_resource($resource->id));
     }
 
     /**
-     * Test the member sync for a range of scenarios including migrated tools, unlaunched tools.
+     * Test confirming that preexisting, non-lti user accounts do not have their profiles or pictures updated during sync.
+     */
+    public function test_sync_non_lti_linked_user() {
+        $this->resetAfterTest();
+
+        // Set up the environment.
+        [$course, $resource] = $this->create_test_environment();
+
+        // Fake an auth - making sure it's a manual account.
+        $authenticateduser = $this->lti_advantage_user_authenticates('123');
+        $authenticateduser->auth = 'manual';
+        $authenticateduser->password = '1234abcD*';
+        user_update_user($authenticateduser);
+        $authenticateduser = \core_user::get_user($authenticateduser->id);
+
+        // Mock the launch for the specified user.
+        $mocklaunchuser = $this->get_mock_launch_users_with_ids([$authenticateduser->id])[0];
+        $mocklaunch = $this->get_mock_launch($resource, $mocklaunchuser);
+        $this->get_tool_launch_service()->user_launches_tool($authenticateduser, $mocklaunch);
+
+        // Prepare the sync task, with a stubbed list of members.
+        $task = $this->get_mock_task_with_users($this->get_mock_members_with_ids(['123'], null, true, true, true, true));
+
+        // Run the member sync.
+        $this->expectOutputRegex(
+            "/Skipped profile sync for user '$authenticateduser->id'. The user does not belong to the LTI auth method.\n" .
+            "Skipped picture sync for user '$authenticateduser->id'. The user does not belong to the LTI auth method/"
+        );
+        $task->execute();
+
+        $updateduser = \core_user::get_user($authenticateduser->id);
+        $this->assertEquals($authenticateduser->firstname, $updateduser->firstname);
+        $this->assertEquals($authenticateduser->lastname, $updateduser->lastname);
+        $this->assertEquals($authenticateduser->email, $updateduser->email);
+        $this->verify_user_profile_image($authenticateduser->id, false);
+    }
+
+    /**
+     * Test the member sync for a range of scenarios including migrated tools, unlaunched tools, provisioning methods.
      *
      * @dataProvider member_sync_data_provider
      * @param array|null $legacydata array detailing what legacy information to create, or null if not required.
+     * @param array|null $resourceconfig array detailing config values to be used when creating the test enrol_lti instances.
      * @param array $launchdata array containing details of the launch, including user and migration claim.
      * @param array|null $syncmembers the members to use in the mock sync.
      * @param array $expected the array detailing expectations.
      */
-    public function test_sync_user_migration(?array $legacydata, array $launchdata,
+    public function test_sync_enrolments_and_migration(?array $legacydata, ?array $resourceconfig, array $launchdata,
             ?array $syncmembers, array $expected) {
 
         $this->resetAfterTest();
+
         // Set up the environment.
-        [$course, $resource] = $this->create_test_environment(true, true, true, helper::MEMBER_SYNC_ENROL_NEW);
+        [$course, $resource] = $this->create_test_environment(true, true, true, helper::MEMBER_SYNC_ENROL_AND_UNENROL, true, false,
+            0, $resourceconfig['provisioningmodeinstructor'] ?? 0, $resourceconfig['provisioningmodelearner'] ?? 0);
 
         // Set up legacy tool and user data.
-        [$legacytools, $legacyconsumerrecord, $legacyusers] = $this->setup_legacy_data($course, $legacydata);
+        if ($legacydata) {
+            [$legacytools, $legacyconsumerrecord, $legacyusers] = $this->setup_legacy_data($course, $legacydata);
+        }
 
         // Mock the launch for the specified user.
         $mocklaunch = $this->get_mock_launch($resource, $launchdata['user'], null, true, true,
             $launchdata['launch_migration_claim']);
 
         // Perform the launch.
-        $this->get_tool_launch_service()->user_launches_tool($mocklaunch);
+        $instructoruser = $this->lti_advantage_user_authenticates(
+            $launchdata['user']['user_id'],
+            $launchdata['launch_migration_claim'] ?? []
+        );
+        $this->get_tool_launch_service()->user_launches_tool($instructoruser, $mocklaunch);
 
         // Prepare the sync task, with a stubbed list of members.
         $task = $this->get_mock_task_with_users($syncmembers);
@@ -611,20 +697,25 @@ class sync_members_test extends \lti_advantage_testcase {
 
         // Verify enrolments.
         $ltiusers = (new user_repository())->find_by_resource($resource->id);
-        $this->assertCount(count($expected['enrolments']), $ltiusers);
+        $enrolled = array_filter($expected['enrolments'], function($user) {
+            return $user['is_enrolled'];
+        });
+        $this->assertCount(count($enrolled), $ltiusers);
         $this->verify_course_enrolments($course, $ltiusers);
 
-        // Verify migration process.
-        $legacyuserids = array_column($legacyusers, 'id');
-        foreach ($ltiusers as $ltiuser) {
-            $this->assertArrayHasKey($ltiuser->get_sourceid(), $expected['enrolments']);
-            if (!$expected['enrolments'][$ltiuser->get_sourceid()]['is_migrated']) {
-                // Those members who hadn't launched over 1p1 prior will have new lti user records created.
-                $this->assertNotContains((string)$ltiuser->get_localid(), $legacyuserids);
-            } else {
-                // Those members who were either already migrated during launch, or were migrated during the sync,
-                // will be mapped to their legacy user accounts.
-                $this->assertContains((string)$ltiuser->get_localid(), $legacyuserids);
+        // Verify migration, if expected.
+        if ($legacydata) {
+            $legacyuserids = array_column($legacyusers, 'id');
+            foreach ($ltiusers as $ltiuser) {
+                $this->assertArrayHasKey($ltiuser->get_sourceid(), $expected['enrolments']);
+                if (!$expected['enrolments'][$ltiuser->get_sourceid()]['is_migrated']) {
+                    // Those members who hadn't launched over 1p1 prior will have new lti user records created.
+                    $this->assertNotContains((string)$ltiuser->get_localid(), $legacyuserids);
+                } else {
+                    // Those members who were either already migrated during launch, or were migrated during the sync,
+                    // will be mapped to their legacy user accounts.
+                    $this->assertContains((string)$ltiuser->get_localid(), $legacyuserids);
+                }
             }
         }
     }
@@ -635,6 +726,8 @@ class sync_members_test extends \lti_advantage_testcase {
      * @return array[] the array of test data.
      */
     public function member_sync_data_provider(): array {
+        global $CFG;
+        require_once($CFG->dirroot . '/auth/lti/auth.php');
         return [
             'Migrated tool, user ids changed, new and existing users present in sync' => [
                 'legacy_data' => [
@@ -648,6 +741,7 @@ class sync_members_test extends \lti_advantage_testcase {
                         ['secret' => 'toolsecret2'],
                     ]
                 ],
+                'resource_config' => null,
                 'launch_data' => [
                     'user' => $this->get_mock_launch_users_with_ids(['1p3_1'])[0],
                     'launch_migration_claim' => [
@@ -668,15 +762,19 @@ class sync_members_test extends \lti_advantage_testcase {
                 'expected' => [
                     'enrolments' => [
                         '1p3_1' => [
+                            'is_enrolled' => true,
                             'is_migrated' => true,
                         ],
                         '1p3_2' => [
+                            'is_enrolled' => true,
                             'is_migrated' => true,
                         ],
                         '1p3_3' => [
+                            'is_enrolled' => true,
                             'is_migrated' => false,
                         ],
                         '1p3_4' => [
+                            'is_enrolled' => true,
                             'is_migrated' => false,
                         ]
                     ]
@@ -694,6 +792,7 @@ class sync_members_test extends \lti_advantage_testcase {
                         ['secret' => 'toolsecret2'],
                     ]
                 ],
+                'resource_config' => null,
                 'launch_data' => [
                     'user' => $this->get_mock_launch_users_with_ids(['1'])[0],
                     'launch_migration_claim' => [
@@ -713,15 +812,19 @@ class sync_members_test extends \lti_advantage_testcase {
                 'expected' => [
                     'enrolments' => [
                         '1' => [
+                            'is_enrolled' => true,
                             'is_migrated' => true,
                         ],
                         '2' => [
+                            'is_enrolled' => true,
                             'is_migrated' => true,
                         ],
                         '3' => [
+                            'is_enrolled' => true,
                             'is_migrated' => false,
                         ],
                         '4' => [
+                            'is_enrolled' => true,
                             'is_migrated' => false,
                         ]
                     ]
@@ -739,6 +842,7 @@ class sync_members_test extends \lti_advantage_testcase {
                         ['secret' => 'toolsecret2'],
                     ]
                 ],
+                'resource_config' => null,
                 'launch_data' => [
                     'user' => $this->get_mock_launch_users_with_ids(['1p3_1'])[0],
                     'launch_migration_claim' => null,
@@ -752,15 +856,19 @@ class sync_members_test extends \lti_advantage_testcase {
                 'expected' => [
                     'enrolments' => [
                         '1p3_1' => [
+                            'is_enrolled' => true,
                             'is_migrated' => false,
                         ],
                         '1p3_2' => [
+                            'is_enrolled' => true,
                             'is_migrated' => false,
                         ],
                         '1p3_3' => [
+                            'is_enrolled' => true,
                             'is_migrated' => false,
                         ],
                         '1p3_4' => [
+                            'is_enrolled' => true,
                             'is_migrated' => false,
                         ]
                     ]
@@ -778,6 +886,7 @@ class sync_members_test extends \lti_advantage_testcase {
                         ['secret' => 'toolsecret2'],
                     ]
                 ],
+                'resource_config' => null,
                 'launch_data' => [
                     'user' => $this->get_mock_launch_users_with_ids(['1'])[0],
                     'launch_migration_claim' => null,
@@ -791,15 +900,19 @@ class sync_members_test extends \lti_advantage_testcase {
                 'expected' => [
                     'enrolments' => [
                         '1' => [
+                            'is_enrolled' => true,
                             'is_migrated' => false,
                         ],
                         '2' => [
+                            'is_enrolled' => true,
                             'is_migrated' => false,
                         ],
                         '3' => [
+                            'is_enrolled' => true,
                             'is_migrated' => false,
                         ],
                         '4' => [
+                            'is_enrolled' => true,
                             'is_migrated' => false,
                         ]
                     ]
@@ -817,6 +930,7 @@ class sync_members_test extends \lti_advantage_testcase {
                         ['secret' => 'toolsecret2'],
                     ]
                 ],
+                'resource_config' => null,
                 'launch_data' => [
                     'user' => $this->get_mock_launch_users_with_ids(['1p3_1'])[0],
                     'launch_migration_claim' => null,
@@ -830,20 +944,250 @@ class sync_members_test extends \lti_advantage_testcase {
                 'expected' => [
                     'enrolments' => [
                         '1p3_1' => [
+                            'is_enrolled' => true,
                             'is_migrated' => false,
                         ],
                         '1p3_2' => [
+                            'is_enrolled' => true,
                             'is_migrated' => false,
                         ],
                         '1p3_3' => [
+                            'is_enrolled' => true,
                             'is_migrated' => false,
                         ],
                         '1p3_4' => [
+                            'is_enrolled' => true,
                             'is_migrated' => false,
                         ]
                     ]
                 ]
-            ]
+            ],
+            'Default provisioning modes, mixed bag of users and roles' => [
+                'legacy_data' => null,
+                'resource_config' => [
+                    'provisioningmodelearner' => \auth_plugin_lti::PROVISIONING_MODE_AUTO_ONLY,
+                    'provisioningmodeinstructor' => \auth_plugin_lti::PROVISIONING_MODE_PROMPT_NEW_EXISTING
+                ],
+                'launch_data' => [
+                    'user' => $this->get_mock_launch_users_with_ids(['1p3_1'])[0],
+                    'launch_migration_claim' => null,
+                ],
+                'sync_members_data' => [
+                    // This user is just an instructor but is also the user who is already linked, via the launch above.
+                    $this->get_mock_members_with_ids(['1p3_1'], null, true, true, true, false, [
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+                    ])[0],
+                    // This user is just a learner.
+                    $this->get_mock_members_with_ids(['1p3_2'], null, true, true, true, false, [
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'
+                    ])[0],
+                    // This user is also a learner.
+                    $this->get_mock_members_with_ids(['1p3_3'], null, true, true, true, false, [
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'
+                    ])[0],
+                    // This user is both an instructor and a learner.
+                    $this->get_mock_members_with_ids(['1p3_4'], null, true, true, true, false, [
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'
+                    ])[0],
+                ],
+                'expected' => [
+                    'enrolments' => [
+                        '1p3_1' => [
+                            'is_enrolled' => true, // Instructor - enrolled because they are also the launch user (already linked).
+                            'is_migrated' => false,
+                        ],
+                        '1p3_2' => [
+                            'is_enrolled' => true, // Learner - enrolled due to 'auto' provisioning mode.
+                            'is_migrated' => false,
+                        ],
+                        '1p3_3' => [
+                            'is_enrolled' => true, // Learner - enrolled due to 'auto' provisioning mode.
+                            'is_migrated' => false,
+                        ],
+                        '1p3_4' => [
+                            'is_enrolled' => false,  // Both roles - not enrolled due to instructor's 'prompt' provisioning mode.
+                            'is_migrated' => false,
+                        ]
+                    ]
+                ]
+            ],
+            'All automatic provisioning, mixed bag of users and roles' => [
+                'legacy_data' => null,
+                'resource_config' => [
+                    'provisioningmodelearner' => \auth_plugin_lti::PROVISIONING_MODE_AUTO_ONLY,
+                    'provisioningmodeinstructor' => \auth_plugin_lti::PROVISIONING_MODE_AUTO_ONLY
+                ],
+                'launch_data' => [
+                    'user' => $this->get_mock_launch_users_with_ids(['1p3_1'])[0],
+                    'launch_migration_claim' => null,
+                ],
+                'sync_members_data' => [
+                    // This user is just an instructor but is also the user who is already linked, via the launch above.
+                    $this->get_mock_members_with_ids(['1p3_1'], null, true, true, true, false, [
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+                    ])[0],
+                    // This user is just a learner.
+                    $this->get_mock_members_with_ids(['1p3_2'], null, true, true, true, false, [
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'
+                    ])[0],
+                    // This user is also a learner.
+                    $this->get_mock_members_with_ids(['1p3_3'], null, true, true, true, false, [
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'
+                    ])[0],
+                    // This user is both an instructor and a learner.
+                    $this->get_mock_members_with_ids(['1p3_4'], null, true, true, true, false, [
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'
+                    ])[0],
+                ],
+                'expected' => [
+                    'enrolments' => [
+                        '1p3_1' => [
+                            'is_enrolled' => true, // Instructor - enrolled because they are also the launch user (already linked).
+                            'is_migrated' => false,
+                        ],
+                        '1p3_2' => [
+                            'is_enrolled' => true, // Learner - enrolled due to 'auto' provisioning mode.
+                            'is_migrated' => false,
+                        ],
+                        '1p3_3' => [
+                            'is_enrolled' => true, // Learner - enrolled due to 'auto' provisioning mode.
+                            'is_migrated' => false,
+                        ],
+                        '1p3_4' => [
+                            'is_enrolled' => true, // Both roles - enrolled due to instructor's 'auto' provisioning mode.
+                            'is_migrated' => false,
+                        ]
+                    ]
+                ]
+            ],
+            'All prompt provisioning, mixed bag of users and roles' => [
+                'legacy_data' => null,
+                'resource_config' => [
+                    'provisioningmodelearner' => \auth_plugin_lti::PROVISIONING_MODE_PROMPT_NEW_EXISTING,
+                    'provisioningmodeinstructor' => \auth_plugin_lti::PROVISIONING_MODE_PROMPT_NEW_EXISTING
+                ],
+                'launch_data' => [
+                    'user' => $this->get_mock_launch_users_with_ids(['1p3_1'])[0],
+                    'launch_migration_claim' => null,
+                ],
+                'sync_members_data' => [
+                    // This user is just an instructor but is also the user who is already linked, via the launch above.
+                    $this->get_mock_members_with_ids(['1p3_1'], null, true, true, true, false, [
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+                    ])[0],
+                    // This user is just a learner.
+                    $this->get_mock_members_with_ids(['1p3_2'], null, true, true, true, false, [
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'
+                    ])[0],
+                    // This user is also a learner.
+                    $this->get_mock_members_with_ids(['1p3_3'], null, true, true, true, false, [
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'
+                    ])[0],
+                    // This user is both an instructor and a learner.
+                    $this->get_mock_members_with_ids(['1p3_4'], null, true, true, true, false, [
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'
+                    ])[0],
+                ],
+                'expected' => [
+                    'enrolments' => [
+                        '1p3_1' => [
+                            'is_enrolled' => true, // Instructor - enrolled because they are also the launch user (already linked).
+                            'is_migrated' => false,
+                        ],
+                        '1p3_2' => [
+                            'is_enrolled' => false, // Learner - not enrolled due to 'prompt' provisioning mode.
+                            'is_migrated' => false,
+                        ],
+                        '1p3_3' => [
+                            'is_enrolled' => false, // Learner - not enrolled due to 'prompt' provisioning mode.
+                            'is_migrated' => false,
+                        ],
+                        '1p3_4' => [
+                            'is_enrolled' => false, // Both roles - not enrolled due to instructor's 'prompt' provisioning mode.
+                            'is_migrated' => false,
+                        ]
+                    ]
+                ]
+            ],
+            'All automatic provisioning, with legacy data and migration claim, mixed bag of users and roles' => [
+                'legacy_data' => [
+                    'users' => [
+                        ['user_id' => '2'],
+                        ['user_id' => '3'],
+                        ['user_id' => '4'],
+                        ['user_id' => '5']
+                    ],
+                    'consumer_key' => 'CONSUMER_1',
+                    'tools' => [
+                        ['secret' => 'toolsecret1'],
+                        ['secret' => 'toolsecret2'],
+                    ]
+                ],
+                'resource_config' => [
+                    'provisioningmodelearner' => \auth_plugin_lti::PROVISIONING_MODE_AUTO_ONLY,
+                    'provisioningmodeinstructor' => \auth_plugin_lti::PROVISIONING_MODE_AUTO_ONLY
+                ],
+                'launch_data' => [
+                    'user' => $this->get_mock_launch_users_with_ids(['1p3_1'])[0],
+                    'launch_migration_claim' => [
+                        'consumer_key' => 'CONSUMER_1',
+                        'signing_secret' => 'toolsecret1',
+                        'context_id' => 'd345b',
+                        'tool_consumer_instance_guid' => '12345-123',
+                        'resource_link_id' => '4b6fa'
+                    ],
+                ],
+                'sync_members_data' => [
+                    // This user is just an instructor but is also the user who is already linked, via the launch above.
+                    $this->get_mock_members_with_ids(['1p3_1'], null, true, true, true, false, [
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+                    ])[0],
+                    // This user is just a learner.
+                    $this->get_mock_members_with_ids(['1p3_2'], ['2'], true, true, true, false, [
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'
+                    ])[0],
+                    // This user is also a learner.
+                    $this->get_mock_members_with_ids(['1p3_3'], ['3'], true, true, true, false, [
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'
+                    ])[0],
+                    // This user is both an instructor and a learner.
+                    $this->get_mock_members_with_ids(['1p3_4'], ['4'], true, true, true, false, [
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'
+                    ])[0],
+                    // This user is just an instructor who hasn't launched before (unlike the first user here).
+                    $this->get_mock_members_with_ids(['1p3_5'], ['5'], true, true, true, false, [
+                        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+                    ])[0],
+                ],
+                'expected' => [
+                    'enrolments' => [
+                        '1p3_1' => [
+                            'is_enrolled' => true, // Instructor - enrolled because they are also the launch user (already linked).
+                            'is_migrated' => false,
+                        ],
+                        '1p3_2' => [
+                            'is_enrolled' => true, // Learner - enrolled due to 'auto' provisioning mode.
+                            'is_migrated' => true,
+                        ],
+                        '1p3_3' => [
+                            'is_enrolled' => true, // Learner - enrolled due to 'auto' provisioning mode.
+                            'is_migrated' => true,
+                        ],
+                        '1p3_4' => [
+                            'is_enrolled' => true, // Both roles - enrolled due to instructor's 'auto' provisioning mode.
+                            'is_migrated' => true
+                        ],
+                        '1p3_5' => [
+                            'is_enrolled' => true, // Instructor role only - enrolled due to instructor's 'auto' provisioning mode.
+                            'is_migrated' => true
+                        ]
+                    ]
+                ]
+            ],
         ];
     }
 }

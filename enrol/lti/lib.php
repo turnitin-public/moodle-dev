@@ -234,8 +234,8 @@ class enrol_lti_plugin extends enrol_plugin {
         ];
         $mform->addElement('select', 'ltiversion', get_string('ltiversion', 'enrol_lti'), $versionoptions);
         $mform->addHelpButton('ltiversion', 'ltiversion', 'enrol_lti');
+        $legacy = optional_param('legacy', 0, PARAM_INT);
         if (empty($instance->id)) {
-            $legacy = optional_param('legacy', false, PARAM_INT);
             $mform->setDefault('ltiversion', $legacy ? 'LTI-1p0/LTI-2p0' : 'LTI-1p3');
         }
 
@@ -284,6 +284,25 @@ class enrol_lti_plugin extends enrol_plugin {
         $mform->addElement('select', 'rolelearner', get_string('rolelearner', 'enrol_lti'), $assignableroles);
         $mform->setDefault('rolelearner', '5');
         $mform->addHelpButton('rolelearner', 'rolelearner', 'enrol_lti');
+
+        if (!$legacy) {
+            global $CFG;
+            require_once($CFG->dirroot . '/auth/lti/auth.php');
+            $authmodes = [
+                auth_plugin_lti::PROVISIONING_MODE_AUTO_ONLY => get_string('provisioningmodeauto', 'auth_lti'),
+                auth_plugin_lti::PROVISIONING_MODE_PROMPT_NEW_EXISTING => get_string('provisioningmodenewexisting', 'auth_lti'),
+                auth_plugin_lti::PROVISIONING_MODE_PROMPT_EXISTING_ONLY => get_string('provisioningmodeexistingonly', 'auth_lti')
+            ];
+            $mform->addElement('select', 'provisioningmodeinstructor', get_string('provisioningmodeteacherlaunch', 'enrol_lti'),
+                $authmodes);
+            $mform->addHelpButton('provisioningmodeinstructor', 'provisioningmode', 'enrol_lti');
+            $mform->setDefault('provisioningmodeinstructor', auth_plugin_lti::PROVISIONING_MODE_PROMPT_NEW_EXISTING);
+
+            $mform->addElement('select', 'provisioningmodelearner', get_string('provisioningmodestudentlaunch', 'enrol_lti'),
+                $authmodes);
+            $mform->addHelpButton('provisioningmodelearner', 'provisioningmode', 'enrol_lti');
+            $mform->setDefault('provisioningmodelearner', auth_plugin_lti::PROVISIONING_MODE_AUTO_ONLY);
+        }
 
         $mform->addElement('header', 'remotesystem', get_string('remotesystem', 'enrol_lti'));
 

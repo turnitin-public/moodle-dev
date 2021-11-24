@@ -38,6 +38,7 @@ final class message_helper {
     /**
      * Check whether the launch user is an instructor.
      *
+     * @param array $jwtdata array formatted JWT data from the launch.
      * @param bool $includelegacyroles whether to also consider legacy simple names as valid roles.
      * @return bool true if the user is an instructor, false otherwise.
      */
@@ -71,6 +72,7 @@ final class message_helper {
     /**
      * Check whether the launch user has an admin role.
      *
+     * @param array $jwtdata array formatted JWT data from the launch.
      * @return bool true if the user is admin, false otherwise.
      */
     private static function user_is_admin(array $jwtdata): bool {

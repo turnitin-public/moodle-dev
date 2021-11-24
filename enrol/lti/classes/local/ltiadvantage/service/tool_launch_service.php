@@ -26,7 +26,6 @@ use enrol_lti\local\ltiadvantage\repository\application_registration_repository;
 use enrol_lti\local\ltiadvantage\repository\context_repository;
 use enrol_lti\local\ltiadvantage\repository\deployment_repository;
 use enrol_lti\local\ltiadvantage\repository\legacy_consumer_repository;
-use enrol_lti\local\ltiadvantage\repository\legacy_user_repository;
 use enrol_lti\local\ltiadvantage\repository\resource_link_repository;
 use enrol_lti\local\ltiadvantage\repository\user_repository;
 use IMSGlobal\LTI13\LTI_Message_Launch;
@@ -183,38 +182,33 @@ class tool_launch_service {
     }
 
     /**
-     * Get a user instance from the launch data.
+     * Get an lti user instance from the launch data.
      *
+     * @param \stdClass $user the moodle user object.
      * @param \stdClass $launchdata the launch data.
      * @param \stdClass $resource the resource to which the user belongs.
      * @param resource_link $resourcelink the resource_link from which the user originated.
      * @return user the user instance.
      */
-    private function user_from_launchdata(\stdClass $launchdata, \stdClass $resource,
+    private function lti_user_from_launchdata(\stdClass $user, \stdClass $launchdata, \stdClass $resource,
             resource_link $resourcelink): user {
 
         // Find the user based on the unique-to-the-issuer 'sub' value.
-        if ($user = $this->userrepo->find_by_sub($launchdata->sub, new \moodle_url($launchdata->platform), $resource->id)) {
-            // User exists, so update existing based on launch data and resource data which may have changed.
-            $user->set_firstname($launchdata->user['givenname'] ?? $launchdata->sub);
-            $user->set_lastname($launchdata->user['familyname'] ?? $resource->contextid);
-            $user->set_email($launchdata->user['email'] ?? '');
-            $user->set_resourcelinkid($resourcelink->get_id());
-            $user->set_lang($resource->lang);
-            $user->set_city($resource->city);
-            $user->set_country($resource->country);
-            $user->set_institution($resource->institution);
-            $user->set_timezone($resource->timezone);
-            $user->set_maildisplay($resource->maildisplay);
+        if ($ltiuser = $this->userrepo->find_single_user_by_resource($user->id, $resource->id)) {
+            // User exists, so update existing based on resource data which may have changed.
+            $ltiuser->set_resourcelinkid($resourcelink->get_id());
+            $ltiuser->set_lang($resource->lang);
+            $ltiuser->set_city($resource->city);
+            $ltiuser->set_country($resource->country);
+            $ltiuser->set_institution($resource->institution);
+            $ltiuser->set_timezone($resource->timezone);
+            $ltiuser->set_maildisplay($resource->maildisplay);
         } else {
             // Create the lti user.
-            $user = $resourcelink->add_user(
-                new \moodle_url($launchdata->platform),
+            $ltiuser = $resourcelink->add_user(
+                $user->id,
                 $launchdata->sub,
-                $launchdata->user['givenname'] ?? $launchdata->sub,
-                $launchdata->user['familyname'] ?? $resource->contextid,
                 $resource->lang,
-                $launchdata->user['email'] ?? '',
                 $resource->city ?? '',
                 $resource->country ?? '',
                 $resource->institution ?? '',
@@ -222,8 +216,8 @@ class tool_launch_service {
                 $resource->maildisplay ?? null,
             );
         }
-        $user->set_lastaccess(time());
-        return $user;
+        $ltiuser->set_lastaccess(time());
+        return $ltiuser;
     }
 
     /**
@@ -309,11 +303,12 @@ class tool_launch_service {
     /**
      * Handles the use case "A user launches the tool so they can view an external resource".
      *
+     * @param \stdClass $user the Moodle user record, obtained via the auth_lti authentication process.
      * @param LTI_Message_Launch $launch the launch data.
      * @return array array containing [int $userid, \stdClass $resource]
      * @throws \moodle_exception if launch problems are encountered.
      */
-    public function user_launches_tool(LTI_Message_Launch $launch): array {
+    public function user_launches_tool(\stdClass $user, LTI_Message_Launch $launch): array {
 
         $launchdata = $this->get_launch_data($launch);
 
@@ -339,6 +334,8 @@ class tool_launch_service {
             throw new \moodle_exception('ltiadvlauncherror:invalidid', 'enrol_lti', '', $resourceuuid);
         }
 
+        // Update the deployment with the legacy consumer_key information, allowing migration of users to take place in future
+        // names and roles syncs.
         if ($migrationclaim = $this->migration_claim_from_launchdata($launchdata)) {
             $deployment->set_legacy_consumer_key($migrationclaim->get_consumer_key());
             $this->deploymentrepo->save($deployment);
@@ -356,24 +353,8 @@ class tool_launch_service {
         $resourcelink = $this->resourcelinkrepo->save($resourcelink);
 
         // Save the user launching the resource link.
-        $user = $this->user_from_launchdata($launchdata, $resource, $resourcelink);
-
-        // Only migrate users who are eligible: those who don't exist yet.
-        if ($migrationclaim && !$user->get_id()) {
-            $legacyuserid = $migrationclaim->get_user_id() ?? $user->get_sourceid();
-            $legacyconsumerkey = $migrationclaim->get_consumer_key();
-
-            // Now link the user with their legacy user account information.
-            $legacyuserrepo = new legacy_user_repository();
-            if ($legacyuser = $legacyuserrepo->find_by_consumer($legacyconsumerkey, $legacyuserid)) {
-                $user->set_localid($legacyuser->id);
-            }
-        }
-        $user = $this->userrepo->save($user);
-
-        if (!empty($launchdata->user['picture'])) {
-            helper::update_user_profile_image($user->get_localid(), $launchdata->user['picture']);
-        }
+        $ltiuser = $this->lti_user_from_launchdata($user, $launchdata, $resource, $resourcelink);
+        $ltiuser = $this->userrepo->save($ltiuser);
 
         // Set the frame embedding mode, which controls the display of blocks and nav when launching.
         global $SESSION;
@@ -388,16 +369,16 @@ class tool_launch_service {
         }
 
         // Enrol the user in the course with no role.
-        $result = helper::enrol_user($resource, $user->get_localid());
+        $result = helper::enrol_user($resource, $ltiuser->get_localid());
         if ($result !== helper::ENROLMENT_SUCCESSFUL) {
             throw new \moodle_exception($result, 'enrol_lti');
         }
 
         // Give the user the role in the given context.
         $roleid = $isinstructor ? $resource->roleinstructor : $resource->rolelearner;
-        role_assign($roleid, $user->get_localid(), $resource->contextid);
+        role_assign($roleid, $ltiuser->get_localid(), $resource->contextid);
 
-        return [$user->get_localid(), $resource];
+        return [$ltiuser->get_localid(), $resource];
     }
 
 }

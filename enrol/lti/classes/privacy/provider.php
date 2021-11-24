@@ -63,19 +63,6 @@ class provider implements
             'privacy:metadata:enrol_lti_users'
         );
 
-        $items->add_database_table(
-            'enrol_lti_adv_user',
-            [
-                'userid' => 'privacy:metadata:enrol_lti_adv_user:userid',
-                'issuer' => 'privacy:metadata:enrol_lti_adv_user:issuer',
-                'sub' => 'privacy:metadata:enrol_lti_adv_user:sub',
-                'legacymigrated' => 'privacy:metadata:enrol_lti_adv_user:legacymigrated',
-                'timecreated' => 'privacy:metadata:enrol_lti_adv_user:timecreated',
-                'timemodified' => 'privacy:metadata:enrol_lti_adv_user:timemodified',
-            ],
-            'privacy:metadata:enrol_lti_adv_user'
-        );
-
         return $items;
     }
 
@@ -87,7 +74,6 @@ class provider implements
      */
     public static function get_contexts_for_userid(int $userid) : contextlist {
         $contextlist = new contextlist();
-        global $DB;
 
         $sql = "SELECT DISTINCT ctx.id
                   FROM {enrol_lti_users} ltiusers
@@ -98,9 +84,6 @@ class provider implements
                  WHERE ltiusers.userid = :userid";
         $params = ['userid' => $userid];
         $contextlist->add_from_sql($sql, $params);
-        if ($DB->record_exists('enrol_lti_adv_user', ['userid' => $userid])) {
-            $contextlist->add_user_context($userid);
-        }
 
         return $contextlist;
     }
@@ -113,20 +96,16 @@ class provider implements
     public static function get_users_in_context(userlist $userlist) {
         $context = $userlist->get_context();
 
-        if ($context instanceof \context_course || $context instanceof \context_module) {
-            $sql = "SELECT ltiusers.userid
+        if (!($context instanceof \context_course || $context instanceof \context_module)) {
+            return;
+        }
+
+        $sql = "SELECT ltiusers.userid
                   FROM {enrol_lti_users} ltiusers
                   JOIN {enrol_lti_tools} ltitools ON ltiusers.toolid = ltitools.id
                  WHERE ltitools.contextid = :contextid";
-            $params = ['contextid' => $context->id];
-            $userlist->add_from_sql('userid', $sql, $params);
-        } else if ($context instanceof \context_user) {
-            $sql = "SELECT userid
-                      FROM {enrol_lti_adv_user} ltiadvuser
-                     WHERE ltiadvuser.userid = :userid";
-            $params = ['userid' => $context->instanceid];
-            $userlist->add_from_sql('userid', $sql, $params);
-        }
+        $params = ['contextid' => $context->id];
+        $userlist->add_from_sql('userid', $sql, $params);
     }
 
     /**
@@ -167,27 +146,25 @@ class provider implements
             $finaldata = (object) $data;
             writer::with_context($context)->export_data(['enrol_lti_users'], $finaldata);
         });
-
-        static::export_lti_advantage_user_data($user->id, \context_user::instance($user->id));
     }
 
     /**
      * Delete all user data which matches the specified context.
      *
-     * @param \context $context a context instance.
+     * @param \context $context A user context.
      */
     public static function delete_data_for_all_users_in_context(\context $context) {
         global $DB;
 
-        if ($context instanceof \context_course || $context instanceof \context_module) {
-            $enrolltitools = $DB->get_fieldset_select('enrol_lti_tools', 'id', 'contextid = :contextid',
-                ['contextid' => $context->id]);
-            if (!empty($enrolltitools)) {
-                list($sql, $params) = $DB->get_in_or_equal($enrolltitools, SQL_PARAMS_NAMED);
-                $DB->delete_records_select('enrol_lti_users', 'toolid ' . $sql, $params);
-            }
-        } else if ($context instanceof \context_user) {
-            $DB->delete_records('enrol_lti_adv_user', ['userid' => $context->instanceid]);
+        if (!($context instanceof \context_course || $context instanceof \context_module)) {
+            return;
+        }
+
+        $enrolltitools = $DB->get_fieldset_select('enrol_lti_tools', 'id', 'contextid = :contextid',
+            ['contextid' => $context->id]);
+        if (!empty($enrolltitools)) {
+            list($sql, $params) = $DB->get_in_or_equal($enrolltitools, SQL_PARAMS_NAMED);
+            $DB->delete_records_select('enrol_lti_users', 'toolid ' . $sql, $params);
         }
     }
 
@@ -202,20 +179,16 @@ class provider implements
         $userid = $contextlist->get_user()->id;
 
         foreach ($contextlist->get_contexts() as $context) {
+            if (!($context instanceof \context_course || $context instanceof \context_module)) {
+                continue;
+            }
 
-            if ($context instanceof \context_user && $context->instanceid == $userid) {
-                // User context: Remove the lti advantage information mapped to the user account.
-                $DB->delete_records('enrol_lti_adv_user', ['userid' => $userid]);
-            } else if ($context instanceof \context_course || $context instanceof \context_module) {
-                // Course or module context: Only remove enrol_lti_tools and enrol_lti_users records.
-                // The lti advantage user information remains as this is tied to the user account (and user context).
-                $enrolltitools = $DB->get_fieldset_select('enrol_lti_tools', 'id', 'contextid = :contextid',
-                    ['contextid' => $context->id]);
-                if (!empty($enrolltitools)) {
-                    list($sql, $params) = $DB->get_in_or_equal($enrolltitools, SQL_PARAMS_NAMED);
-                    $params = array_merge($params, ['userid' => $userid]);
-                    $DB->delete_records_select('enrol_lti_users', "toolid $sql AND userid = :userid", $params);
-                }
+            $enrolltitools = $DB->get_fieldset_select('enrol_lti_tools', 'id', 'contextid = :contextid',
+                ['contextid' => $context->id]);
+            if (!empty($enrolltitools)) {
+                list($sql, $params) = $DB->get_in_or_equal($enrolltitools, SQL_PARAMS_NAMED);
+                $params = array_merge($params, ['userid' => $userid]);
+                $DB->delete_records_select('enrol_lti_users', "toolid $sql AND userid = :userid", $params);
             }
         }
     }
@@ -230,18 +203,18 @@ class provider implements
 
         $context = $userlist->get_context();
 
-        if ($context instanceof \context_course || $context instanceof \context_module) {
-            $enrolltitools = $DB->get_fieldset_select('enrol_lti_tools', 'id', 'contextid = :contextid',
+        if (!($context instanceof \context_course || $context instanceof \context_module)) {
+            return;
+        }
+
+        $enrolltitools = $DB->get_fieldset_select('enrol_lti_tools', 'id', 'contextid = :contextid',
                 ['contextid' => $context->id]);
-            if (!empty($enrolltitools)) {
-                list($toolsql, $toolparams) = $DB->get_in_or_equal($enrolltitools, SQL_PARAMS_NAMED);
-                $userids = $userlist->get_userids();
-                list($usersql, $userparams) = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
-                $params = $toolparams + $userparams;
-                $DB->delete_records_select('enrol_lti_users', "toolid $toolsql AND userid $usersql", $params);
-            }
-        } else if ($context instanceof \context_user) {
-            $DB->delete_records('enrol_lti_adv_user', ['userid' => $context->instanceid]);
+        if (!empty($enrolltitools)) {
+            list($toolsql, $toolparams) = $DB->get_in_or_equal($enrolltitools, SQL_PARAMS_NAMED);
+            $userids = $userlist->get_userids();
+            list($usersql, $userparams) = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
+            $params = $toolparams + $userparams;
+            $DB->delete_records_select('enrol_lti_users', "toolid $toolsql AND userid $usersql", $params);
         }
     }
 
@@ -272,33 +245,6 @@ class provider implements
 
         if (!empty($lastid)) {
             $export($lastid, $data);
-        }
-    }
-
-    /**
-     * Export the user data stored in the enrol_lti_adv_user table, which sits at user context.
-     *
-     * @param int $userid the id of the user to export for.
-     * @param \context $context the context in which to export.
-     */
-    protected static function export_lti_advantage_user_data(int $userid, \context $context): void {
-        global $DB;
-        $sql = "SELECT lau.id, lau.issuer, lau.sub, lau.legacymigrated, lau.timecreated, lau.timemodified
-                  FROM {enrol_lti_adv_user} lau
-                 WHERE lau.userid = :userid";
-        $records = $DB->get_records_sql($sql, ['userid' => $userid]);
-        if (!empty($records)) {
-            $ltiadvantageuserinfo = (object) array_map(function($record) use ($context) {
-                return [
-                    'issuer' => $record->issuer,
-                    'sub' => $record->sub,
-                    'legacymigrated' => $record->legacymigrated,
-                    'timecreated' => transform::datetime($record->timecreated),
-                    'timemodified' => transform::datetime($record->timemodified)
-                ];
-            }, $records);
-            writer::with_context($context)->export_data([get_string('privacy:ltiadvantageuserpath', 'enrol_lti')],
-                $ltiadvantageuserinfo);
         }
     }
 }

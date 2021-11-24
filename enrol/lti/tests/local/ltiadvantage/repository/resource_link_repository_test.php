@@ -195,15 +195,14 @@ class resource_link_repository_test extends \advanced_testcase {
         $resourcelink3 = resource_link::create('another-res-link-2', $newreslink->get_deploymentid(),
             $newreslink->get_resourceid());
         $newreslink3 = $repository->save($resourcelink3);
+        $user1 = $this->getDataGenerator()->create_user();
+        $user2 = $this->getDataGenerator()->create_user();
 
         $userrepo = new user_repository();
         $user = $newreslink->add_user(
-            new \moodle_url('https://lms.example.org'),
+            $user1->id,
             'platform-user-id-123',
-            'Test',
-            'Student',
             'en',
-            's1@example.com',
             'Sydney',
             'AU',
             'Test university',
@@ -214,12 +213,9 @@ class resource_link_repository_test extends \advanced_testcase {
         $userrepo->save($createduser);
 
         $user2 = $newreslink3->add_user(
-            new \moodle_url('https://lms.example.org'),
+            $user2->id,
             'platform-user-id-777',
-            'Another',
-            'Person',
             'en',
-            's2@example.com',
             'Melbourne',
             'AU',
             'Test university',
@@ -253,12 +249,9 @@ class resource_link_repository_test extends \advanced_testcase {
 
         // Also create a user from this resource link so we get some test user_resource_link mappings.
         $user = $newreslink->add_user(
-            new \moodle_url('https://lms.example.org'),
+            2,
             'source-id-123',
-            'Simon',
-            'McTest',
             'en',
-            'simon@example.com',
             'Perth',
             'AU',
             'An Example Institution',
@@ -291,12 +284,9 @@ class resource_link_repository_test extends \advanced_testcase {
 
         // Also create a user from this resource link so we get some test user_resource_link mappings.
         $user = $newreslink->add_user(
-            new \moodle_url('https://lms.example.org'),
+            2,
             'source-id-123',
-            'Simon',
-            'McTest',
             'en',
-            'simon@example.com',
             'Perth',
             'AU',
             'An Example Institution',
@@ -337,12 +327,9 @@ class resource_link_repository_test extends \advanced_testcase {
 
         // Also create a user from this resource link so we get some test user_resource_link mappings.
         $user = $newreslink->add_user(
-            new \moodle_url('https://lms.example.org'),
+            2,
             'source-id-123',
-            'Simon',
-            'McTest',
             'en',
-            'simon@example.com',
             'Perth',
             'AU',
             'An Example Institution',

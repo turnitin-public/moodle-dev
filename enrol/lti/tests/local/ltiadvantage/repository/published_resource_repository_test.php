@@ -144,8 +144,9 @@ class published_resource_repository_test extends \advanced_testcase {
      * Test finding published resources for different roles having different capabilities at the course level.
      */
     public function test_find_all_for_user_no_permissions() {
+        $this->resetAfterTest();
         global $DB;
-        [$user, $user2, $user3, $course, $course2, $mod, $mod2, $coursetool, $modtool, $mod2tool]
+        [$user, $user2, $user3, $course, $course2, $mod, $mod2, $mod3, $coursetool, $modtool, $mod2tool]
             = $this->generate_published_resources();
 
         // Grant the user permissions as an editing teacher in a specific module within the course,
@@ -163,7 +164,7 @@ class published_resource_repository_test extends \advanced_testcase {
         // Now, give the user a course role of 'editingteacher' and confirm they can see the published content.
         $this->getDataGenerator()->enrol_user($modaccessonlyuser->id, $course->id, 'editingteacher');
         $resources = $resourcerepo->find_all_for_user($modaccessonlyuser->id);
-        $this->assertCount(2, $resources);
+        $this->assertCount(3, $resources);
 
         // Check other course level roles without the capability, e.g. 'teacher'.
         role_unassign($editingteacherrole->id, $modaccessonlyuser->id, \context_course::instance($course->id)->id);

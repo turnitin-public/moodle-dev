@@ -36,10 +36,21 @@ use enrol_lti\local\ltiadvantage\issuer_database;
 use IMSGlobal\LTI13\LTI_Message_Launch;
 
 require_once(__DIR__ . '/../../config.php');
-global $CFG, $DB, $OUTPUT, $PAGE;
+
+global $OUTPUT, $PAGE;
 
 $idtoken = optional_param('id_token', null, PARAM_RAW);
 $launchid = optional_param('launchid', null, PARAM_RAW);
+
+if (!is_enabled_auth('lti')) {
+    throw new moodle_exception('pluginnotenabled', 'auth', '', get_string('pluginname', 'auth_lti'));
+}
+if (!enrol_is_enabled('lti')) {
+    throw new moodle_exception('enrolisdisabled', 'enrol_lti');
+}
+if (empty($idtoken) && empty($launchid)) {
+    throw new coding_exception('Error: launch requires id_token');
+}
 
 // First launch from the platform: get launch data and cache it in case the user's not authenticated.
 $sessionlaunchcache = new launch_cache_session();
@@ -48,32 +59,30 @@ $issuerdb = new issuer_database(new application_registration_repository(), new d
 if ($idtoken) {
     $launch = LTI_Message_Launch::new($issuerdb, $sessionlaunchcache)
         ->validate();
-    $PAGE->set_url('/enrol/lti/launch_deeplink.php?launchid='.urlencode($launch->get_launch_id()));
 }
-
-// Redirect after authentication: Fetch launch data from the session launch cache.
 if ($launchid) {
     $launch = LTI_Message_Launch::from_cache($launchid, $issuerdb, $sessionlaunchcache);
 }
-
 if (empty($launch)) {
-    throw new moodle_exception('Bad launchid. Deep linking launch data could not be found');
+    throw new moodle_exception('Bad launch. Deep linking launch data could not be found');
 }
 
-require_login(null, false);
+// Authenticate the instructor.
+// Deep linking cannot use resource-specific provisioning modes, so it just uses a sensible 'existing accounts only' mode.
+$auth = get_auth_plugin('lti');
+$auth->complete_login(
+    $launch->get_launch_data(),
+    new moodle_url('/enrol/lti/launch_deeplink.php', ['launchid' => $launch->get_launch_id()]),
+    auth_plugin_lti::PROVISIONING_MODE_PROMPT_EXISTING_ONLY
+);
 
+require_login(null, false);
+global $USER, $CFG;
 $PAGE->set_context(context_system::instance());
 $url = new moodle_url('/enrol/lti/launch_deeplink.php');
 $PAGE->set_url($url);
 $PAGE->set_pagelayout('popup');
 $PAGE->set_title(get_string('opentool', 'enrol_lti'));
-
-if (!is_enabled_auth('lti')) {
-    throw new moodle_exception('pluginnotenabled', 'auth', '', get_string('pluginname', 'auth_lti'));
-}
-if (!enrol_is_enabled('lti')) {
-    throw new moodle_exception('enrolisdisabled', 'enrol_lti');
-}
 
 // Get all the published_resource view objects and render them for selection.
 global $USER;

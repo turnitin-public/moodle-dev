@@ -151,6 +151,11 @@ class published_resource_repository {
         $params = array_merge($inparams, ['enrolstatusenabled' => ENROL_INSTANCE_ENABLED]);
         $resources = $DB->get_records_sql($sql, $params);
 
+        // Only users who have the ability to publish content should see published content.
+        $resources = array_filter($resources, function($resource) use ($userid) {
+            return has_capability('enrol/lti:config', \context_course::instance($resource->courseid), $userid);
+        });
+
         // Make sure the user can access each course or module, excluding those which are inaccessible from the return.
         $availableresources = $this->get_available_resources_from_records($resources, $userid);
 

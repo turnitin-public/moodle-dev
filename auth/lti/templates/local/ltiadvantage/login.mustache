@@ -47,20 +47,45 @@
             {{/info}}
             <div class="row">
                 <div class="col-sm-6 d-flex">
-                    <div class="card w-100">
-                        <div class="card-header">
-                            I have an existing account
-                        </div>
-                        <!--img class="card-img-top" src="..." alt="Card image cap"-->
-                        <div class="card-body text-center d-flex flex-column">
-                            <i class="fa fa-user-circle-o fa-2x link"></i>
-                            <h4 class="card-title">Use existing account</h4>
+                    {{#sessioninfo}}
+                        <div class="card w-100">
+                            <div class="card-header">
+                                I have an existing account
+                            </div>
+                            <!--img class="card-img-top" src="..." alt="Card image cap"-->
+                            <div class="card-body text-center d-flex flex-column">
+                                <i class="fa fa-user-circle-o fa-2x link"></i>
+                                <h4 class="card-title">Use existing account</h4>
+                                <p class="card-text mt-2">
+                                    <span class="text-muted">
+                                        You are currently signed in as
+                                    </span><br>
+                                    {{{picturehtml}}}
+                                    {{firstname}} {{lastname}} ({{email}})
+                                </p>
+                                <span class="text-left font-weight-bold small">Email verification is required to link this account</span>
 
-                            <p class="card-text text-muted">Log in to your existing account.</p>
-                            <input type="submit" class="btn btn-primary mt-auto" name="existing_account" value="Log in">
+                                <input type="submit" class="btn btn-primary mt-auto" name="existing_account" value="Link this account">
+                            </div>
+                            <!--div class="text-muted">Doing this will blah blah blah blah blah....etc and more and more and more and more and more.</div-->
                         </div>
-                        <!--div class="text-muted">Doing this will blah blah blah blah blah....etc and more and more and more and more and more.</div-->
-                    </div>
+                    {{/sessioninfo}}
+                    {{^sessioninfo}}
+                        <div class="card w-100">
+                            <div class="card-header">
+                                I have an existing account
+                            </div>
+                            <!--img class="card-img-top" src="..." alt="Card image cap"-->
+                            <div class="card-body text-center d-flex flex-column">
+                                <i class="fa fa-user-circle-o fa-2x link"></i>
+                                <h4 class="card-title">Use existing account</h4>
+
+                                <p class="card-text text-muted mt-2">Log in to your existing account.</p>
+                                <input type="submit" class="btn btn-primary mt-auto" name="existing_account" value="Log in">
+                            </div>
+                            <!--div class="text-muted">Doing this will blah blah blah blah blah....etc and more and more and more and more and more.</div-->
+                        </div>
+                    {{/sessioninfo}}
                 </div>
                 <div class="col-sm-6 d-flex">
                     <div class="card w-100">

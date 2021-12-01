@@ -10,6 +10,8 @@
                 <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The user account the LTI user is linked to."/>
                 <FIELD NAME="issuer256" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="SHA256 hash of the issuer from which the platform user originates."/>
                 <FIELD NAME="sub256" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="SHA256 hash of the subject identifying the user for the issuer."/>
+                <FIELD NAME="token" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="The token used in the confirmation email, empty once linked successfully."/>
+                <FIELD NAME="tokenexpiry" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
                 <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
                 <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
             </FIELDS>

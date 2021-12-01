@@ -44,6 +44,8 @@ function xmldb_auth_lti_upgrade($oldversion) {
         $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
         $table->add_field('issuer256', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null);
         $table->add_field('sub256', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('token', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL, null, '');
+        $table->add_field('tokenexpiry', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
         $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
         $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
 

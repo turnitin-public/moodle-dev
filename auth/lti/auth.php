@@ -191,6 +191,107 @@ class auth_plugin_lti extends \auth_plugin_base {
         }
     }
 
+    // TODO: is there any verification of issuer here or in the calling code?
+    //  Given enrol_lti controls the issuer, this code is just a 'dumb' store, so we can't do much.
+    //  What happens when an issuer is removed in the enrol plugin? well, launches won't work so linked logins are irrelevant, but
+    //  we'd probably want a way to clean that up. Can the auth plugin listen for an event fired by the enrol plugin to do this?
+    public function send_account_link_confirmation_email(string $iss, string $sub, int $userid, moodle_url $returnurl): bool {
+        $token = $this->create_unconfirmed_user_binding($iss, $sub, $userid);
+        $params = [
+            'iss' => $iss,
+            'sub' => $sub,
+            'userid' => $userid,
+            'token' => $token,
+            'returnurl' => $returnurl->out(false)
+        ];
+        $verificationurl = new moodle_url('/auth/lti/confirm-link.php', $params);
+
+        $emailtext = "Please click the link to confirm linking these accounts: {$verificationurl->out(false)}";
+
+        // Build and send the email.
+        $site = get_site();
+        $supportuser = \core_user::get_support_user();
+        $user = get_complete_user_data('id', $userid);
+
+        $data = new stdClass();
+        $data->fullname = fullname($user);
+        $data->sitename  = format_string($site->fullname);
+        $data->admin     = generate_email_signoff();
+        $data->issuername = $iss;
+        //$data->linkedemail = format_string($linkedlogin->get('email'));
+
+        $subject = "Account linking verification";
+
+
+        $data->link = $verificationurl->out(false);
+        $message = get_string('confirmlinkedloginemail', 'auth_oauth2', $data);
+
+        $data->link = $verificationurl->out();
+        $messagehtml = text_to_html($emailtext, false, false, true);
+
+        $user->mailformat = 1;  // Always send HTML version as well.
+
+        // Directly email rather than using the messaging system to ensure its not routed to a popup or jabber.
+        return email_to_user($user, $supportuser, $subject, $emailtext, $messagehtml);
+    }
+
+    public function confirm_user_binding(string $iss, string $sub, int $userid, string $token) {
+        global $DB;
+
+        $issuer256 = hash('sha256', $iss);
+        $sub256 = hash('sha256', $sub);
+        $params = [
+            'userid' => $userid,
+            'sub256' => $sub256,
+            'issuer256' => $issuer256,
+            'token' => $token,
+        ];
+
+        $linkedlogin = $DB->get_record('auth_lti_linked_login', $params);
+        if (empty($linkedlogin)) {
+            return false;
+        }
+        $expires = $linkedlogin->tokenexpiry;
+        if (time() > $expires) {
+            $DB->delete_records('auth_lti_linked_login', ['id' => $linkedlogin->id]);
+            return false;
+        }
+
+        $timenow = time();
+        $linkedlogin->timemodified = $timenow;
+        $linkedlogin->token = '';
+        $linkedlogin->tokenexpiry = 0;
+        $DB->update_record('auth_lti_linked_login', $linkedlogin);
+        return true;
+    }
+
+    protected function create_unconfirmed_user_binding(string $iss, string $sub, int $userid): ?string {
+        global $DB;
+
+        $timenow = time();
+        $issuer256 = hash('sha256', $iss);
+        $sub256 = hash('sha256', $sub);
+        // TODO: what if the user never confirms via email, and the confirmation expiry is reached?
+        //  Somewhere, we need to allow another binding attempt via deleting the linked login record.
+        if ($DB->record_exists('auth_lti_linked_login', ['issuer256' => $issuer256, 'sub256' => $sub256])) {
+            return null;
+        }
+        $expires = new \DateTime('NOW');
+        $expires->add(new \DateInterval('PT30M'));
+        $token = random_string(32);
+        $rec = [
+            'userid' => $userid,
+            'issuer256' => $issuer256,
+            'sub256' => $sub256,
+            'timecreated' => $timenow,
+            'timemodified' => $timenow,
+            'token' => $token,
+            'tokenexpiry' => $expires->getTimestamp()
+        ];
+        $DB->insert_record('auth_lti_linked_login', $rec);
+        return $token;
+    }
+
     /**
      * Create a binding between the LTI user, as identified by {iss, sub} tuple and the user id.
      *
@@ -204,6 +305,8 @@ class auth_plugin_lti extends \auth_plugin_base {
         $timenow = time();
         $issuer256 = hash('sha256', $iss);
         $sub256 = hash('sha256', $sub);
+
+        // TODO What if we try to create a complete binding but there's already a record needing confirmation? or an expired record?
         if ($DB->record_exists('auth_lti_linked_login', ['issuer256' => $issuer256, 'sub256' => $sub256])) {
             return;
         }
@@ -212,7 +315,9 @@ class auth_plugin_lti extends \auth_plugin_base {
             'issuer256' => $issuer256,
             'sub256' => $sub256,
             'timecreated' => $timenow,
-            'timemodified' => $timenow
+            'timemodified' => $timenow,
+            'token' => '',
+            'tokenexpiry' => null
         ];
         $DB->insert_record('auth_lti_linked_login', $rec);
     }

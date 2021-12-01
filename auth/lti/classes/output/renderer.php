@@ -34,9 +34,20 @@ class renderer extends \plugin_renderer_base {
     public function render_account_binding_options_page(): string {
         $formaction = new \moodle_url('/auth/lti/login.php');
         $notification = new notification("It looks like this is your first time here. Please select from one of the account options below.", \core\notification::INFO, false);
+        $sessioninfo = null;
+        if (isloggedin()) {
+            global $USER;
+            $sessioninfo = [
+                'firstname' => $USER->firstname,
+                'lastname' => $USER->lastname,
+                'email' => $USER->email,
+                'picturehtml' => $this->output->user_picture($USER,  ['size' => 35, 'class' => 'round']),
+            ];
+        }
         $context = [
             'info' => $notification->export_for_template($this),
             'formaction' => $formaction->out(),
+            'sessioninfo' => $sessioninfo,
             'sesskey' => sesskey(),
         ];
         return parent::render_from_template('auth_lti/local/ltiadvantage/login', $context);

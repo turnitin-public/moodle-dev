@@ -16,7 +16,7 @@
 /**
  * Page allowing a platform user, identified by their {iss, sub} tuple, to be bound to a new or existing Moodle account.
  *
- * This is an LTI Acvantage specific login feature.
+ * This is an LTI Advantage specific login feature.
  *
  * The auth flow defined in auth_lti\auth::complete_login() redirects here when a launching user does not have an
  * account binding yet. This page prompts the user to select between:
@@ -100,14 +100,23 @@ if ($newaccount) {
         $launchdata = $SESSION->auth_lti->launchdata;
         $returnurl = $SESSION->auth_lti->returnurl;
         unset($SESSION->auth_lti);
-        $auth->create_user_binding($launchdata['iss'], $launchdata['sub'], $USER->id);
 
-        $PAGE->set_context(context_system::instance());
         $PAGE->set_url(new moodle_url('/auth/lti/login.php'));
+        $PAGE->set_context(context_system::instance());
         $PAGE->set_pagelayout('popup');
+
+        $sent = $auth->send_account_link_confirmation_email($launchdata['iss'], $launchdata['sub'], $USER->id, $returnurl);
+        if ($sent) {
+
+        }
+        //$auth->create_user_binding($launchdata['iss'], $launchdata['sub'], $USER->id);
+
         $renderer = $PAGE->get_renderer('auth_lti');
-        $message = "Your account has been successfully linked!";
+
+        $message = "We've sent you a verification email. Please click the confirmation link in the email to finalise the account ".
+            "linking process.";
         echo $OUTPUT->header();
+        //echo $OUTPUT->notification($message, notification::NOTIFY_SUCCESS);
         echo $renderer->render_account_binding_complete(
             new notification($message, notification::NOTIFY_SUCCESS, false),
             $returnurl

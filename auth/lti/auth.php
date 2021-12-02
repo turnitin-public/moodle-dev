@@ -48,6 +48,44 @@ class auth_plugin_lti extends \auth_plugin_base {
         return false;
     }
 
+    public function user_authenticated_hook(&$user, $username, $password) {
+        if (true) {
+
+        }
+    }
+
+    public function loginpage_hook() {
+
+        global $SESSION, $CFG, $frm;
+        $linktoken = optional_param('linktoken', null, PARAM_RAW);
+
+        if ($linktoken) {
+            \core\session\manager::get_login_token();
+            $logintokkey = array_keys($SESSION->logintoken)[0];
+            $logintok = array_values($SESSION->logintoken)[0];
+            $SESSION->auth_lti->oldlogintok = new stdClass();
+            $SESSION->auth_lti->oldlogintok->logintokkey = $logintokkey;
+            $SESSION->auth_lti->oldlogintok->logintok = $logintok;
+            $SESSION->auth_lti->linktoken = $SESSION->logintoken;
+            $SESSION->logintoken[$logintokkey] = ['token' => 'mytoken123', 'created' => $logintok['created']];
+            //$SESSION->auth_lti->linktoken = $SESSION->logintoken;
+        }
+        else if (isset($SESSION->auth_lti->oldlogintok) && empty($_POST)) {
+            // Restore the prior login token for non-workflow uses. This breaks the workflow, but that's fine because we don't
+            // expect a user to load up an entirely fresh login form in the middle of account binding.
+            $SESSION->logintoken['core_auth_login'] = $SESSION->auth_lti->oldlogintok->logintok;
+            unset($SESSION->auth_lti->oldlogintok);
+            $SESSION->wantsurl = $CFG->wwwroot;
+
+        }
+
+
+
+        /*if (isset($SESSION->auth_lti->linktoken) && $linktoken != $SESSION->auth_lti->linktoken) {
+            $SESSION->wantsurl = $CFG->wwwroot;
+        }*/
+    }
+
     /**
      * Authenticate the user based on the unique {iss, sub} tuple present in the OIDC JWT.
      *
@@ -104,7 +142,7 @@ class auth_plugin_lti extends \auth_plugin_base {
             } else {
                 // No binding, so take the user to login where they can decide whether to use a new or existing account.
                 global $SESSION;
-                $SESSION->auth_lti = (object)['launchdata' => $launchdata, 'returnurl' => $returnurl];
+                $SESSION->auth_lti = (object)['launchdata' => $launchdata, 'returnurl' => $returnurl, 'linktoken' => random_string(32)];
                 redirect(new moodle_url('/auth/lti/login.php', [
                     'sesskey' => sesskey(),
                 ]));

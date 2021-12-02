@@ -94,7 +94,10 @@ if ($newaccount) {
     // This is done by redirecting to self, with a 'login_check' param set.
     // Only when authenticated, do we display the account binding completion view, allowing return to the launch.
     if (isloggedin() || $logincheck) {
-        require_login(null, false);
+        //require_login(null, false);
+        if (!isloggedin()) {
+            redirect(new moodle_url(get_login_url(), ['linktoken' => $SESSION->auth_lti->linktoken]));
+        }
         global $USER;
         $auth = get_auth_plugin('lti');
         $launchdata = $SESSION->auth_lti->launchdata;
@@ -113,12 +116,13 @@ if ($newaccount) {
 
         $renderer = $PAGE->get_renderer('auth_lti');
 
-        $message = "We've sent you a verification email. Please click the confirmation link in the email to finalise the account ".
-            "linking process.";
+        echo "<h3>You're almost there";
+        $message = "We've sent you a verification email. Please click the link in the email to finalise the account linking process.<br><br>
+        You'll need to reload this page once the verification is complete.";
         echo $OUTPUT->header();
         //echo $OUTPUT->notification($message, notification::NOTIFY_SUCCESS);
         echo $renderer->render_account_binding_complete(
-            new notification($message, notification::NOTIFY_SUCCESS, false),
+            new notification($message, notification::NOTIFY_INFO, false),
             $returnurl
         );
         echo $OUTPUT->footer();
@@ -129,9 +133,12 @@ if ($newaccount) {
         $params = [
             'existing_account' => 'yes',
             'login_check' => '1',
-            'sesskey' => sesskey()
+            'sesskey' => sesskey(),
+            'linktoken' => $SESSION->auth_lti->linktoken
         ];
-        redirect(new moodle_url('/auth/lti/login.php', $params));
+        $url = new moodle_url('/auth/lti/login.php', $params);
+        $SESSION->wantsurl = $url->out(false);
+        redirect($url);
     }
 }
 

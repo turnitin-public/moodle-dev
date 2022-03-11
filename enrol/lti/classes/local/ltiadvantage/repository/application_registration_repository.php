@@ -133,6 +133,7 @@ class application_registration_repository {
      */
     public function find_by_platform(string $platformid, string $clientid): ?application_registration {
         global $DB;
+
         try {
             $indexhash = $this->get_unique_index_hash($platformid, $clientid);
             $record = $DB->get_record($this->applicationregistrationtable, ['platformclienthash' => $indexhash], '*',

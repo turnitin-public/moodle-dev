@@ -55,7 +55,6 @@ class platform_registration_form extends \moodleform {
         // Client Id.
         $mform->addElement('text', 'clientid', get_string('registerplatform:clientid', 'enrol_lti'));
         $mform->setType('clientid', PARAM_TEXT);
-        $mform->addRule('clientid', $strrequired, 'required', null, 'client');
         $mform->addHelpButton('clientid', 'registerplatform:clientid', 'enrol_lti');
 
         // Authentication request URL.

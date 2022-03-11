@@ -40,6 +40,8 @@ class issuer_database_test extends \advanced_testcase {
     public function test_find_registration_by_issuer() {
         $this->resetAfterTest();
         $appregrepo = new application_registration_repository();
+
+        // Create a registration for an issuer that supports multiple clients via client_id.
         $appreg = application_registration::create(
             'My platform',
             new \moodle_url('https://lms.example.com'),
@@ -50,7 +52,20 @@ class issuer_database_test extends \advanced_testcase {
         );
         $appregrepo->save($appreg);
 
+        // Create a registration for an issuer that doesn't support multiple clients, i.e. has no client_id support.
+        $appreg2 = application_registration::create(
+            'Another platform',
+            new \moodle_url('https://lms2.example.com'),
+            '',
+            new \moodle_url('https://lms2.example.com/lti/auth'),
+            new \moodle_url('https://lms2.example.com/lti/jwks'),
+            new \moodle_url('https://lms2.example.com/lti/token')
+        );
+        $appregrepo->save($appreg2);
+
         $issuerdb = new issuer_database($appregrepo, new deployment_repository());
+
+        // Verify we can find the registration including client_id.
         $registration = $issuerdb->findRegistrationByIssuer('https://lms.example.com', 'client-id-123');
         $this->assertInstanceOf(LtiRegistration::class, $registration);
         $this->assertEquals($appreg->get_authenticationrequesturl()->out(false), $registration->getAuthLoginUrl());
@@ -59,11 +74,20 @@ class issuer_database_test extends \advanced_testcase {
         $this->assertEquals($appreg->get_clientid(), $registration->getClientId());
         $this->assertEquals($appreg->get_platformid()->out(false), $registration->getIssuer());
 
+        // Verify we can find the registration NOT including client_id.
+        $registration = $issuerdb->findRegistrationByIssuer('https://lms2.example.com');
+        $this->assertInstanceOf(LtiRegistration::class, $registration);
+        $this->assertEquals($appreg2->get_authenticationrequesturl()->out(false), $registration->getAuthLoginUrl());
+        $this->assertEquals($appreg2->get_jwksurl()->out(false), $registration->getKeySetUrl());
+        $this->assertEquals($appreg2->get_accesstokenurl()->out(false), $registration->getAuthTokenUrl());
+        $this->assertEquals($appreg2->get_clientid(), $registration->getClientId());
+        $this->assertEquals($appreg2->get_platformid()->out(false), $registration->getIssuer());
+
+        // Try to find the first registration using a different client_id, verifying it can't be found.
         $this->assertNull($issuerdb->findRegistrationByIssuer('https://lms.example.com', 'client-id-456'));
 
-        $this->expectException(\coding_exception::class);
-        $this->expectExceptionMessageMatches('/Both issuer and client id are required to identify platform /');
-        $issuerdb->findRegistrationByIssuer('https://lms.example.com');
+        // Try to find a registration using a non-existent issuer.
+        $this->assertNull($issuerdb->findRegistrationByIssuer('https://not-found.example.com'));
     }
 
     /**
@@ -74,6 +98,8 @@ class issuer_database_test extends \advanced_testcase {
     public function test_find_deployment() {
         $this->resetAfterTest();
         $appregrepo = new application_registration_repository();
+
+        // Create a registration for an issuer that supports multiple clients via client_id.
         $appreg = application_registration::create(
             'My platform',
             new \moodle_url('https://lms.example.com'),
@@ -83,20 +109,44 @@ class issuer_database_test extends \advanced_testcase {
             new \moodle_url('https://lms.example.com/lti/token')
         );
         $appreg = $appregrepo->save($appreg);
-        $dep = $appreg->add_tool_deployment('Site wide tool deployment', 'deployment-id-1');
+
+        // Create a registration for an issuer that doesn't support multiple clients, i.e. has no client_id support.
+        $appreg2 = application_registration::create(
+            'Another platform',
+            new \moodle_url('https://lms2.example.com'),
+            '',
+            new \moodle_url('https://lms2.example.com/lti/auth'),
+            new \moodle_url('https://lms2.example.com/lti/jwks'),
+            new \moodle_url('https://lms2.example.com/lti/token')
+        );
+        $appreg2 = $appregrepo->save($appreg2);
+
+        // Add deployments to both registrations.
         $deploymentrepo = new deployment_repository();
+        $dep = $appreg->add_tool_deployment('Site wide tool deployment', 'deployment-id-1');
         $deploymentrepo->save($dep);
+        $dep2 = $appreg2->add_tool_deployment('Site wide tool deployment', 'deployment-id-2');
+        $deploymentrepo->save($dep2);
 
         $issuerdb = new issuer_database($appregrepo, new deployment_repository());
+
+        // Find the deployment for the first registration.
         $deployment = $issuerdb->findDeployment('https://lms.example.com', 'deployment-id-1', 'client-id-123');
         $this->assertInstanceOf(LtiDeployment::class, $deployment);
         $this->assertEquals($dep->get_deploymentid(), $deployment->getDeploymentId());
 
+        // Find the deployment for the second registration, without using client_id.
+        $deployment2 = $issuerdb->findDeployment('https://lms2.example.com', 'deployment-id-2');
+        $this->assertInstanceOf(LtiDeployment::class, $deployment2);
+        $this->assertEquals($dep2->get_deploymentid(), $deployment2->getDeploymentId());
+
+        // Try to find the deployment for the first registration using an invalid client_id.
         $this->assertNull($issuerdb->findDeployment('https://lms.example.com', 'deployment-id-1', 'client-id-456'));
+
+        // Try to find the deployment for the first registration using an invalid deploymentid.
         $this->assertNull($issuerdb->findDeployment('https://lms.example.com', 'deployment-id-2', 'client-id-123'));
 
-        $this->expectException(\coding_exception::class);
-        $this->expectExceptionMessageMatches('/Both issuer and client id are required to identify platform /');
-        $issuerdb->findDeployment('https://lms.example.com', 'deployment-id-2');
+        // Try to find a deployment for a non-existent issuer.
+        $this->assertNull($issuerdb->findDeployment('https://not-found.example.com', 'deployment-id-2'));
     }
 }

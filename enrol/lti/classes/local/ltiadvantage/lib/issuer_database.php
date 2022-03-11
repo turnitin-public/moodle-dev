@@ -56,15 +56,9 @@ class issuer_database implements IDatabase {
      * @return LtiRegistration|null The registration object, or null if not found.
      */
     public function findRegistrationByIssuer($iss, $clientId = null): ?LtiRegistration {
-        if (is_null($clientId)) {
-            throw new \coding_exception("Both issuer and client id are required to identify platform registrations ".
-                "and must be sent by your LMS during both login requests (as 'client_id') and in the auth response ".
-                "Tool JWT (as the 'aud' claim).");
-        }
-
         global $CFG;
         require_once($CFG->libdir . '/moodlelib.php'); // For get_config() usage.
-        $reg = $this->appregrepo->find_by_platform($iss, $clientId);
+        $reg = $this->appregrepo->find_by_platform($iss, $clientId ?? '');
         if (!$reg) {
             return null;
         }
@@ -90,13 +84,7 @@ class issuer_database implements IDatabase {
      * @return LtiDeployment|null The deployment object or null if not found.
      */
     public function findDeployment($iss, $deploymentId, $clientId = null): ?LtiDeployment {
-        if (is_null($clientId)) {
-            throw new \coding_exception("Both issuer and client id are required to identify platform registrations ".
-                "and must be sent by your LMS during both login requests (as 'client_id') and in the auth response ".
-                "Tool JWT (as the 'aud' claim).");
-        }
-
-        $appregistration = $this->appregrepo->find_by_platform($iss, $clientId);
+        $appregistration = $this->appregrepo->find_by_platform($iss, $clientId ?? '');
         if (!$appregistration) {
             return null;
         }

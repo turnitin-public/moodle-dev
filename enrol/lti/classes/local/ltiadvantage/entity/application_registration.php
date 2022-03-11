@@ -67,9 +67,7 @@ class application_registration {
         if (empty($name)) {
             throw new \coding_exception("Invalid 'name' arg. Cannot be an empty string.");
         }
-        if (empty($clientid)) {
-            throw new \coding_exception("Invalid 'clientid' arg. Cannot be an empty string.");
-        }
+
         $this->name = $name;
         $this->platformid = $platformid;
         $this->clientid = $clientid;
@@ -80,11 +78,11 @@ class application_registration {
     }
 
     /**
-     * Factory method to create a new instance of an application repository
+     * Factory method to create a new instance of an application registration.
      *
      * @param string $name the descriptor for this application registration.
      * @param \moodle_url $platformid the URL of application
-     * @param string $clientid unique id for the client on the application
+     * @param string $clientid unique id for the client on the application, or empty '' if not supported by the issuer.
      * @param \moodle_url $authenticationrequesturl URL to send OIDC Auth requests to.
      * @param \moodle_url $jwksurl URL to use to get public keys from the application.
      * @param \moodle_url $accesstokenurl URL to use to get an access token from the application, used in service calls.

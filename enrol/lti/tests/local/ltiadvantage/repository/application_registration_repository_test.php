@@ -131,17 +131,63 @@ class application_registration_repository_test extends \advanced_testcase {
     /**
      * Tests trying to persist two as-yet-unpersisted objects having identical makeup.
      *
+     * @dataProvider unique_constraints_provider
      * @covers ::save
+     * @param array $registrations array of registration instances to save, in order.
+     * @param array $expected the expectations for the test.
      */
-    public function test_save_duplicate_unique_constraints() {
+    public function test_save_duplicate_unique_constraints(array $registrations, array $expected) {
         $this->resetAfterTest();
-        $testregistration = $this->generate_application_registration();
-        $testregistration2 = $this->generate_application_registration();
         $repository = new application_registration_repository();
 
-        $this->assertInstanceOf(application_registration::class, $repository->save($testregistration));
-        $this->expectException(\dml_exception::class);
-        $repository->save($testregistration2);
+        $this->assertInstanceOf(application_registration::class, $repository->save($registrations[0]));
+        if (!empty($expected['valid'])) {
+            $this->assertInstanceOf(application_registration::class, $repository->save($registrations[1]));
+        } else {
+            $this->expectException($expected['exception']);
+            $repository->save($registrations[1]);
+        }
+    }
+
+    public function unique_constraints_provider() {
+        return [
+            'Both registrations are for an issuer supporting client_id, {iss, client_id} is clashing' => [
+                'registrations' => [
+                    $this->generate_application_registration(),
+                    $this->generate_application_registration()
+                ],
+                'expected' => [
+                    'exception' => \dml_exception::class
+                ]
+            ],
+            'Both registrations are for an issuer not supporting client_id, same issuer' => [
+                'registrations' => [
+                    $this->generate_application_registration('https://lms.example.com', ''),
+                    $this->generate_application_registration('https://lms.example.com', '')
+                ],
+                'expected' => [
+                    'exception' => \dml_exception::class
+                ]
+            ],
+            'First registration is for iss supporting client_id, second not supporting client_id, same issuer' => [
+                'registrations' => [
+                    $this->generate_application_registration('https://lms.example.com', 'client-id-123'),
+                    $this->generate_application_registration('https://lms.example.com', '')
+                ],
+                'expected' => [
+                    'valid' => true
+                ]
+            ],
+            'First registration is for iss not supporting client_id, second is supporting client_id, same issuer' => [
+                'registrations' => [
+                    $this->generate_application_registration('https://lms.example.com', ''),
+                    $this->generate_application_registration('https://lms.example.com', 'client-id-123')
+                ],
+                'expected' => [
+                    'valid' => true
+                ]
+            ],
+        ];
     }
 
     /**

@@ -111,9 +111,7 @@ class application_registration_test extends \advanced_testcase {
                     'accesstokenurl' => new \moodle_url('https://lms.example.com/token'),
                 ],
                 'expectations' => [
-                    'valid' => false,
-                    'exception' => \coding_exception::class,
-                    'exceptionmessage' => "Invalid 'clientid' arg. Cannot be an empty string."
+                    'valid' => true
                 ]
             ]
         ];

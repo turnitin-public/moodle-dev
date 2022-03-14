@@ -56,6 +56,7 @@
         <th>{{#str}}name, core{{/str}}</th>
         <th>{{#str}}details, enrol_lti{{/str}}</th>
         <th>{{#str}}deployments, enrol_lti{{/str}}</th>
+        <th>{{#str}}registrationstatus, enrol_lti{{/str}}</th>
         <th>{{#str}}actions, core{{/str}}</th>
     </tr>
     </thead>
@@ -77,6 +78,14 @@
                 {{^hasdeployments}}
                     {{countdeployments}}
                 {{/hasdeployments}}
+            </td>
+            <td>
+                {{#isactive}}
+                <span class="badge badge-success">{{{statusstring}}}</span>
+                {{/isactive}}
+                {{^isactive}}
+                <span class="badge badge-warning">{{{statusstring}}}</span>
+                {{/isactive}}
             </td>
             <td>
                 <a class="edit" href="{{editurl}}" title="{{#str}} edit {{/str}}">{{#pix}} t/edit, core, {{#str}} edit {{/str}}{{/pix}}</a>

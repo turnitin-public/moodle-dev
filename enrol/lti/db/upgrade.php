@@ -318,5 +318,109 @@ function xmldb_enrol_lti_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2021052514, 'enrol', 'lti');
     }
 
+    if ($oldversion < 2022031400) {
+        // Changing the default of field platformid on table enrol_lti_app_registration to null.
+        $table = new xmldb_table('enrol_lti_app_registration');
+        $field = new xmldb_field('platformid', XMLDB_TYPE_TEXT, null, null, null, null, null, 'name');
+
+        // Launch change of nullability for field platformid.
+        $dbman->change_field_notnull($table, $field);
+
+        // Changing the default of field clientid on table enrol_lti_app_registration to null.
+        $field = new xmldb_field('clientid', XMLDB_TYPE_CHAR, '1333', null, null, null, null, 'platformid');
+
+        // Launch change of nullability for field clientid.
+        $dbman->change_field_notnull($table, $field);
+
+        // Drop the platformclienthash index, so the field can be modified.
+        $index = new xmldb_index('platformclienthash', XMLDB_INDEX_UNIQUE, ['platformclienthash']);
+
+        // Conditionally launch drop index platformclienthash.
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+
+        // Changing the default of field platformclienthash on table enrol_lti_app_registration to null.
+        $field = new xmldb_field('platformclienthash', XMLDB_TYPE_CHAR, '64', null, null, null, null, 'clientid');
+
+        // Launch change of nullability for field platformclienthash.
+        $dbman->change_field_notnull($table, $field);
+
+        // Recreate the platformclienthash index.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Changing the default of field authenticationrequesturl on table enrol_lti_app_registration to null.
+        $field = new xmldb_field('authenticationrequesturl', XMLDB_TYPE_TEXT, null, null, null, null, null, 'platformclienthash');
+
+        // Launch change of nullability for field authenticationrequesturl.
+        $dbman->change_field_notnull($table, $field);
+
+        // Changing the default of field jwksurl on table enrol_lti_app_registration to null.
+        $field = new xmldb_field('jwksurl', XMLDB_TYPE_TEXT, null, null, null, null, null, 'authenticationrequesturl');
+
+        // Launch change of nullability for field jwksurl.
+        $dbman->change_field_notnull($table, $field);
+
+        // Changing the default of field accesstokenurl on table enrol_lti_app_registration to null.
+        $field = new xmldb_field('accesstokenurl', XMLDB_TYPE_TEXT, null, null, null, null, null, 'jwksurl');
+
+        // Launch change of nullability for field accesstokenurl.
+        $dbman->change_field_notnull($table, $field);
+
+        // Define field localclientid to be added to enrol_lti_app_registration (defined as null here to allow data migration).
+        $field = new xmldb_field('localclientid', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'accesstokenurl');
+
+        // Conditionally launch add field localclientid.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+
+            // Set existing values to use a suitable unique id.
+            $recordset = $DB->get_recordset('enrol_lti_app_registration');
+            foreach ($recordset as $record) {
+                // Guarantee uniqueness by checking the {platformid (iss), localclientid}.
+                $platformidcompare = $DB->sql_compare_text('platformid', 255);
+                $sql = "WHERE " . $DB->sql_compare_text('platformid', 255) . " = :platformid
+                          AND {localclientid} = :localclientid";
+                $params = ['platformid' => $record->platformid, 'localclientid' => $record->localclientid];
+                do {
+                    $bytes = random_bytes(30);
+                    $localclientid = bin2hex($bytes);
+                    $record->localclientid = $localclientid;
+                } while ($DB->record_exists_sql($sql, $params));
+
+                $DB->update_record('enrol_lti_app_registration', $record);
+            }
+            $recordset->close();
+
+            // Now make the field notnull.
+            $field = new xmldb_field('localclientid', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null, 'accesstokenurl');
+            $dbman->change_field_notnull($table, $field);
+        }
+
+        // Define field status to be added to enrol_lti_app_registration (defined as null here to allow data migration).
+        $field = new xmldb_field('status', XMLDB_TYPE_INTEGER, '1', null, null, null, null, 'localclientid');
+
+        // Conditionally launch add field status.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+
+            $recordset = $DB->get_recordset('enrol_lti_app_registration');
+            foreach ($recordset as $record) {
+                $record->status = 1;
+                $DB->update_record('enrol_lti_app_registration', $record);
+            }
+            $recordset->close();
+
+            // Now make the field notnull.
+            $field = new xmldb_field('status', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, null, 'localclientid');
+            $dbman->change_field_notnull($table, $field);
+        }
+
+        // Lti savepoint reached.
+        upgrade_plugin_savepoint(true, 2022031400, 'enrol', 'lti');
+    }
+
     return true;
 }

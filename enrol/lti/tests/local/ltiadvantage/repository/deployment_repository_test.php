@@ -41,7 +41,7 @@ class deployment_repository_test extends \advanced_testcase {
             $registration = application_registration::create(
                 'Test',
                 new \moodle_url('http://lms.example.org'),
-                'clientid_123',
+                'clientid_112',
                 new \moodle_url('https://example.org/authrequesturl'),
                 new \moodle_url('https://example.org/jwksurl'),
                 new \moodle_url('https://example.org/accesstokenurl')
@@ -130,8 +130,8 @@ class deployment_repository_test extends \advanced_testcase {
      */
     public function test_save_unique_constraints_not_met() {
         $this->resetAfterTest();
-        $deployment1 = $this->create_test_deployment('Deploy_ID_123');
-        $deployment2 = $this->create_test_deployment('Deploy_ID_123', $deployment1->get_registrationid());
+        $deployment1 = $this->create_test_deployment('Deploy_ID_103');
+        $deployment2 = $this->create_test_deployment('Deploy_ID_103', $deployment1->get_registrationid());
         $deploymentrepo = new deployment_repository();
 
         $this->assertInstanceOf(deployment::class, $deploymentrepo->save($deployment1));
@@ -269,7 +269,7 @@ class deployment_repository_test extends \advanced_testcase {
         $registration1 = application_registration::create(
             'Test',
             new \moodle_url('http://lms.example.org'),
-            'clientid_123',
+            'clientid_111',
             new \moodle_url('https://example.org/authrequesturl'),
             new \moodle_url('https://example.org/jwksurl'),
             new \moodle_url('https://example.org/accesstokenurl')

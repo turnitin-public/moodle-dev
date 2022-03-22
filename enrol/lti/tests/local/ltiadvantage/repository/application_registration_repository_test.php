@@ -38,7 +38,7 @@ class application_registration_repository_test extends \advanced_testcase {
             string $clientid = null): application_registration {
 
         $issuer = $issuer ?? 'https://lms.example.org';
-        $clientid = $clientid ?? 'clientid_123';
+        $clientid = $clientid ?? 'clientid_101';
         return application_registration::create(
             'Example LMS application',
             new \moodle_url($issuer),
@@ -92,7 +92,7 @@ class application_registration_repository_test extends \advanced_testcase {
      */
     public function test_save_new() {
         $this->resetAfterTest();
-        $registration = $this->generate_application_registration();
+        $registration = $this->generate_application_registration('https://lms.example.org', 'clientid_102');
         $repository = new application_registration_repository();
         $createdregistration = $repository->save($registration);
 
@@ -108,7 +108,7 @@ class application_registration_repository_test extends \advanced_testcase {
      */
     public function test_save_existing() {
         $this->resetAfterTest();
-        $testregistration = $this->generate_application_registration();
+        $testregistration = $this->generate_application_registration('https://lms.example.org', 'clientid_103');
         $repository = new application_registration_repository();
 
         $createdregistration = $repository->save($testregistration);
@@ -135,8 +135,8 @@ class application_registration_repository_test extends \advanced_testcase {
      */
     public function test_save_duplicate_unique_constraints() {
         $this->resetAfterTest();
-        $testregistration = $this->generate_application_registration();
-        $testregistration2 = $this->generate_application_registration();
+        $testregistration = $this->generate_application_registration('https://lms.example.org', 'clientid_104');
+        $testregistration2 = $this->generate_application_registration('https://lms.example.org', 'clientid_104');
         $repository = new application_registration_repository();
 
         $this->assertInstanceOf(application_registration::class, $repository->save($testregistration));
@@ -151,7 +151,7 @@ class application_registration_repository_test extends \advanced_testcase {
      */
     public function test_find() {
         $this->resetAfterTest();
-        $testregistration = $this->generate_application_registration();
+        $testregistration = $this->generate_application_registration('https://lms.example.org', 'clientid_105');
         $repository = new application_registration_repository();
         $createdregistration = $repository->save($testregistration);
         $foundregistration = $repository->find($createdregistration->get_id());
@@ -173,8 +173,8 @@ class application_registration_repository_test extends \advanced_testcase {
         $this->assertEquals([], $repository->find_all());
 
         // Add two registrations.
-        $reg1 = $this->generate_application_registration('https://some.platform.org');
-        $reg2 = $this->generate_application_registration('https://another.platform.org');
+        $reg1 = $this->generate_application_registration('https://some.platform.org', 'clientid_106');
+        $reg2 = $this->generate_application_registration('https://another.platform.org', 'clientid_106');
         $reg1 = $repository->save($reg1);
         $regns[$reg1->get_id()] = $reg1;
         $reg2 = $repository->save($reg2);
@@ -220,7 +220,7 @@ class application_registration_repository_test extends \advanced_testcase {
      */
     public function test_exists() {
         $this->resetAfterTest();
-        $testregistration = $this->generate_application_registration();
+        $testregistration = $this->generate_application_registration('https://lms.example.org', 'clientid_107');
         $repository = new application_registration_repository();
         $createdregistration = $repository->save($testregistration);
 
@@ -236,7 +236,7 @@ class application_registration_repository_test extends \advanced_testcase {
     public function test_delete() {
         $this->resetAfterTest();
         global $DB;
-        $reg = $this->generate_application_registration();
+        $reg = $this->generate_application_registration('https://lms.example.org', 'clientid_108');
         $repository = new application_registration_repository();
         $reg = $repository->save($reg);
 
@@ -259,7 +259,7 @@ class application_registration_repository_test extends \advanced_testcase {
         $deploymentrepo = new deployment_repository();
 
         // Deployment linked to a registration.
-        $testregistration = $this->generate_application_registration();
+        $testregistration = $this->generate_application_registration('https://lms.example.org', 'clientid_109');
         $createdregistration = $appregrepo->save($testregistration);
         $deployment1 = $createdregistration->add_tool_deployment('Deployment 1', '12345');
         $createddeployment = $deploymentrepo->save($deployment1);

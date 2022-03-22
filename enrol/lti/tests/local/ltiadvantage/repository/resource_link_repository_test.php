@@ -37,7 +37,7 @@ class resource_link_repository_test extends \advanced_testcase {
         $registration = application_registration::create(
             'Test',
             new \moodle_url('http://lms.example.org'),
-            'clientid_123',
+            'clientid_113',
             new \moodle_url('https://example.org/authrequesturl'),
             new \moodle_url('https://example.org/jwksurl'),
             new \moodle_url('https://example.org/accesstokenurl')
@@ -51,7 +51,7 @@ class resource_link_repository_test extends \advanced_testcase {
 
         $contextrepo = new context_repository();
         $context = $saveddeployment->add_context(
-            'CTX123',
+            'CTX102',
             ['http://purl.imsglobal.org/vocab/lis/v2/course#CourseSection']
         );
         $savedcontext = $contextrepo->save($context);
@@ -119,7 +119,7 @@ class resource_link_repository_test extends \advanced_testcase {
      */
     public function test_save_new() {
         $this->resetAfterTest();
-        $resourcelink = $this->generate_resource_link();
+        $resourcelink = $this->generate_resource_link('my-res-link-100');
         $repository = new resource_link_repository();
         $savedresourcelink = $repository->save($resourcelink);
 
@@ -135,7 +135,7 @@ class resource_link_repository_test extends \advanced_testcase {
      */
     public function test_add_uniqueness_constraints() {
         $this->resetAfterTest();
-        $reslink1 = $this->generate_resource_link();
+        $reslink1 = $this->generate_resource_link('my-res-link-101');
         $reslink2 = clone $reslink1;
         $repository = new resource_link_repository();
         $createdresource1 = $repository->save($reslink1);
@@ -151,7 +151,7 @@ class resource_link_repository_test extends \advanced_testcase {
      */
     public function test_find() {
         $this->resetAfterTest();
-        $resourcelink = $this->generate_resource_link();
+        $resourcelink = $this->generate_resource_link('my-res-link-102');
         $repository = new resource_link_repository();
         $newreslink = $repository->save($resourcelink);
 
@@ -168,7 +168,7 @@ class resource_link_repository_test extends \advanced_testcase {
      */
     public function test_find_by_resource() {
         $this->resetAfterTest();
-        $resourcelink = $this->generate_resource_link();
+        $resourcelink = $this->generate_resource_link('my-res-link-103');
         $repository = new resource_link_repository();
         $newreslink = $repository->save($resourcelink);
         $resourcelink2 = resource_link::create('another-res-link-1', $newreslink->get_deploymentid(),
@@ -197,7 +197,7 @@ class resource_link_repository_test extends \advanced_testcase {
      */
     public function test_find_by_resource_and_user() {
         $this->resetAfterTest();
-        $resourcelink = $this->generate_resource_link();
+        $resourcelink = $this->generate_resource_link('my-res-link-104');
         $repository = new resource_link_repository();
         $newreslink = $repository->save($resourcelink);
         $resourcelink2 = resource_link::create('another-res-link-1', $newreslink->get_deploymentid(),
@@ -255,7 +255,7 @@ class resource_link_repository_test extends \advanced_testcase {
      */
     public function test_delete() {
         $this->resetAfterTest();
-        $resourcelink = $this->generate_resource_link();
+        $resourcelink = $this->generate_resource_link('my-res-link-105');
         $repository = new resource_link_repository();
         $newreslink = $repository->save($resourcelink);
         $this->assertTrue($repository->exists($newreslink->get_id()));
@@ -293,7 +293,7 @@ class resource_link_repository_test extends \advanced_testcase {
      */
     public function test_delete_by_resource() {
         $this->resetAfterTest();
-        $resourcelink = $this->generate_resource_link();
+        $resourcelink = $this->generate_resource_link('my-res-link-106');
         $repository = new resource_link_repository();
         $newreslink = $repository->save($resourcelink);
 
@@ -337,7 +337,7 @@ class resource_link_repository_test extends \advanced_testcase {
      */
     public function test_delete_by_deployment() {
         $this->resetAfterTest();
-        $resourcelink = $this->generate_resource_link();
+        $resourcelink = $this->generate_resource_link('my-res-link-107');
         $repository = new resource_link_repository();
         $newreslink = $repository->save($resourcelink);
         $this->assertTrue($repository->exists($newreslink->get_id()));
@@ -375,7 +375,7 @@ class resource_link_repository_test extends \advanced_testcase {
      */
     public function test_exists() {
         $this->resetAfterTest();
-        $resourcelink = $this->generate_resource_link();
+        $resourcelink = $this->generate_resource_link('my-res-link-108');
         $repository = new resource_link_repository();
         $newreslink = $repository->save($resourcelink);
         $this->assertTrue($repository->exists($newreslink->get_id()));
@@ -390,7 +390,7 @@ class resource_link_repository_test extends \advanced_testcase {
      */
     public function test_save_existing() {
         $this->resetAfterTest();
-        $resourcelink = $this->generate_resource_link();
+        $resourcelink = $this->generate_resource_link('my-res-link-109');
         $repository = new resource_link_repository();
         $newreslink = $repository->save($resourcelink);
         $newreslink->add_grade_service(
@@ -408,7 +408,7 @@ class resource_link_repository_test extends \advanced_testcase {
      */
     public function test_update_stale() {
         $this->resetAfterTest();
-        $resourcelink = $this->generate_resource_link();
+        $resourcelink = $this->generate_resource_link('my-res-link-110');
         $repository = new resource_link_repository();
         $newreslink = $repository->save($resourcelink);
         $repository->delete($newreslink->get_id());

@@ -86,7 +86,7 @@ class tool_deployment_service_test extends \lti_advantage_testcase {
         $createddeployment = $service->add_tool_deployment(
             (object) [
                 'registration_id' => $testreg->get_id(),
-                'deployment_id' => 'Deploy_ID_123',
+                'deployment_id' => 'Deploy_ID_101',
                 'deployment_name' => "Tool deployment in location x"
             ]
         );
@@ -109,7 +109,7 @@ class tool_deployment_service_test extends \lti_advantage_testcase {
         $service->add_tool_deployment(
             (object) [
                 'registration_id' => 1234,
-                'deployment_id' => 'Deploy_ID_123',
+                'deployment_id' => 'Deploy_ID_102',
                 'deployment_name' => "Tool deployment in location x"
             ]
         );

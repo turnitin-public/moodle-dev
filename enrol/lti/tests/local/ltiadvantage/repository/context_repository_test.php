@@ -36,7 +36,7 @@ class context_repository_test extends \advanced_testcase {
         $registration = application_registration::create(
             'Test',
             new \moodle_url('http://lms.example.org'),
-            'clientid_123',
+            'clientid_110',
             new \moodle_url('https://example.org/authrequesturl'),
             new \moodle_url('https://example.org/jwksurl'),
             new \moodle_url('https://example.org/accesstokenurl')
@@ -48,7 +48,7 @@ class context_repository_test extends \advanced_testcase {
         $deploymentrepo = new deployment_repository();
         $saveddeployment = $deploymentrepo->save($deployment);
 
-        return $saveddeployment->add_context('CTX123', ['http://purl.imsglobal.org/vocab/lis/v2/course#CourseSection']);
+        return $saveddeployment->add_context('CTX101', ['http://purl.imsglobal.org/vocab/lis/v2/course#CourseSection']);
     }
 
     /**

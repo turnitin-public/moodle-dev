@@ -19,6 +19,7 @@ Feature: Notification popover unread notifications
       | username | firstname | lastname | email |
       | teacher1 | Teacher | 1 | teacher1@example.com |
       | student1 | Student | 1 | student1@example.com |
+      | student2 | Student | 2 | student2@example.com |
     And the following "course enrolments" exist:
       | user | course | role |
       | teacher1 | C1 | editingteacher |
@@ -34,11 +35,16 @@ Feature: Notification popover unread notifications
     And the following "mod_assign > submissions" exist:
       | assign                | user      | onlinetext                   |
       | Test assignment name  | student1  | I'm the student1 submission  |
+    # This should generate some notifications
+    And the following "notifications" exist:
+      | subject  | userfrom | userto   | timecreated | timeread   |
+      | Test 01  | student2 | student1 | 1654587996  | null       |
+      | Test 02  | student2 | student1 | 1654587997  | null       |
 
   Scenario: Notification popover shows correct unread count
     When I log in as "student1"
     # Confirm the popover is saying 1 unread notifications.
-    Then I should see "1" in the "#nav-notification-popover-container [data-region='count-container']" "css_element"
+    Then I should see "3" in the "#nav-notification-popover-container [data-region='count-container']" "css_element"
     # Open the popover.
     And I open the notification popover
     # Confirm the submission notification is visible.
@@ -51,6 +57,12 @@ Feature: Notification popover unread notifications
     And I open the notification popover
     # Click on the submission notification.
     And I follow "You have submitted your assignment submission for Test assignment name"
+    # Open the remaining notifications.
+    And I open the notification popover
+    And I follow "Test 01"
+    And I open the notification popover
+    And I follow "Test 02"
+
     # Confirm the count element is hidden (i.e. there are no unread notifications).
     Then "[data-region='count-container']" "css_element" in the "#nav-notification-popover-container" "css_element" should not be visible
 
@@ -64,3 +76,11 @@ Feature: Notification popover unread notifications
     And I reload the page
     # Confirm the count element is hidden (i.e. there are no unread notifications).
     Then "[data-region='count-container']" "css_element" in the "#nav-notification-popover-container" "css_element" should not be visible
+
+  Scenario: Notifications should be created
+    When I log in as "student1"
+    # Open the notification popover.
+    Then I open the notification popover
+    # Find notifications
+    And I should see "Test 01" in the "#nav-notification-popover-container" "css_element"
+    And I should see "Test 02" in the "#nav-notification-popover-container" "css_element"

@@ -553,7 +553,6 @@ $grading-content-show-content-button-padding-left: calc(#{map-get($spacers, 2) *
     .grader-grading-panel {
         top: 0;
         position: absolute;
-        height: 100%;
         z-index: 0;
         width: $grading-drawer-width;
 
@@ -760,6 +759,7 @@ $grading-content-show-content-button-padding-left: calc(#{map-get($spacers, 2) *
 
     .grader-module-content {
         overflow-y: auto;
+        height: calc(100% - #{$navbar-height});
         margin-right: $grading-drawer-width;
         @include transition(margin-right .2s ease-in-out);
     }

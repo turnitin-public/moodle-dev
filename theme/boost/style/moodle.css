@@ -18121,7 +18121,6 @@ select {
 .path-mod-forum .unified-grader .grader-grading-panel {
   top: 0;
   position: absolute;
-  height: 100%;
   z-index: 0;
   width: 430px; }
   .path-mod-forum .unified-grader .grader-grading-panel.hidden {
@@ -18252,6 +18251,7 @@ select {
 
 .path-mod-forum .unified-grader .grader-module-content {
   overflow-y: auto;
+  height: calc(100% - 60px);
   margin-right: 430px;
   transition: margin-right 0.2s ease-in-out; }
   @media (prefers-reduced-motion: reduce) {

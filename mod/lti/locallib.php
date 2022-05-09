@@ -3383,6 +3383,12 @@ function lti_sign_jwt($parms, $endpoint, $oauthconsumerkey, $typeid = 0, $nonce 
     }
 
     $privatekey = jwks_helper::get_private_key();
+
+    // Send just the lineitem endpoint, with the capability to post scores to that lineitem only.
+    unset($payload['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint']);
+    $payload['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint']['scope'] = ['https://purl.imsglobal.org/spec/lti-ags/scope/score'];
+    $payload['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint']['lineitem'] = "http://localhost/ltiplatform/mod/lti/services.php/2/lineitems/2/lineitem?type_id=1";
+
     $jwt = JWT::encode($payload, $privatekey['key'], 'RS256', $privatekey['kid']);
 
     $newparms = array();

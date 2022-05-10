@@ -3348,7 +3348,7 @@ function lti_sign_jwt($parms, $endpoint, $oauthconsumerkey, $typeid = 0, $nonce 
         'exp' => $now + 60,
     );
     $payload['iss'] = $CFG->wwwroot;
-    $payload['aud'] = $oauthconsumerkey;
+    $payload['aud'] = [$oauthconsumerkey];
     $payload[LTI_JWT_CLAIM_PREFIX . '/claim/deployment_id'] = strval($typeid);
     $payload[LTI_JWT_CLAIM_PREFIX . '/claim/target_link_uri'] = $endpoint;
 

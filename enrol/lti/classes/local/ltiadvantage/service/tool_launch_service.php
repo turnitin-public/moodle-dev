@@ -85,6 +85,7 @@ class tool_launch_service {
      */
     private function get_launch_data(LtiMessageLaunch $launch): \stdClass {
         $launchdata = $launch->getLaunchData();
+        print_object($launchdata);
         $data = [
             'platform' => $launchdata['iss'],
             'clientid' => $launchdata['aud'], // See LTI_Message_Launch::validate_registration for details about aud.

@@ -32,6 +32,11 @@ defined('MOODLE_INTERNAL') || die;
  * @param context         $context    The context of the course
  */
 function tool_monitor_extend_navigation_course($navigation, $course, $context) {
+    $url = new moodle_url('https://google.com.au');
+    $settingsnode = navigation_node::create("AAAAA Course nav callback item", $url, navigation_node::TYPE_CUSTOM,
+        null, null, new pix_icon('i/settings', ''));
+    $navigation->add_node($settingsnode);
+
     if (has_capability('tool/monitor:managerules', $context) && get_config('tool_monitor', 'enablemonitor')) {
         $url = new moodle_url('/admin/tool/monitor/managerules.php', array('courseid' => $course->id));
         $settingsnode = navigation_node::create(get_string('managerules', 'tool_monitor'), $url, navigation_node::TYPE_SETTING,
@@ -52,6 +57,10 @@ function tool_monitor_extend_navigation_course($navigation, $course, $context) {
  * @param context         $context    The context of the course
  */
 function tool_monitor_extend_navigation_frontpage($navigation, $course, $context) {
+    $url = new moodle_url('https://google.com.au');
+    $settingsnode = navigation_node::create("My custom nav item", $url, navigation_node::TYPE_CUSTOM,
+        null, null, new pix_icon('i/settings', ''));
+    $navigation->add_node($settingsnode);
 
     if (has_capability('tool/monitor:managerules', $context)) {
         $url = new moodle_url('/admin/tool/monitor/managerules.php', array('courseid' => $course->id));

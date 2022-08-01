@@ -102,3 +102,12 @@ function tool_moodlenet_custom_chooser_footer(int $courseid, int $sectionid): ac
         $renderedcarousel
     );
 }
+
+function tool_moodlenet_extend_action_menu(cm_info $cminfo, int $indent, int $sectionreturn) {
+    return [
+        'share' => new action_menu_link_secondary(
+            new moodle_url('/admin/tool/moodlenet/package.php', ['id' => $cminfo->id]),
+            new pix_icon('i/publish', get_string('sharewithmoodlenet', 'tool_moodlenet'), 'core'),
+            get_string('sharewithmoodlenet', 'tool_moodlenet'))
+    ];
+}

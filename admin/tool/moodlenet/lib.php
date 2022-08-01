@@ -111,3 +111,14 @@ function tool_moodlenet_extend_action_menu(cm_info $cminfo, int $indent, int $se
             get_string('sharewithmoodlenet', 'tool_moodlenet'))
     ];
 }
+
+function tool_moodlenet_extend_navigation_course($navigation, $course, $context) {
+    // Check that the MoodleNet plugin is enabled.
+    if (has_capability('moodle/course:update', $context)) {
+
+        $url = new moodle_url('/admin/tool/moodlenet/package.php', ['courseid' => $course->id]);
+        $settingsnode = navigation_node::create(get_string('sharewithmoodlenet', 'tool_moodlenet'), $url,
+            navigation_node::TYPE_SETTING, null, 'sharewithmoodlenet', new pix_icon('i/settings', ''));
+        $navigation->add_node($settingsnode);
+    }
+}

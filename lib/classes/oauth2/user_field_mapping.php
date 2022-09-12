@@ -83,7 +83,7 @@ class user_field_mapping extends persistent {
     protected function validate_externalfield($value){
         // This parameter type is set to PARAM_RAW_TRIMMED and HTML check is done here.
         if (clean_param($value, PARAM_NOTAGS) !== $value){
-            return new lang_string('userfieldexternalfield_error', 'tool_oauth2');
+            return new lang_string('userfieldexternalfield_error', 'oauth2');
         }
         return true;
     }

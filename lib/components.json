@@ -97,6 +97,7 @@
         "mnet": "mnet",
         "my": "my",
         "notes": "notes",
+        "oauth2": "oauth2",
         "pagetype": null,
         "payment" : "payment",
         "pix": null,

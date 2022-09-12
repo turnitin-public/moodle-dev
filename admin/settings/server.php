@@ -550,6 +550,11 @@ if ($hassiteconfig) {
         $ADMIN->add('server', $temp);
     }
 
+    $ADMIN->add(
+        'server',
+        new admin_externalpage('oauth2', new lang_string('oauth2services', 'oauth2'), new moodle_url("/oauth2/issuers.php")),
+    );
+
     // Web services.
     $ADMIN->add('server', new admin_category('webservicesettings', new lang_string('webservices', 'webservice')));
 

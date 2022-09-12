@@ -2903,5 +2903,16 @@ privatefiles,moodle|/user/files.php';
         upgrade_main_savepoint(true, 2022081200.01);
     }
 
+    if ($oldversion < 2022090900.01) {
+        // If tool_oauth2 is no longer present, remove it.
+        if (!file_exists($CFG->dirroot . '/admin/tool/oauth2/version.php')) {
+            unset_all_config_for_plugin('tool_oauth2');
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2022090900.01);
+    }
+
+
     return true;
 }

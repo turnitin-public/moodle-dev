@@ -1,6 +1,10 @@
 This files describes API changes in /admin/tool/* - plugins,
 information provided here is intended especially for developers.
 
+=== 4.1 ===
+
+* The OAuth2 tool has been moved to core_oauth2 (/oauth2/) and has subsequently been completely removed.
+
 === 4.0 ===
 
 * The Health center tool has been completely removed.

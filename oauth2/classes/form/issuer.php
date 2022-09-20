@@ -46,6 +46,9 @@ class issuer extends persistent {
     /** @var string $type */
     protected $type;
 
+    /** @var bool whether this form relates to a new issuer being created from a template or not. */
+    protected $istemplate;
+
     /**
      * Constructor.
      *
@@ -70,6 +73,9 @@ class issuer extends persistent {
         // The type variable defines, if we are in the creation process of a standard issuer.
         if (array_key_exists('type', $customdata)) {
             $this->type = $customdata['type'];
+        }
+        if (array_key_exists('istemplate', $customdata)) {
+            $this->istemplate = $customdata['istemplate'];
         }
         parent::__construct($action, $customdata, $method, $target, $attributes, $editable, $ajaxformdata);
     }
@@ -100,11 +106,13 @@ class issuer extends persistent {
         // Client ID.
         $mform->addElement('text', 'clientid', get_string('issuerclientid', 'oauth2'));
         $mform->addRule('clientid', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+        $mform->addRule('clientid', null, 'required', null, 'client');
         $mform->addHelpButton('clientid', 'issuerclientid', 'oauth2');
 
         // Client Secret.
         $mform->addElement('text', 'clientsecret', get_string('issuerclientsecret', 'oauth2'));
         $mform->addRule('clientsecret', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+        $mform->addRule('clientsecret', null, 'required', null, 'client');
         $mform->addHelpButton('clientsecret', 'issuerclientsecret', 'oauth2');
 
         // Use basic authentication.
@@ -115,9 +123,6 @@ class issuer extends persistent {
         $mform->addElement('text', 'baseurl', get_string('issuerbaseurl', 'oauth2'));
         $mform->addRule('baseurl', get_string('maximumchars', '', 1024), 'maxlength', 1024, 'client');
         $mform->addHelpButton('baseurl', 'issuerbaseurl', 'oauth2');
-        if ($this->type && $this->type == 'nextcloud') {
-            $mform->addRule('baseurl', null, 'required', null, 'client');
-        }
 
         // Image.
         $mform->addElement('text', 'image', get_string('issuerimage', 'oauth2'), 'maxlength="1024"');
@@ -178,25 +183,17 @@ class issuer extends persistent {
                 'eq', \core\oauth2\issuer::SERVICEONLY);
         $mform->hideIf('acceptrisk', 'requireconfirmation', 'checked');
 
-
-        if ($this->type == 'imsobv2p1' || $issuer->get('servicetype') == 'imsobv2p1') {
-            $mform->addRule('baseurl', null, 'required', null, 'client');
-        } else {
-            $mform->addRule('clientid', null, 'required', null, 'client');
-            $mform->addRule('clientsecret', null, 'required', null, 'client');
-        }
-
         $mform->addElement('hidden', 'sortorder');
         $mform->setType('sortorder', PARAM_INT);
 
         $mform->addElement('hidden', 'servicetype');
         $mform->setType('servicetype', PARAM_ALPHANUM);
 
-        if ($this->type) {
+        if ($this->istemplate) {
             $mform->addElement('hidden', 'action', 'savetemplate');
             $mform->setType('action', PARAM_ALPHA);
 
-            $mform->addElement('hidden', 'type', $this->_customdata['type']);
+            $mform->addElement('hidden', 'type', $this->type);
             $mform->setType('type', PARAM_ALPHANUM);
         } else {
             $mform->addElement('hidden', 'action', 'edit');

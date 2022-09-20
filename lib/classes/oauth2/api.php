@@ -48,29 +48,30 @@ class api {
      */
     public static function init_standard_issuer($type) {
         require_capability('moodle/site:config', context_system::instance());
-
-        $classname = self::get_service_classname($type);
-        if (class_exists($classname)) {
-            return $classname::init();
-        }
-        throw new moodle_exception('OAuth 2 service type not recognised: ' . $type);
+        return helper::get_service_classname($type)::get_template();
     }
 
     /**
      * Create endpoints for standard issuers, based on the issuer created from submitted data.
-     * @param string $type One of google, facebook, microsoft, nextcloud, imsobv2p1
+     * @param string $unused not used anymore.
      * @param issuer $issuer issuer the endpoints should be created for.
      * @return \core\oauth2\issuer
      */
-    public static function create_endpoints_for_standard_issuer($type, $issuer) {
+    public static function create_endpoints_for_standard_issuer($unused, $issuer) {
         require_capability('moodle/site:config', context_system::instance());
 
-        $classname = self::get_service_classname($type);
-        if (class_exists($classname)) {
-            $classname::create_endpoints($issuer);
-            return $issuer;
+        $service = helper::get_service_instance($issuer);
+        foreach ($service->get_endpoints() as $endpoint) {
+            $endpoint->set('issuerid', $issuer->get('id'));
+            $endpoint->create();
         }
-        throw new moodle_exception('OAuth 2 service type not recognised: ' . $type);
+
+        foreach ($service->get_field_mappings() as $fieldmap) {
+            $fieldmap->set('issuerid', $issuer->get('id'));
+            $fieldmap->create();
+        }
+
+        return $issuer;
     }
 
     /**
@@ -95,8 +96,8 @@ class api {
             case 'google':
             case 'facebook':
             case 'microsoft':
-                $classname = self::get_service_classname($type);
-                $issuer = $classname::init();
+                $service = helper::get_service_classname($type);
+                $issuer = $service::get_template();
                 if ($baseurl) {
                     $issuer->set('baseurl', $baseurl);
                 }
@@ -329,6 +330,10 @@ class api {
         require_capability('moodle/site:config', context_system::instance());
         $issuer = new issuer(0, $data);
 
+        // Init the service, allowing any modification to the raw issuer data.
+        $service = helper::get_service_instance($issuer);
+        $issuer = $service->get_issuer();
+
         // Will throw exceptions on validation failures.
         if ($create) {
             $issuer->create();
@@ -336,9 +341,27 @@ class api {
             $issuer->update();
         }
 
-        // Perform service discovery.
-        $classname = self::get_service_classname($issuer->get('servicetype'));
-        $classname::discover_endpoints($issuer);
+        // Update the endpoints.
+        foreach (endpoint::get_records(['issuerid' => $issuer->get('id')]) as $endpoint) {
+            $endpoint->delete();
+        }
+        foreach ($service->get_endpoints() as $endpoint) {
+            $endpoint->set('issuerid', $issuer->get('id'));
+            $endpoint->create();
+        }
+
+        // Update the user field mappings.
+        foreach (user_field_mapping::get_records(['issuerid' => $issuer->get('id')]) as $userfieldmapping) {
+            $userfieldmapping->delete();
+        }
+        foreach ($service->get_field_mappings() as $fieldmap) {
+            $fieldmap->set('issuerid', $issuer->get('id'));
+            $fieldmap->create();
+        }
+
+        //$classname = self::get_service_classname($issuer->get('servicetype'));
+        //$classname::discover_endpoints($issuer);
+
         self::guess_image($issuer);
 
         return $issuer;

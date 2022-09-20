@@ -56,7 +56,9 @@ if ($action == 'edit') {
         $PAGE->navbar->add(get_string('createnewservice', 'oauth2') . ' ' . get_string('custom_service', 'oauth2'));
     }
 
-    $mform = new \core_oauth2\form\issuer(null, ['persistent' => $issuer]);
+    // TODO replace with helper/factory call.
+    $type = $issuer ? $issuer->get('servicetype') : '';
+    $mform = core\oauth2\helper::get_service_form($issuer, $type);
 }
 
 if ($mform && $mform->is_cancelled()) {
@@ -87,16 +89,16 @@ if ($mform && $mform->is_cancelled()) {
 } else if ($action == 'savetemplate') {
 
     $type = required_param('type', PARAM_ALPHANUM);
-    $mform = new \core_oauth2\form\issuer(null, [
-        'persistent' => $issuer,
-        'type' => $type,
-        'showrequireconfirm' => true, // Ensure the "requireconfirmation" field is included in form data.
-    ]);
+
+    // TODO replace with helper/factory call.
+    $mform = core\oauth2\helper::get_service_form($issuer, $type, true);
+
     if ($mform->is_cancelled()) {
         redirect(new moodle_url('/oauth2/issuers.php'));
     }
     if ($mform->is_submitted() && $data = $mform->get_data()) {
         $issuer = new core\oauth2\issuer(0, $data);
+        $issuer = core\oauth2\helper::get_service_instance($issuer)->get_issuer();
         $issuer->create();
         $issuer = core\oauth2\api::create_endpoints_for_standard_issuer($type, $issuer);
         redirect($PAGE->url, get_string('changessaved'), null, \core\output\notification::NOTIFY_SUCCESS);
@@ -113,7 +115,9 @@ if ($mform && $mform->is_cancelled()) {
     $docs = required_param('docslink', PARAM_ALPHAEXT);
     require_sesskey();
     $issuer = core\oauth2\api::init_standard_issuer($type);
-    $mform = new \core_oauth2\form\issuer(null, ['persistent' => $issuer, 'type' => $type]);
+
+    // TODO replace with helper/factory call.
+    $mform = core\oauth2\helper::get_service_form($issuer, $type, true);
 
     $PAGE->navbar->add(get_string('createnewservice', 'oauth2') . ' ' . get_string($type . '_service', 'oauth2'));
     echo $OUTPUT->header();
@@ -185,6 +189,15 @@ if ($mform && $mform->is_cancelled()) {
 
     echo $renderer->container_start();
     echo get_string('createnewservice', 'oauth2') . ' ';
+
+    foreach (\core\oauth2\helper::get_service_names() as $service) {
+        $docs = "oauth2/issuers/$service";
+        $name = "{$service}_service";
+        $params = ['action' => 'edittemplate', 'type' => $service, 'sesskey' => sesskey(), 'docslink' => $docs];
+        $addurl = new moodle_url('/oauth2/issuers.php', $params);
+        echo $renderer->single_button($addurl, get_string($name, 'oauth2'));
+    }
+
 
     // Google template.
     $docs = 'oauth2/issuers/google';

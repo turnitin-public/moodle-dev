@@ -2,8 +2,9 @@
 
 namespace core\oauth2\service\google;
 
-use core\oauth2\issuer;
+use core\oauth2\discovery\openid_connect_discovery;
 use core\oauth2\endpoint;
+use core\oauth2\issuer;
 use core\oauth2\user_field_mapping;
 use core\oauth2\service\v1\service;
 
@@ -13,14 +14,16 @@ class google implements service {
 
     protected array $endpoints;
 
-    protected \curl $curl;
-
     protected bool $discovered = false;
 
-    public function __construct(issuer $issuer, \curl $curl) {
+    protected openid_connect_discovery $oidcconfigreader;
+
+    public function __construct(issuer $issuer, ?openid_connect_discovery $oidcconfigreader) {
         $this->issuer = $issuer;
         $this->endpoints = [];
-        $this->curl = $curl;
+        if ($oidcconfigreader) {
+            $this->oidcconfigreader = $oidcconfigreader;
+        }
     }
 
     public static function get_template(): ?issuer {
@@ -36,16 +39,18 @@ class google implements service {
     }
 
     public static function get_instance(issuer $issuer): service {
-        return new self($issuer, new \curl());
+        $issuerurl = $issuer->get('baseurl');
+        $oidcconfigreader = !empty($issuerurl) ? new openid_connect_discovery(new \moodle_url($issuerurl), new \curl()) : null;
+        return new self($issuer, $oidcconfigreader);
     }
 
     public function get_issuer(): issuer {
-        $this->discover_metadata();
+        $this->get_issuer_configuration();
         return $this->issuer;
     }
 
     public function get_endpoints(): array {
-        $this->discover_metadata();
+        $this->get_issuer_configuration();
         return array_values($this->endpoints);
     }
 
@@ -73,63 +78,32 @@ class google implements service {
         return $m;
     }
 
-    protected function discover_metadata(): void {
-        if ($this->discovered) {
+    protected function get_issuer_configuration(): void {
+        if ($this->discovered || empty($this->oidcconfigreader)) {
             return;
         }
 
-        $url = $this->get_discovery_endpoint_url();
+        // TODO: we usually save the discovery_endpoint here but we don't need to - it's not needed as long as google does oidc.
+        //$record = (object) [
+        //    'name' => 'discovery_endpoint',
+        //    'url' => $url,
+        //];
+        //$this->endpoints[$record->name] = new endpoint(0, $record);
 
-        if (!$json = $this->curl->get($url)) {
-            $msg = 'Could not discover end points for identity issuer: ' . $this->issuer->get('name') . " [URL: $url]";
-            throw new \moodle_exception($msg);
-        }
-
-        if ($msg = $this->curl->error) {
-            throw new \moodle_exception('Could not discover service endpoints: ' . $msg);
-        }
-
-        $info = json_decode($json);
-        if (empty($info)) {
-            $msg = 'Could not discover end points for identity issuer: ' . $this->issuer->get('name') . " [URL: $url]";
-            throw new \moodle_exception($msg);
-        }
-
-        $record = (object) [
-            'name' => 'discovery_endpoint',
-            'url' => $url,
-        ];
-        $this->endpoints[$record->name] = new endpoint(0, $record);
-
-        $this->process_configuration_json($info);
-        $this->discovered = true;
-    }
-
-    protected function get_discovery_endpoint_url(): string {
-        $url = $this->issuer->get('baseurl');
-        if (!empty($url)) {
-            // Add slash at the end of the base url.
-            $url .= (substr($url, -1) == '/' ? '' : '/');
-            // Append the well-known file for OIDC.
-            $url .= '.well-known/openid-configuration';
-        }
-
-        return $url;
-    }
-
-    protected function process_configuration_json(\stdClass $info) {
-        foreach ($info as $key => $value) {
-            if (substr_compare($key, '_endpoint', - strlen('_endpoint')) === 0) {
-                $record = new \stdClass();
-                $record->name = $key;
-                $record->url = $value;
-
-                $this->endpoints[$record->name] = new endpoint(0, $record);
-            }
-
+        $this->issuerconfig = $this->oidcconfigreader->read_configuration();
+        foreach ($this->issuerconfig as $key => $value) {
             if ($key == 'scopes_supported') {
                 $this->issuer->set('scopessupported', implode(' ', $value));
             }
         }
+
+        foreach ($this->oidcconfigreader->get_endpoints() as $name => $url) {
+            $record = (object) [
+                'name' => $name,
+                'url' => $url
+            ];
+            $this->endpoints[$record->name] = new endpoint(0, $record);
+        }
+        $this->discovered = true;
     }
 }

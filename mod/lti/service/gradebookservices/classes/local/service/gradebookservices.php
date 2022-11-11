@@ -424,8 +424,10 @@ class gradebookservices extends service_base {
             }
             if (isset($score->timestamp)) {
                 $timemodified = strtotime($score->timestamp);
+                $dategraded = strtotime($score->timestamp);
             } else {
                 $timemodified = time();
+                $dategraded = time();
             }
         }
         $feedbackformat = FORMAT_MOODLE;
@@ -445,6 +447,7 @@ class gradebookservices extends service_base {
             }
             $grade->rawgrademax = $score->scoreMaximum;
             $grade->timemodified = $timemodified;
+            $grade->dategraded = $dategraded;
             $grade->feedbackformat = $feedbackformat;
             $grade->feedback = $feedback;
             $grade->rawgrade = $finalgrade;

@@ -22,4 +22,5 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['oauth2servicesettings'] = 'Manage OAuth 2 service plugins';
 $string['privacy:metadata'] = 'The OAuth 2 subsystem does not store any personal data.';

@@ -40,7 +40,8 @@
         "theme": "theme",
         "local": "local",
         "h5plib": "h5p\/h5plib",
-        "paygw": "payment\/gateway"
+        "paygw": "payment\/gateway",
+        "oauth2service": "lib\/oauth2"
     },
     "subsystems": {
         "access": null,

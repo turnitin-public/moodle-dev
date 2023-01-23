@@ -1937,6 +1937,9 @@ class core_plugin_manager {
                 'quiz', 'resource', 'scorm', 'survey', 'url', 'wiki', 'workshop'
             ),
 
+            'oauth2service' => [
+            ],
+
             'paygw' => [
                 'paypal',
             ],

@@ -14,24 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * This file contains the form add/update oauth2 user_field_mapping.
- *
- * @package   tool_oauth2
- * @copyright 2017 Damyon Wiese
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
+namespace core_oauth2\form;
 
-namespace tool_oauth2\form;
-defined('MOODLE_INTERNAL') || die();
-
-use stdClass;
 use core\form\persistent;
 
 /**
  * Issuer form.
  *
- * @package   tool_oauth2
+ * @package   core_oauth2
  * @copyright 2017 Damyon Wiese
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -47,21 +37,19 @@ class user_field_mapping extends persistent {
      * Define the form - called by parent constructor
      */
     public function definition() {
-        global $PAGE;
-
         $mform = $this->_form;
         $userfieldmapping = $this->get_persistent();
 
         // External.
-        $mform->addElement('text', 'externalfield', get_string('userfieldexternalfield', 'tool_oauth2'));
+        $mform->addElement('text', 'externalfield', get_string('userfieldexternalfield', 'oauth2'));
         $mform->addRule('externalfield', null, 'required', null, 'client');
         $mform->addRule('externalfield', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
-        $mform->addHelpButton('externalfield', 'userfieldexternalfield', 'tool_oauth2');
+        $mform->addHelpButton('externalfield', 'userfieldexternalfield', 'oauth2');
 
         // Internal.
         $choices = $userfieldmapping->get_internalfield_list();
-        $mform->addElement('selectgroups', 'internalfield', get_string('userfieldinternalfield', 'tool_oauth2'), $choices);
-        $mform->addHelpButton('internalfield', 'userfieldinternalfield', 'tool_oauth2');
+        $mform->addElement('selectgroups', 'internalfield', get_string('userfieldinternalfield', 'oauth2'), $choices);
+        $mform->addHelpButton('internalfield', 'userfieldinternalfield', 'oauth2');
 
         $mform->addElement('hidden', 'action', 'edit');
         $mform->setType('action', PARAM_ALPHA);
@@ -73,8 +61,6 @@ class user_field_mapping extends persistent {
         $mform->addElement('hidden', 'id', $userfieldmapping->get('id'));
         $mform->setType('id', PARAM_INT);
 
-        $this->add_action_buttons(true, get_string('savechanges', 'tool_oauth2'));
+        $this->add_action_buttons(true, get_string('savechanges', 'oauth2'));
     }
-
 }
-

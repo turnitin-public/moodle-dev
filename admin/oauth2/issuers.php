@@ -17,25 +17,25 @@
 /**
  * OAuth 2 Configuration page.
  *
- * @package    tool_oauth2
+ * @package    core_oauth2
  * @copyright  2017 Damyon Wiese <damyon@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once(__DIR__ . '/../../../config.php');
+require_once(__DIR__ . '/../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->libdir.'/tablelib.php');
 
-$PAGE->set_url('/admin/tool/oauth2/issuers.php');
+$PAGE->set_url('/admin/oauth2/issuers.php');
 $PAGE->set_context(context_system::instance());
 $PAGE->set_pagelayout('admin');
-$strheading = get_string('pluginname', 'tool_oauth2');
+$strheading = get_string('oauth2services', 'oauth2');
 $PAGE->set_title($strheading);
 $PAGE->set_heading($strheading);
 
 require_admin();
 
-$renderer = $PAGE->get_renderer('tool_oauth2');
+$renderer = $PAGE->get_renderer('core_oauth2');
 
 $action = optional_param('action', '', PARAM_ALPHAEXT);
 $issuerid = optional_param('id', '', PARAM_RAW);
@@ -51,16 +51,16 @@ if ($issuerid) {
 
 if ($action == 'edit') {
     if ($issuer) {
-        $PAGE->navbar->add(get_string('editissuer', 'tool_oauth2', s($issuer->get('name'))));
+        $PAGE->navbar->add(get_string('editissuer', 'oauth2', s($issuer->get('name'))));
     } else {
-        $PAGE->navbar->add(get_string('createnewservice', 'tool_oauth2') . ' ' . get_string('custom_service', 'tool_oauth2'));
+        $PAGE->navbar->add(get_string('createnewservice', 'oauth2') . ' ' . get_string('custom_service', 'oauth2'));
     }
 
-    $mform = new \tool_oauth2\form\issuer(null, ['persistent' => $issuer]);
+    $mform = new \core_oauth2\form\issuer(null, ['persistent' => $issuer]);
 }
 
 if ($mform && $mform->is_cancelled()) {
-    redirect(new moodle_url('/admin/tool/oauth2/issuers.php'));
+    redirect(new moodle_url('/admin/oauth2/issuers.php'));
 } else if ($action == 'edit') {
 
     if ($data = $mform->get_data()) {
@@ -77,9 +77,9 @@ if ($mform && $mform->is_cancelled()) {
     } else {
         echo $OUTPUT->header();
         if ($issuer) {
-            echo $OUTPUT->heading(get_string('editissuer', 'tool_oauth2', s($issuer->get('name'))));
+            echo $OUTPUT->heading(get_string('editissuer', 'oauth2', s($issuer->get('name'))));
         } else {
-            echo $OUTPUT->heading(get_string('createnewservice', 'tool_oauth2') . ' ' . get_string('custom_service', 'tool_oauth2'));
+            echo $OUTPUT->heading(get_string('createnewservice', 'oauth2') . ' ' . get_string('custom_service', 'oauth2'));
         }
         $mform->display();
         echo $OUTPUT->footer();
@@ -87,13 +87,13 @@ if ($mform && $mform->is_cancelled()) {
 } else if ($action == 'savetemplate') {
 
     $type = required_param('type', PARAM_ALPHANUM);
-    $mform = new \tool_oauth2\form\issuer(null, [
+    $mform = new \core_oauth2\form\issuer(null, [
         'persistent' => $issuer,
         'type' => $type,
         'showrequireconfirm' => true, // Ensure the "requireconfirmation" field is included in form data.
     ]);
     if ($mform->is_cancelled()) {
-        redirect(new moodle_url('/admin/tool/oauth2/issuers.php'));
+        redirect(new moodle_url('/admin/oauth2/issuers.php'));
     }
     if ($mform->is_submitted() && $data = $mform->get_data()) {
         $issuer = new core\oauth2\issuer(0, $data);
@@ -102,7 +102,7 @@ if ($mform && $mform->is_cancelled()) {
         redirect($PAGE->url, get_string('changessaved'), null, \core\output\notification::NOTIFY_SUCCESS);
     } else {
         echo $OUTPUT->header();
-        echo $OUTPUT->heading(get_string('createnewservice', 'tool_oauth2') . ' ' . get_string($type . '_service', 'tool_oauth2'));
+        echo $OUTPUT->heading(get_string('createnewservice', 'oauth2') . ' ' . get_string($type . '_service', 'oauth2'));
         $mform->display();
         echo $OUTPUT->footer();
     }
@@ -113,11 +113,11 @@ if ($mform && $mform->is_cancelled()) {
     $docs = required_param('docslink', PARAM_ALPHAEXT);
     require_sesskey();
     $issuer = core\oauth2\api::init_standard_issuer($type);
-    $mform = new \tool_oauth2\form\issuer(null, ['persistent' => $issuer, 'type' => $type]);
+    $mform = new \core_oauth2\form\issuer(null, ['persistent' => $issuer, 'type' => $type]);
 
-    $PAGE->navbar->add(get_string('createnewservice', 'tool_oauth2') . ' ' . get_string($type . '_service', 'tool_oauth2'));
+    $PAGE->navbar->add(get_string('createnewservice', 'oauth2') . ' ' . get_string($type . '_service', 'oauth2'));
     echo $OUTPUT->header();
-    echo $OUTPUT->heading(get_string('createnewservice', 'tool_oauth2') . ' ' . get_string($type . '_service', 'tool_oauth2'));
+    echo $OUTPUT->heading(get_string('createnewservice', 'oauth2') . ' ' . get_string($type . '_service', 'oauth2'));
     $mform->display();
     echo $OUTPUT->footer();
 
@@ -125,45 +125,45 @@ if ($mform && $mform->is_cancelled()) {
 
     require_sesskey();
     core\oauth2\api::enable_issuer($issuerid);
-    redirect($PAGE->url, get_string('issuerenabled', 'tool_oauth2'), null, \core\output\notification::NOTIFY_SUCCESS);
+    redirect($PAGE->url, get_string('issuerenabled', 'oauth2'), null, \core\output\notification::NOTIFY_SUCCESS);
 
 } else if ($action == 'disable') {
 
     require_sesskey();
     core\oauth2\api::disable_issuer($issuerid);
-    redirect($PAGE->url, get_string('issuerdisabled', 'tool_oauth2'), null, \core\output\notification::NOTIFY_SUCCESS);
+    redirect($PAGE->url, get_string('issuerdisabled', 'oauth2'), null, \core\output\notification::NOTIFY_SUCCESS);
 
 } else if ($action == 'delete') {
 
     if (!optional_param('confirm', false, PARAM_BOOL)) {
         $continueparams = ['action' => 'delete', 'id' => $issuerid, 'sesskey' => sesskey(), 'confirm' => true];
-        $continueurl = new moodle_url('/admin/tool/oauth2/issuers.php', $continueparams);
-        $cancelurl = new moodle_url('/admin/tool/oauth2/issuers.php');
+        $continueurl = new moodle_url('/admin/oauth2/issuers.php', $continueparams);
+        $cancelurl = new moodle_url('/admin/oauth2/issuers.php');
         echo $OUTPUT->header();
-        echo $OUTPUT->confirm(get_string('deleteconfirm', 'tool_oauth2', s($issuer->get('name'))), $continueurl, $cancelurl);
+        echo $OUTPUT->confirm(get_string('deleteconfirm', 'oauth2', s($issuer->get('name'))), $continueurl, $cancelurl);
         echo $OUTPUT->footer();
     } else {
         require_sesskey();
         core\oauth2\api::delete_issuer($issuerid);
-        redirect($PAGE->url, get_string('issuerdeleted', 'tool_oauth2'), null, \core\output\notification::NOTIFY_SUCCESS);
+        redirect($PAGE->url, get_string('issuerdeleted', 'oauth2'), null, \core\output\notification::NOTIFY_SUCCESS);
     }
 
 } else if ($action == 'auth') {
 
     if (!optional_param('confirm', false, PARAM_BOOL)) {
         $continueparams = ['action' => 'auth', 'id' => $issuerid, 'sesskey' => sesskey(), 'confirm' => true];
-        $continueurl = new moodle_url('/admin/tool/oauth2/issuers.php', $continueparams);
-        $cancelurl = new moodle_url('/admin/tool/oauth2/issuers.php');
+        $continueurl = new moodle_url('/admin/oauth2/issuers.php', $continueparams);
+        $cancelurl = new moodle_url('/admin/oauth2/issuers.php');
         echo $OUTPUT->header();
-        echo $OUTPUT->confirm(get_string('authconfirm', 'tool_oauth2', s($issuer->get('name'))), $continueurl, $cancelurl);
+        echo $OUTPUT->confirm(get_string('authconfirm', 'oauth2', s($issuer->get('name'))), $continueurl, $cancelurl);
         echo $OUTPUT->footer();
     } else {
         require_sesskey();
         $params = ['sesskey' => sesskey(), 'id' => $issuerid, 'action' => 'auth', 'confirm' => true, 'response' => true];
-        if (core\oauth2\api::connect_system_account($issuer, new moodle_url('/admin/tool/oauth2/issuers.php', $params))) {
-            redirect($PAGE->url, get_string('authconnected', 'tool_oauth2'), null, \core\output\notification::NOTIFY_SUCCESS);
+        if (core\oauth2\api::connect_system_account($issuer, new moodle_url('/admin/oauth2/issuers.php', $params))) {
+            redirect($PAGE->url, get_string('authconnected', 'oauth2'), null, \core\output\notification::NOTIFY_SUCCESS);
         } else {
-            redirect($PAGE->url, get_string('authnotconnected', 'tool_oauth2'), null, \core\output\notification::NOTIFY_ERROR);
+            redirect($PAGE->url, get_string('authnotconnected', 'oauth2'), null, \core\output\notification::NOTIFY_ERROR);
         }
     }
 } else if ($action == 'moveup') {
@@ -178,59 +178,59 @@ if ($mform && $mform->is_cancelled()) {
 
 } else {
     echo $OUTPUT->header();
-    echo $OUTPUT->heading(get_string('pluginname', 'tool_oauth2'));
-    echo $OUTPUT->doc_link('OAuth2_Services', get_string('serviceshelp', 'tool_oauth2'));
+    echo $OUTPUT->heading(get_string('oauth2services', 'oauth2'));
+    echo $OUTPUT->doc_link('OAuth2_Services', get_string('serviceshelp', 'oauth2'));
     $issuers = core\oauth2\api::get_all_issuers(true);
     echo $renderer->issuers_table($issuers);
 
     echo $renderer->container_start();
-    echo get_string('createnewservice', 'tool_oauth2') . ' ';
+    echo get_string('createnewservice', 'oauth2') . ' ';
 
     // Google template.
-    $docs = 'admin/tool/oauth2/issuers/google';
+    $docs = 'oauth2/issuers/google';
     $params = ['action' => 'edittemplate', 'type' => 'google', 'sesskey' => sesskey(), 'docslink' => $docs];
-    $addurl = new moodle_url('/admin/tool/oauth2/issuers.php', $params);
-    echo $renderer->single_button($addurl, get_string('google_service', 'tool_oauth2'));
+    $addurl = new moodle_url('/admin/oauth2/issuers.php', $params);
+    echo $renderer->single_button($addurl, get_string('google_service', 'oauth2'));
 
     // Microsoft template.
-    $docs = 'admin/tool/oauth2/issuers/microsoft';
+    $docs = 'oauth2/issuers/microsoft';
     $params = ['action' => 'edittemplate', 'type' => 'microsoft', 'sesskey' => sesskey(), 'docslink' => $docs];
-    $addurl = new moodle_url('/admin/tool/oauth2/issuers.php', $params);
-    echo $renderer->single_button($addurl, get_string('microsoft_service', 'tool_oauth2'));
+    $addurl = new moodle_url('/admin/oauth2/issuers.php', $params);
+    echo $renderer->single_button($addurl, get_string('microsoft_service', 'oauth2'));
 
     // Facebook template.
-    $docs = 'admin/tool/oauth2/issuers/facebook';
+    $docs = 'oauth2/issuers/facebook';
     $params = ['action' => 'edittemplate', 'type' => 'facebook', 'sesskey' => sesskey(), 'docslink' => $docs];
-    $addurl = new moodle_url('/admin/tool/oauth2/issuers.php', $params);
-    echo $renderer->single_button($addurl, get_string('facebook_service', 'tool_oauth2'));
+    $addurl = new moodle_url('/admin/oauth2/issuers.php', $params);
+    echo $renderer->single_button($addurl, get_string('facebook_service', 'oauth2'));
 
     // Nextcloud template.
-    $docs = 'admin/tool/oauth2/issuers/nextcloud';
+    $docs = 'oauth2/issuers/nextcloud';
     $params = ['action' => 'edittemplate', 'type' => 'nextcloud', 'sesskey' => sesskey(), 'docslink' => $docs];
-    $addurl = new moodle_url('/admin/tool/oauth2/issuers.php', $params);
-    echo $renderer->single_button($addurl, get_string('nextcloud_service', 'tool_oauth2'));
+    $addurl = new moodle_url('/admin/oauth2/issuers.php', $params);
+    echo $renderer->single_button($addurl, get_string('nextcloud_service', 'oauth2'));
 
     // IMS Open Badges Connect template.
-    $docs = 'admin/tool/oauth2/issuers/imsobv2p1';
+    $docs = 'oauth2/issuers/imsobv2p1';
     $params = ['action' => 'edittemplate', 'type' => 'imsobv2p1', 'sesskey' => sesskey(), 'docslink' => $docs];
-    $addurl = new moodle_url('/admin/tool/oauth2/issuers.php', $params);
-    echo $renderer->single_button($addurl, get_string('imsobv2p1_service', 'tool_oauth2'));
+    $addurl = new moodle_url('/admin/oauth2/issuers.php', $params);
+    echo $renderer->single_button($addurl, get_string('imsobv2p1_service', 'oauth2'));
 
     // Linkedin template.
-    $docs = 'admin/tool/oauth2/issuers/linkedin';
+    $docs = 'oauth2/issuers/linkedin';
     $params = ['action' => 'edittemplate', 'type' => 'linkedin', 'sesskey' => sesskey(), 'docslink' => $docs];
-    $addurl = new moodle_url('/admin/tool/oauth2/issuers.php', $params);
-    echo $renderer->single_button($addurl, get_string('linkedin_service', 'tool_oauth2'));
+    $addurl = new moodle_url('/admin/oauth2/issuers.php', $params);
+    echo $renderer->single_button($addurl, get_string('linkedin_service', 'oauth2'));
 
     // Clever template.
-    $docs = 'admin/tool/oauth2/issuers/clever';
+    $docs = 'oauth2/issuers/clever';
     $params = ['action' => 'edittemplate', 'type' => 'clever', 'sesskey' => sesskey(), 'docslink' => $docs];
-    $addurl = new moodle_url('/admin/tool/oauth2/issuers.php', $params);
-    echo $renderer->single_button($addurl, get_string('clever_service', 'tool_oauth2'));
+    $addurl = new moodle_url('/admin/oauth2/issuers.php', $params);
+    echo $renderer->single_button($addurl, get_string('clever_service', 'oauth2'));
 
     // Generic issuer.
-    $addurl = new moodle_url('/admin/tool/oauth2/issuers.php', ['action' => 'edit']);
-    echo $renderer->single_button($addurl, get_string('custom_service', 'tool_oauth2'));
+    $addurl = new moodle_url('/admin/oauth2/issuers.php', ['action' => 'edit']);
+    echo $renderer->single_button($addurl, get_string('custom_service', 'oauth2'));
 
     echo $renderer->container_end();
     echo $OUTPUT->footer();

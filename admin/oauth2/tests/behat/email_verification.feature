@@ -1,4 +1,4 @@
-@tool @tool_oauth2 @external @javascript
+@core @core_oauth2 @external @javascript
 Feature: OAuth2 email verification
   In order to make sure administrators understand the ramifications of email verification
   As an administrator

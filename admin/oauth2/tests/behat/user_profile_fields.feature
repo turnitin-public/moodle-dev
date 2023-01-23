@@ -1,4 +1,4 @@
-@tool @tool_oauth2 @javascript
+@core @core_oauth2 @javascript
 
 Feature: OAuth2 user profile fields functionality
   In order to use them later for authentication or repository plugins

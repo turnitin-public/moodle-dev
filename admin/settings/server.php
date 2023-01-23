@@ -329,6 +329,11 @@ if ($hassiteconfig) {
         $plugin->load_settings($ADMIN, 'oauth2services', $hassiteconfig);
     }
 
+    $ADMIN->add(
+        'oauth2services',
+        new admin_externalpage('oauth2', new lang_string('oauth2services', 'oauth2'), new moodle_url("/admin/oauth2/issuers.php")),
+    );
+
     // Tasks.
     $ADMIN->add('server', new admin_category('taskconfig', new lang_string('taskadmintitle', 'admin')));
 

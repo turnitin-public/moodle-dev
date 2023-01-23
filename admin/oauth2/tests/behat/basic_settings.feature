@@ -1,4 +1,4 @@
-@tool @tool_oauth2 @external
+@core @core_oauth2 @external
 Feature: Basic OAuth2 functionality
   In order to use them later for authentication or repository plugins
   As an administrator

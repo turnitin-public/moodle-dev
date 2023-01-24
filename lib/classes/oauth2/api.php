@@ -27,6 +27,8 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/filelib.php');
 
+use core\oauth2\service\helper;
+use core\oauth2\service\service;
 use stdClass;
 use moodle_url;
 use context_system;
@@ -41,19 +43,18 @@ use moodle_exception;
 class api {
 
     /**
-     * Initializes a record for one of the standard issuers to be displayed in the settings.
+     * Gets the default issuer data from the respective oauth2service plugin, to prefill the service instance creation form.
+     *
      * The issuer is not yet created in the database.
-     * @param string $type One of google, facebook, microsoft, nextcloud, imsobv2p1
-     * @return \core\oauth2\issuer
+     *
+     * @param string $pluginname The oauth2service plugin name.
+     * @return \core\oauth2\issuer the issuer instance.
      */
-    public static function init_standard_issuer($type) {
+    public static function init_standard_issuer($pluginname) {
         require_capability('moodle/site:config', context_system::instance());
 
-        $classname = self::get_service_classname($type);
-        if (class_exists($classname)) {
-            return $classname::init();
-        }
-        throw new moodle_exception('OAuth 2 service type not recognised: ' . $type);
+        // Hook, asking the plugin to provide its default issuer template.
+        return helper::get_service_classname($pluginname)::get_template();
     }
 
     /**
@@ -95,8 +96,8 @@ class api {
             case 'google':
             case 'facebook':
             case 'microsoft':
-                $classname = self::get_service_classname($type);
-                $issuer = $classname::init();
+                $serviceclassname = helper::get_service_classname($type);
+                $issuer = $serviceclassname::get_template();
                 if ($baseurl) {
                     $issuer->set('baseurl', $baseurl);
                 }
@@ -214,7 +215,7 @@ class api {
         }
         // Get all the scopes!
         $scopes = self::get_system_scopes_for_issuer($issuer);
-        $class = self::get_client_classname($issuer->get('servicetype'));
+        $class = helper::get_client_classname($issuer->get('servicetype'));
         $client = new $class($issuer, null, $scopes, true);
 
         if (!$client->is_logged_in()) {
@@ -237,31 +238,10 @@ class api {
      */
     public static function get_user_oauth_client(issuer $issuer, moodle_url $currenturl, $additionalscopes = '',
             $autorefresh = false) {
-        $class = self::get_client_classname($issuer->get('servicetype'));
+        $class = helper::get_client_classname($issuer->get('servicetype'));
         $client = new $class($issuer, $currenturl, $additionalscopes, false, $autorefresh);
 
         return $client;
-    }
-
-    /**
-     * Get the client classname for an issuer.
-     *
-     * @param string $type The OAuth issuer type (google, facebook...).
-     * @return string The classname for the custom client or core client class if the class for the defined type
-     *                 doesn't exist or null type is defined.
-     */
-    protected static function get_client_classname(?string $type): string {
-        // Default core client class.
-        $classname = 'core\\oauth2\\client';
-
-        if (!empty($type)) {
-            $typeclassname = 'core\\oauth2\\client\\' . $type;
-            if (class_exists($typeclassname)) {
-                $classname = $typeclassname;
-            }
-        }
-
-        return $classname;
     }
 
     /**
@@ -299,6 +279,42 @@ class api {
     }
 
     /**
+     * Save an issuer, taking data passed from the mform and updating related entities.
+     *
+     * @param stdClass $data the mform data
+     * @return issuer the saved issuer instance.
+     */
+    public static function save_issuer(stdClass $data): issuer {
+        $id = $data->id ?? 0; // Record the id, to ensure plugins don't change it.
+        $issuer = new issuer($data->id ?? 0, $data);
+
+        // Hook allowing plugins to provide their own issuer data based on the submitted, validated form data,
+        // providing support for features like dynamic client registration.
+        $service = helper::get_service_instance($issuer);
+        $issuer = $service->get_issuer();
+        $issuer->set('id', $id);
+
+        if ($id) {
+            // Update issuer, ensure endpoints are present, but don't change field mappings,
+            $issuer->update();
+            self::fix_issuer_endpoints($issuer, $service->get_endpoints());
+        } else {
+            $issuer->create();
+            self::fix_issuer_endpoints($issuer, $service->get_endpoints());
+
+            // Extension point: Get the user field mapping from the plugin (if the plugin supports login/identity)
+            foreach ($service->get_field_mappings() as $userfieldmap) {
+                $userfieldmap->set('issuerid', $issuer->get('id'));
+                $userfieldmap->create();
+            }
+
+            // If no image is present in the form data, try to use the favicon as fallback.
+            self::guess_image($issuer);
+        }
+        return $issuer;
+    }
+
+    /**
      * Take the data from the mform and update the issuer.
      *
      * @param stdClass $data
@@ -319,9 +335,41 @@ class api {
     }
 
     /**
+     * Makes sure the endpoints defined by the service plugin are present.
+     *
+     * Will fix endpoints having the same name, or missing endpoints. If custom endpoints have been defined, these are not touched.
+     *
+     * @param issuer $issuer the issuer
+     * @param array $endpoints the endpoints which are required for operation of the issuer/service.
+     * @return void
+     */
+    protected static function fix_issuer_endpoints(issuer $issuer, array $endpoints): void {
+        $existingendpoints = self::get_endpoints($issuer);
+        $indexedexisting = array_combine(
+            array_map(function($item) {
+                return $item->get('name');
+            }, $existingendpoints),
+            array_map(function($item) {
+                return $item->get('url');
+            }, $existingendpoints)
+        );
+        foreach ($endpoints as $endpoint) {
+            // Name is present but isn't the original endpoint value - update it.
+            if (isset($indexedexisting[$endpoint->get('name')]) &&
+                    $endpoint->get('url') != $indexedexisting[$endpoint->get('name')]) {
+                $endpoint->set('issuerid', $issuer->get('id'));
+                $endpoint->update();
+            } else if (!isset($indexedexisting[$endpoint->get('name')])) {
+                $endpoint->set('issuerid', $issuer->get('id'));
+                $endpoint->create();
+            }
+        }
+    }
+
+    /**
      * Take the data from the mform and create or update the issuer.
      *
-     * @param stdClass $data Form data for them issuer to be created/updated.
+     * @param stdClass $data Form data for the issuer to be created/updated.
      * @param bool $create If true, the issuer will be created; otherwise, it will be updated.
      * @return issuer The created/updated issuer.
      */
@@ -606,7 +654,7 @@ class api {
         $scopes = self::get_system_scopes_for_issuer($issuer);
 
         // Allow callbacks to inject non-standard scopes to the auth request.
-        $class = self::get_client_classname($issuer->get('servicetype'));
+        $class = helper::get_client_classname($issuer->get('servicetype'));
         $client = new $class($issuer, $returnurl, $scopes, true);
 
         if (!optional_param('response', false, PARAM_BOOL)) {

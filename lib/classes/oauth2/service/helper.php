@@ -16,22 +16,48 @@
 
 namespace core\oauth2\service;
 
+use core\oauth2\client;
+use core\oauth2\issuer;
+use core_oauth2\form\issuer as issuerform;
+
 /**
- * Helper for oauth2service plugins.
+ * Helper for interacting with oauth2service plugins.
  */
 class helper {
+
+    public static function get_service_issuer_form(string $pluginname, ?issuer $issuer = null, array $customdata): issuerform {
+        $classname = self::get_service_classname($pluginname);
+        //$formclass = $classname::get_issuer_form_class();
+        $serviceconfig = $classname::get_config();
+        $data = array_merge($customdata, ['persistent' => $issuer, 'type' => $pluginname, 'serviceconfig' => $serviceconfig]);
+
+        //return new $formclass(null, $data);
+        // TODO: perhaps the API could make it optional for plugins to provide a form, defaulting to the core form here.
+         return new issuerform(null, $data);
+    }
+
+    /**
+     * Get the short name of the service plugin.
+     *
+     * @param string $pluginname
+     * @return string
+     * @throws \coding_exception
+     */
+    public static function get_service_shortname(string $pluginname): string {
+        $classname = self::get_service_classname($pluginname);
+        return get_string($classname::get_config()->get_full_config()['service_shortname'], "oauth2service_$pluginname");
+    }
 
     /**
      * Gets a list of names for all available, enabled oauth2services plugins.
      *
-     * @return array the array of names.
+     * @return array the array containing [pluginname => shortname] for each plugin type.
      */
     public static function get_service_names(): array {
         $pluginman = \core_plugin_manager::instance();
         $names = [];
         foreach ($pluginman->get_enabled_plugins('oauth2service') as $plugin) {
-            $classname = self::get_service_classname($plugin);
-            $names[$classname::get_name()] = $classname::get_name();
+            $names[$plugin] = self::get_service_shortname($plugin);
         }
         return $names;
     }
@@ -41,31 +67,39 @@ class helper {
      *
      * @param string $pluginname the string name of the oauth2service plugin.
      * @return string the fully qualified classname.
+     * @throws \coding_exception if the pluginname is invalid.
      */
     public static function get_service_classname(string $pluginname): string {
-        $serviceclass = "oauth2service\\{$pluginname}\\service";
+        $serviceclass = "oauth2service_$pluginname\\service";
         if (class_exists($serviceclass) && is_subclass_of($serviceclass, service::class)) {
             return $serviceclass;
         }
-        return 'core\\oauth2\\service\\custom\\custom';
+        throw new \coding_exception("Error: '$pluginname' is not a valid OAuth 2 service plugin.");
     }
 
     /**
      * Get an instance of the service class for the plugin which matches the given issuer.
      *
-     * @param issuer $issuer the issuer
+     * @param issuer $issuer the issuer record.
      * @return \core\oauth2\service\service an instance of the service.
      */
     public static function get_service_instance(issuer $issuer): service {
-        $issuertype = $issuer->get('servicetype');
-        if (!empty($issuertype)) {
-            $serviceclass = "oauth2service\\{$issuertype}\\service";
-            if (class_exists($serviceclass) && is_subclass_of($serviceclass, service::class)) {
-                return $serviceclass::get_instance($issuer);
-            }
-        }
+        $classname = self::get_service_classname($issuer->get('servicetype'));
+        return $classname::get_instance($issuer);
+    }
 
-        $defaultclass = 'core\\oauth2\\service\\custom\\custom';
-        return $defaultclass::get_instance($issuer);
+    /**
+     * Get the fully qualified classname of the oauth2service plugin's client class.
+     *
+     * @param string $pluginname
+     * @return string the fully qualified classname.
+     * @throws \coding_exception if the pluginname is invalid.
+     */
+    public static function get_client_classname(string $pluginname): string {
+        $clientclass = "oauth2service_$pluginname\\client";
+        if (class_exists($clientclass) && is_subclass_of($clientclass, client::class)) {
+            return $clientclass;
+        }
+        throw new \coding_exception("Error: '$pluginname' is not a valid OAuth 2 service plugin.");
     }
 }

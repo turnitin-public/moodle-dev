@@ -40,7 +40,6 @@ $renderer = $PAGE->get_renderer('core_oauth2');
 $action = optional_param('action', '', PARAM_ALPHAEXT);
 $issuerid = optional_param('id', '', PARAM_RAW);
 $issuer = null;
-$mform = null;
 
 if ($issuerid) {
     $issuer = \core\oauth2\api::get_issuer($issuerid);
@@ -50,74 +49,50 @@ if ($issuerid) {
 }
 
 if ($action == 'edit') {
-    if ($issuer) {
-        $PAGE->navbar->add(get_string('editissuer', 'oauth2', s($issuer->get('name'))));
-    } else {
-        $PAGE->navbar->add(get_string('createnewservice', 'oauth2') . ' ' . get_string('custom_service', 'oauth2'));
-    }
 
-    $mform = new \core_oauth2\form\issuer(null, ['persistent' => $issuer]);
-}
+    $type = $issuer->get('servicetype');
+    $mform = \core\oauth2\service\helper::get_service_issuer_form($type, $issuer, ['action' => 'edit']);
 
-if ($mform && $mform->is_cancelled()) {
-    redirect(new moodle_url('/admin/oauth2/issuers.php'));
-} else if ($action == 'edit') {
-
-    if ($data = $mform->get_data()) {
+    if ($mform->is_cancelled()) {
+        redirect(new moodle_url('/admin/oauth2/issuers.php'));
+    } else if ($mform->is_submitted() && $data = $mform->get_data()) {
         try {
-            if (!empty($data->id)) {
-                core\oauth2\api::update_issuer($data);
-            } else {
-                core\oauth2\api::create_issuer($data);
-            }
+            $issuer = core\oauth2\api::save_issuer($data);
             redirect($PAGE->url, get_string('changessaved'), null, \core\output\notification::NOTIFY_SUCCESS);
         } catch (Exception $e) {
             redirect($PAGE->url, $e->getMessage(), null, \core\output\notification::NOTIFY_ERROR);
         }
-    } else {
-        echo $OUTPUT->header();
-        if ($issuer) {
-            echo $OUTPUT->heading(get_string('editissuer', 'oauth2', s($issuer->get('name'))));
-        } else {
-            echo $OUTPUT->heading(get_string('createnewservice', 'oauth2') . ' ' . get_string('custom_service', 'oauth2'));
-        }
-        $mform->display();
-        echo $OUTPUT->footer();
     }
-} else if ($action == 'savetemplate') {
+
+    // Show the edit form.
+    $PAGE->navbar->add(get_string('editissuer', 'oauth2', s($issuer->get('name'))));
+    echo $OUTPUT->header();
+    echo $OUTPUT->heading(get_string('editissuer', 'oauth2', s($issuer->get('name'))));
+    $mform->display();
+    echo $OUTPUT->footer();
+
+} else if ($action == 'add') {
 
     $type = required_param('type', PARAM_ALPHANUM);
-    $mform = new \core_oauth2\form\issuer(null, [
-        'persistent' => $issuer,
-        'type' => $type,
-        'showrequireconfirm' => true, // Ensure the "requireconfirmation" field is included in form data.
-    ]);
+    $mform = \core\oauth2\service\helper::get_service_issuer_form($type, null, ['action' => 'add']);
+
     if ($mform->is_cancelled()) {
         redirect(new moodle_url('/admin/oauth2/issuers.php'));
-    }
-    if ($mform->is_submitted() && $data = $mform->get_data()) {
-        $issuer = new core\oauth2\issuer(0, $data);
-        $issuer->create();
-        $issuer = core\oauth2\api::create_endpoints_for_standard_issuer($type, $issuer);
+    } else if ($mform->is_submitted() && $data = $mform->get_data()) {
+        core\oauth2\api::save_issuer($data);
         redirect($PAGE->url, get_string('changessaved'), null, \core\output\notification::NOTIFY_SUCCESS);
-    } else {
-        echo $OUTPUT->header();
-        echo $OUTPUT->heading(get_string('createnewservice', 'oauth2') . ' ' . get_string($type . '_service', 'oauth2'));
-        $mform->display();
-        echo $OUTPUT->footer();
     }
 
-} else if ($action == 'edittemplate') {
+    // Show the add form.
+    $issuer = core\oauth2\api::init_standard_issuer($type); // Hook allowing plugins to prefill the 'add' form.
+    $servicename = core\oauth2\service\helper::get_service_shortname($type);
 
-    $type = required_param('type', PARAM_ALPHANUM);
-    $docs = required_param('docslink', PARAM_ALPHAEXT);
-    require_sesskey();
-    $issuer = core\oauth2\api::init_standard_issuer($type);
-    $mform = new \core_oauth2\form\issuer(null, ['persistent' => $issuer, 'type' => $type]);
-
-    $PAGE->navbar->add(get_string('createnewservice', 'oauth2') . ' ' . get_string($type . '_service', 'oauth2'));
+    $PAGE->navbar->add(get_string('createnewservice', 'oauth2') . ' ' . $servicename);
     echo $OUTPUT->header();
-    echo $OUTPUT->heading(get_string('createnewservice', 'oauth2') . ' ' . get_string($type . '_service', 'oauth2'));
+    echo $OUTPUT->heading(get_string('createnewservice', 'oauth2') . ' ' . $servicename);
+    if ($issuer) {
+        $mform->set_data($issuer->to_record());
+    }
     $mform->display();
     echo $OUTPUT->footer();
 
@@ -185,6 +160,13 @@ if ($mform && $mform->is_cancelled()) {
 
     echo $renderer->container_start();
     echo get_string('createnewservice', 'oauth2') . ' ';
+
+    foreach (\core\oauth2\service\helper::get_service_names() as $service => $shortname) {
+        $docs = "oauth2/issuers/$service"; // TODO plugins to link to docs via API?
+        $params = ['action' => 'add', 'type' => $service, 'sesskey' => sesskey(), 'docslink' => $docs];
+        $addurl = new moodle_url('/admin/oauth2/issuers.php', $params);
+        echo $renderer->single_button($addurl, $shortname);
+    }
 
     // Google template.
     $docs = 'oauth2/issuers/google';

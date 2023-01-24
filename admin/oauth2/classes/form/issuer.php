@@ -16,6 +16,7 @@
 
 namespace core_oauth2\form;
 
+use core\oauth2\service\config\config;
 use stdClass;
 use core\form\persistent;
 
@@ -36,6 +37,9 @@ class issuer extends persistent {
 
     /** @var string $type */
     protected $type;
+
+    /** @var config the config details for the service which the form is being loaded for.*/
+    protected $serviceconfig;
 
     /**
      * Constructor.
@@ -62,6 +66,12 @@ class issuer extends persistent {
         if (array_key_exists('type', $customdata)) {
             $this->type = $customdata['type'];
         }
+
+        // Store the plugin config, which will be used during definition().
+        if (array_key_exists('serviceconfig', $customdata)) {
+            $this->serviceconfig = $customdata['serviceconfig']->get_full_config();
+        }
+
         parent::__construct($action, $customdata, $method, $target, $attributes, $editable, $ajaxformdata);
     }
 
@@ -90,12 +100,12 @@ class issuer extends persistent {
 
         // Client ID.
         $mform->addElement('text', 'clientid', get_string('issuerclientid', 'oauth2'));
-        $mform->addRule('clientid', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+        //$mform->addRule('clientid', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
         $mform->addHelpButton('clientid', 'issuerclientid', 'oauth2');
 
         // Client Secret.
         $mform->addElement('text', 'clientsecret', get_string('issuerclientsecret', 'oauth2'));
-        $mform->addRule('clientsecret', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+        //$mform->addRule('clientsecret', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
         $mform->addHelpButton('clientsecret', 'issuerclientsecret', 'oauth2');
 
         // Use basic authentication.
@@ -106,9 +116,6 @@ class issuer extends persistent {
         $mform->addElement('text', 'baseurl', get_string('issuerbaseurl', 'oauth2'));
         $mform->addRule('baseurl', get_string('maximumchars', '', 1024), 'maxlength', 1024, 'client');
         $mform->addHelpButton('baseurl', 'issuerbaseurl', 'oauth2');
-        if ($this->type && $this->type == 'nextcloud') {
-            $mform->addRule('baseurl', null, 'required', null, 'client');
-        }
 
         // Image.
         $mform->addElement('text', 'image', get_string('issuerimage', 'oauth2'), 'maxlength="1024"');
@@ -169,10 +176,13 @@ class issuer extends persistent {
             'eq', \core\oauth2\issuer::SERVICEONLY);
         $mform->hideIf('acceptrisk', 'requireconfirmation', 'checked');
 
-
-        if ($this->type == 'imsobv2p1' || $issuer->get('servicetype') == 'imsobv2p1') {
+        // Services can opt into a mandatory base URL, depending on their needs.
+        if ($this->serviceconfig['baseurl_required']) {
             $mform->addRule('baseurl', null, 'required', null, 'client');
-        } else {
+        }
+
+        // Services without dynamic registration support need to pass in clientid and secret.
+        if (config::DYNAMIC_CLIENT_REGISTRATION_UNSUPPORTED == $this->serviceconfig['dynamic_client_registration']) {
             $mform->addRule('clientid', null, 'required', null, 'client');
             $mform->addRule('clientsecret', null, 'required', null, 'client');
         }
@@ -183,16 +193,11 @@ class issuer extends persistent {
         $mform->addElement('hidden', 'servicetype');
         $mform->setType('servicetype', PARAM_ALPHANUM);
 
-        if ($this->type) {
-            $mform->addElement('hidden', 'action', 'savetemplate');
-            $mform->setType('action', PARAM_ALPHA);
+        $mform->addElement('hidden', 'action', $this->_customdata['action']);
+        $mform->setType('action', PARAM_ALPHA);
 
-            $mform->addElement('hidden', 'type', $this->_customdata['type']);
-            $mform->setType('type', PARAM_ALPHANUM);
-        } else {
-            $mform->addElement('hidden', 'action', 'edit');
-            $mform->setType('action', PARAM_ALPHA);
-        }
+        $mform->addElement('hidden', 'type', $this->_customdata['type']);
+        $mform->setType('type', PARAM_ALPHANUM);
 
         $mform->addElement('hidden', 'enabled', $issuer->get('enabled'));
         $mform->setType('enabled', PARAM_BOOL);
@@ -213,6 +218,7 @@ class issuer extends persistent {
             // Set servicetype if it's defined.
             $mform->getElement('servicetype')->setValue($this->type);
         }
+        // TODO: we shouldn't be using this form without a type any more, so need to throw.
     }
 
     /**

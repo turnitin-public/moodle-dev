@@ -16,9 +16,15 @@
 
 namespace oauth2service_openbadges;
 
+use core\http_client;
 use core\oauth2\endpoint;
 use core\oauth2\issuer;
+use core\oauth2\registration\oauth2_client_registration_error_response;
+use core\oauth2\registration\oauth2_client_registration_information_response;
+use core\oauth2\registration\oauth2_client_registration_response;
 use core\oauth2\service\config\config;
+use core\oauth2\registration\oauth2_client_registration_metadata;
+use core\oauth2\registration\oauth2_client_registration_request;
 use oauth2service_openbadges\oauth2\service\discovery\openbadges_config_reader;
 
 /**
@@ -44,13 +50,14 @@ class service extends \core\oauth2\service\service {
      *
      * @param issuer $issuer the issuer instance this plugin receives after form submission.
      * @param openbadges_config_reader $configreader an openbadges manifest reader instance.
-     * @param \curl $curl a curl instance.
+     * @param http_client $httpclient an http client instance.
      */
-    public function __construct(protected issuer $issuer, protected openbadges_config_reader $configreader, protected \curl $curl) {
+    public function __construct(protected issuer $issuer, protected openbadges_config_reader $configreader,
+            protected http_client $httpclient) {
     }
 
     public static function get_instance(issuer $issuer): \core\oauth2\service\service {
-        return new self($issuer, new openbadges_config_reader(new \curl()), new \curl());
+        return new self($issuer, new openbadges_config_reader(new \curl()), new http_client());
     }
 
     public static function get_config(): config {
@@ -59,7 +66,7 @@ class service extends \core\oauth2\service\service {
 
     public static function get_template(): ?issuer {
         $record = (object) [
-            'name' => get_string(self::get_config()->get_full_config()['service_shortname'], 'oauth2service_google'),
+            'name' => get_string(self::get_config()->get_full_config()['service_shortname'], 'oauth2service_openbadges'),
             'image' => '',
             'showonloginpage' => issuer::SERVICEONLY,
         ];
@@ -122,6 +129,7 @@ class service extends \core\oauth2\service\service {
      * Self-register the badge issuer if the registration endpoint exists and client id and secret aren't defined.
      *
      * @return void
+     * @throws \moodle_exception in the case of a registration error response.
      */
     protected function dynamic_client_registration(): void {
         global $CFG, $SITE;
@@ -133,55 +141,44 @@ class service extends \core\oauth2\service\service {
         if (empty($clientid) && empty($clientsecret)) {
             $registrationurl = $this->endpoints['registration_endpoint']->get('url');
 
-            $scopes = str_replace("\r", " ", implode(' ', $this->badgeconfig->badgeConnectAPI[0]->scopesOffered));
-
-            // Add slash at the end of the site URL.
+            // Create the OAuth 2 Dynamic Client Registration request.
             $hosturl = $CFG->wwwroot;
-            $hosturl .= (substr($CFG->wwwroot, -1) == '/' ? '' : '/');
+            $metadata = oauth2_client_registration_metadata::from_array(
+                [
+                    'client_name' => $SITE->fullname,
+                    'client_uri' => $hosturl,
+                    'logo_uri' => $hosturl . '/pix/f/moodle-256.png',
+                    'tos_uri' => $hosturl,
+                    'policy_uri' => $hosturl,
+                    'software_id' => 'moodle',
+                    'software_version' => $CFG->version,
+                    'redirect_uris' => [
+                        $hosturl . '/admin/oauth2callback.php'
+                    ],
+                    'token_endpoint_auth_method' => 'client_secret_basic',
+                    'grant_types' => [
+                        'authorization_code',
+                        'refresh_token'
+                    ],
+                    'response_types' => [
+                        'code'
+                    ],
+                    'scope' => str_replace("\r", " ", implode(' ', $this->badgeconfig->badgeConnectAPI[0]->scopesOffered))
+                ]
+            );
 
-            // Create the registration request following the format defined in the IMS OBv2.1 specification.
-            $request = [
-                'client_name' => $SITE->fullname,
-                'client_uri' => $hosturl,
-                'logo_uri' => $hosturl . 'pix/f/moodle-256.png',
-                'tos_uri' => $hosturl,
-                'policy_uri' => $hosturl,
-                'software_id' => 'moodle',
-                'software_version' => $CFG->version,
-                'redirect_uris' => [
-                    $hosturl . 'admin/oauth2callback.php'
-                ],
-                'token_endpoint_auth_method' => 'client_secret_basic',
-                'grant_types' => [
-                    'authorization_code',
-                    'refresh_token'
-                ],
-                'response_types' => [
-                    'code'
-                ],
-                'scope' => $scopes
-            ];
-            $jsonrequest = json_encode($request);
-
-            $this->curl->setHeader(['Content-type: application/json']);
-            $this->curl->setHeader(['Accept: application/json']);
-
-            // Send the registration request.
-            if (!$jsonresponse = $this->curl->post($registrationurl, $jsonrequest)) {
-                $msg = 'Could not self-register badge issuer: ' . $this->issuer->get('name') .
-                    ". Wrong URL or JSON data [URL: $registrationurl]";
-                throw new \moodle_exception($msg);
-            }
-
-            // Process the response and update client id and secret if they are valid.
-            $response = json_decode($jsonresponse);
-            if (property_exists($response, 'client_id')) {
-                $this->issuer->set('clientid', $response->client_id);
-                $this->issuer->set('clientsecret', $response->client_secret);
+            $regrequest = new oauth2_client_registration_request(new \moodle_url($registrationurl), $metadata);
+            $httpresponse = $this->httpclient->send($regrequest->to_request());
+            $regresponse = oauth2_client_registration_response::from_response($httpresponse);
+            if ($regresponse->is_successful()) {
+                /* @var oauth2_client_registration_information_response $regresponse success subtype. */
+                $clientinfo = $regresponse->get_client_information();
+                $this->issuer->set('clientid', $clientinfo->get_client_id());
+                $this->issuer->set('clientsecret', $clientinfo->get_client_secret());
             } else {
-                $msg = 'Could not self-register badge issuer: ' . $this->issuer->get('name') .
-                    '. Invalid response ' . $jsonresponse;
-                throw new \moodle_exception($msg);
+                /* @var oauth2_client_registration_error_response $regresponse error subtype. */
+                $errorinfo = $regresponse->get_error_info();
+                throw new \moodle_exception('Error: '.__METHOD__.': ' .json_encode($errorinfo));
             }
         }
     }

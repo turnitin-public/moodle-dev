@@ -23,5 +23,4 @@
  */
 
 $string['pluginname'] = 'Google';
-$string['pluginshortname'] = 'Google';
 $string['privacy:metadata'] = 'The Google OAuth 2 service plugin does not store any personal data.';

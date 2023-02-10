@@ -23,5 +23,4 @@
  */
 
 $string['pluginname'] = 'LinkedIn';
-$string['pluginshortname'] = 'LinkedIn';
 $string['privacy:metadata'] = 'The LinkedIn OAuth 2 service plugin does not store any personal data.';

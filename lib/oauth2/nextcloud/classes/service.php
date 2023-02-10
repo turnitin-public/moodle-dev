@@ -30,7 +30,7 @@ use core\oauth2\user_field_mapping;
  */
 class service extends \core\oauth2\service\service {
 
-    /** @var array the OAuth 2 endpoints found in the OpenID configuration. */
+    /** @var array the OAuth 2 endpoints. */
     protected array $endpoints = [];
 
     /** @var array the array of user field mappings for this provider. */

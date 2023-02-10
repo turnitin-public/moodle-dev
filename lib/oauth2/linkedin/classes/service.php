@@ -18,8 +18,6 @@ namespace oauth2service_linkedin;
 
 use core\oauth2\endpoint;
 use core\oauth2\issuer;
-use core\oauth2\service\config\config;
-use core\oauth2\service\discovery\openid_config_reader;
 use core\oauth2\user_field_mapping;
 
 /**
@@ -31,19 +29,18 @@ use core\oauth2\user_field_mapping;
  */
 class service extends \core\oauth2\service\service {
 
-    /** @var issuer the issuer instance this plugin receives after form submission. */
-    protected issuer $issuer;
-
     /** @var array the OAuth 2 endpoints found in the OpenID configuration. */
     protected array $endpoints = [];
+
+    /** @var array the array of user field mappings for this provider. */
+    protected array $userfieldmappings = [];
 
     /**
      * Constructor.
      *
-     * @param issuer $issuer an issuer instance.
+     * @param issuer $issuer the issuer instance this plugin receives after form submission.
      */
-    public function __construct(issuer $issuer) {
-        $this->issuer = $issuer;
+    public function __construct(protected issuer $issuer) {
     }
 
     public static function get_instance(issuer $issuer): \core\oauth2\service\service {
@@ -52,13 +49,12 @@ class service extends \core\oauth2\service\service {
 
     public static function get_template(): ?issuer {
         $record = (object) [
-            'name' => self::get_config()->get_full_config()['service_shortname'],
+            'name' => get_string(self::get_config()->get_full_config()['service_shortname'], 'oauth2service_linkedin'),
             'image' => 'https://static.licdn.com/scds/common/u/images/logos/favicons/v1/favicon.ico',
             'baseurl' => 'https://api.linkedin.com/v2',
             'loginscopes' => 'r_liteprofile r_emailaddress',
             'loginscopesoffline' => 'r_liteprofile r_emailaddress',
             'showonloginpage' => issuer::EVERYWHERE,
-            'servicetype' => 'linkedin',
         ];
 
         return new issuer(0, $record);
@@ -82,7 +78,7 @@ class service extends \core\oauth2\service\service {
                 'name' => $name,
                 'url' => $url
             ];
-            $this->endpoints[$record->name] = new endpoint(0, $record);
+            $this->endpoints[$name] = new endpoint(0, $record);
         }
 
         return array_values($this->endpoints);
@@ -95,14 +91,13 @@ class service extends \core\oauth2\service\service {
             'elements[0]-handle~-emailAddress' => 'email',
             'profilePicture-displayImage~-elements[0]-identifiers[0]-identifier' => 'picture'
         ];
-        $m = [];
         foreach ($mapping as $external => $internal) {
             $record = (object) [
                 'externalfield' => $external,
                 'internalfield' => $internal
             ];
-            $m[] = new user_field_mapping(0, $record);
+            $this->userfieldmappings[] = new user_field_mapping(0, $record);
         }
-        return $m;
+        return $this->userfieldmappings;
     }
 }

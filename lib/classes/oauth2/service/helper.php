@@ -27,13 +27,9 @@ class helper {
 
     public static function get_service_issuer_form(string $pluginname, ?issuer $issuer = null, array $customdata): issuerform {
         $classname = self::get_service_classname($pluginname);
-        //$formclass = $classname::get_issuer_form_class();
         $serviceconfig = $classname::get_config();
         $data = array_merge($customdata, ['persistent' => $issuer, 'type' => $pluginname, 'serviceconfig' => $serviceconfig]);
-
-        //return new $formclass(null, $data);
-        // TODO: perhaps the API could make it optional for plugins to provide a form, defaulting to the core form here.
-         return new issuerform(null, $data);
+        return new issuerform(null, $data);
     }
 
     /**
@@ -96,10 +92,13 @@ class helper {
      * @throws \coding_exception if the pluginname is invalid.
      */
     public static function get_client_classname(string $pluginname): string {
+        if (!in_array($pluginname, array_keys(self::get_service_names()))) {
+            throw new \coding_exception("Error: '$pluginname' is not a valid OAuth 2 service plugin.");
+        }
         $clientclass = "oauth2service_$pluginname\\client";
         if (class_exists($clientclass) && is_subclass_of($clientclass, client::class)) {
             return $clientclass;
         }
-        throw new \coding_exception("Error: '$pluginname' is not a valid OAuth 2 service plugin.");
+        return "core\\oauth2\\client";
     }
 }

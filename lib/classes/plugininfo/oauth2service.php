@@ -27,55 +27,52 @@ class oauth2service extends base {
         return true;
     }
 
+    public function get_settings_section_name() {
+        return 'oauth2servicesetting' . $this->name;
+    }
+
     /**
      * Finds all enabled plugins, the result may include missing plugins.
      * @return array|null of enabled plugins $pluginname=>$pluginname, null means unknown
      */
     public static function get_enabled_plugins() {
-        // Get all available plugins.
-        if (!$plugins = \core_plugin_manager::instance()->get_installed_plugins('oauth2service')) {
-            return [];
+        global $CFG;
+
+        $order = (!empty($CFG->oauth2service_plugins_sortorder)) ? explode(',', $CFG->oauth2service_plugins_sortorder) : [];
+        if ($order) {
+            $plugins = \core_plugin_manager::instance()->get_installed_plugins('oauth2service');
+            $order = array_intersect($order, array_keys($plugins));
         }
 
-        // Check they are enabled using get_config (which is cached and hopefully fast).
-        $enabled = [];
-        foreach ($plugins as $plugin => $version) {
-            if (empty(get_config('oauth2service_' . $plugin, 'disabled'))) {
-                $enabled[$plugin] = $plugin;
-            }
-        }
-
-        return $enabled;
+        return array_combine($order, $order);
     }
 
     public static function enable_plugin(string $pluginname, int $enabled): bool {
-        $haschanged = false;
+        global $CFG;
 
-        $plugin = 'oauth2service' . $pluginname;
-        $oldvalue = get_config($plugin, 'disabled');
-        $disabled = !$enabled;
-        // Only set value if there is no config setting or if the value is different from the previous one.
-        if ($oldvalue == false && $disabled) {
-            set_config('disabled', $disabled, $plugin);
+        $haschanged = false;
+        $plugins = [];
+        if (!empty($CFG->oauth2service_plugins_sortorder)) {
+            $plugins = array_flip(explode(',', $CFG->oauth2service_plugins_sortorder));
+        }
+        // Only set visibility if it's different from the current value.
+        if ($enabled && !array_key_exists($pluginname, $plugins)) {
+            $plugins[$pluginname] = $pluginname;
             $haschanged = true;
-        } else if ($oldvalue != false && !$disabled) {
-            unset_config('disabled', $plugin);
+        } else if (!$enabled && array_key_exists($pluginname, $plugins)) {
+            unset($plugins[$pluginname]);
             $haschanged = true;
         }
 
         if ($haschanged) {
-            add_to_config_log('disabled', $oldvalue, $disabled, $plugin);
-            \core_plugin_manager::reset_caches();
+            add_to_config_log('oauth2service_plugins_sortorder', !$enabled, $enabled, $pluginname);
+            self::set_enabled_plugins(array_flip($plugins));
         }
 
         return $haschanged;
     }
 
-    public function get_settings_section_name() {
-        return 'oauth2servicesetting' . $this->name;
-    }
-
-    public function load_settings(\part_of_admin_tree $adminroot, $parentnodename, $hassiteconfig) {
+    /*public function load_settings(\part_of_admin_tree $adminroot, $parentnodename, $hassiteconfig) {
         global $CFG, $USER, $DB, $OUTPUT, $PAGE; // In case settings.php wants to refer to them.
         $ADMIN = $adminroot; // May be used in settings.php.
         $plugininfo = $this; // Also can be used inside settings.php
@@ -99,7 +96,7 @@ class oauth2service extends base {
         if ($settings) {
             $ADMIN->add($parentnodename, $settings);
         }
-    }
+    }*/
 
     /**
      * Return URL used for management of plugins of this type.
@@ -107,5 +104,32 @@ class oauth2service extends base {
      */
     public static function get_manage_url() {
         return new \moodle_url('/admin/settings.php', array('section'=>'manageoauth2services'));
+    }
+
+    /**
+     * Sets the current plugin as enabled or disabled
+     * When enabling tries to guess the sortorder based on default rank returned by the plugin.
+     * @param bool $newstate
+     */
+    public function set_enabled($newstate = true) {
+        self::enable_plugin($this->name, $newstate);
+    }
+
+    /**
+     * Set the list of enabled converter players in the specified sort order
+     * @param string|array $list list of plugin names without frankenstyle prefix - comma-separated string or an array
+     */
+    public static function set_enabled_plugins($list) {
+        if (empty($list)) {
+            $list = [];
+        } else if (!is_array($list)) {
+            $list = explode(',', $list);
+        }
+        if ($list) {
+            $plugins = \core_plugin_manager::instance()->get_installed_plugins('oauth2service');
+            $list = array_intersect($list, array_keys($plugins));
+        }
+        set_config('oauth2service_plugins_sortorder', join(',', $list));
+        \core_plugin_manager::reset_caches();
     }
 }

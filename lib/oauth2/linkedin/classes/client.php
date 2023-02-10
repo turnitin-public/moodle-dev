@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace core\oauth2\client;
+namespace oauth2service_linkedin;
 
 use core\oauth2\client as coreclient;
 
@@ -26,7 +26,7 @@ use core\oauth2\client as coreclient;
  *
  * @copyright  2021 Peter Dias
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package    core
+ * @package    oauth2service_linkedin
  */
 class client extends coreclient {
     /**

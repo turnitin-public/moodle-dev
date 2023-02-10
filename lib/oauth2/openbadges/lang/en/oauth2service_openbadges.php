@@ -23,5 +23,4 @@
  */
 
 $string['pluginname'] = 'Open Badges';
-$string['pluginshortname'] = 'Open Badges';
 $string['privacy:metadata'] = 'The Open Badges OAuth 2 service plugin does not store any personal data.';

@@ -168,52 +168,6 @@ if ($action == 'edit') {
         echo $renderer->single_button($addurl, $shortname);
     }
 
-    // Google template.
-    $docs = 'oauth2/issuers/google';
-    $params = ['action' => 'edittemplate', 'type' => 'google', 'sesskey' => sesskey(), 'docslink' => $docs];
-    $addurl = new moodle_url('/admin/oauth2/issuers.php', $params);
-    echo $renderer->single_button($addurl, get_string('google_service', 'oauth2'));
-
-    // Microsoft template.
-    $docs = 'oauth2/issuers/microsoft';
-    $params = ['action' => 'edittemplate', 'type' => 'microsoft', 'sesskey' => sesskey(), 'docslink' => $docs];
-    $addurl = new moodle_url('/admin/oauth2/issuers.php', $params);
-    echo $renderer->single_button($addurl, get_string('microsoft_service', 'oauth2'));
-
-    // Facebook template.
-    $docs = 'oauth2/issuers/facebook';
-    $params = ['action' => 'edittemplate', 'type' => 'facebook', 'sesskey' => sesskey(), 'docslink' => $docs];
-    $addurl = new moodle_url('/admin/oauth2/issuers.php', $params);
-    echo $renderer->single_button($addurl, get_string('facebook_service', 'oauth2'));
-
-    // Nextcloud template.
-    $docs = 'oauth2/issuers/nextcloud';
-    $params = ['action' => 'edittemplate', 'type' => 'nextcloud', 'sesskey' => sesskey(), 'docslink' => $docs];
-    $addurl = new moodle_url('/admin/oauth2/issuers.php', $params);
-    echo $renderer->single_button($addurl, get_string('nextcloud_service', 'oauth2'));
-
-    // IMS Open Badges Connect template.
-    $docs = 'oauth2/issuers/imsobv2p1';
-    $params = ['action' => 'edittemplate', 'type' => 'imsobv2p1', 'sesskey' => sesskey(), 'docslink' => $docs];
-    $addurl = new moodle_url('/admin/oauth2/issuers.php', $params);
-    echo $renderer->single_button($addurl, get_string('imsobv2p1_service', 'oauth2'));
-
-    // Linkedin template.
-    $docs = 'oauth2/issuers/linkedin';
-    $params = ['action' => 'edittemplate', 'type' => 'linkedin', 'sesskey' => sesskey(), 'docslink' => $docs];
-    $addurl = new moodle_url('/admin/oauth2/issuers.php', $params);
-    echo $renderer->single_button($addurl, get_string('linkedin_service', 'oauth2'));
-
-    // Clever template.
-    $docs = 'oauth2/issuers/clever';
-    $params = ['action' => 'edittemplate', 'type' => 'clever', 'sesskey' => sesskey(), 'docslink' => $docs];
-    $addurl = new moodle_url('/admin/oauth2/issuers.php', $params);
-    echo $renderer->single_button($addurl, get_string('clever_service', 'oauth2'));
-
-    // Generic issuer.
-    $addurl = new moodle_url('/admin/oauth2/issuers.php', ['action' => 'edit']);
-    echo $renderer->single_button($addurl, get_string('custom_service', 'oauth2'));
-
     echo $renderer->container_end();
     echo $OUTPUT->footer();
 }

@@ -24,6 +24,7 @@ use core\oauth2\user_field_mapping;
 /**
  * Class for Clever OAuth service, with the specific methods related to it.
  *
+ * @deprecated since Moodle 4.2
  * @package    core
  * @copyright  2022 OpenStax
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -32,9 +33,13 @@ class clever extends openidconnect implements issuer_interface {
     /**
      * Build an OAuth2 issuer, with all the default values for this service.
      *
+     * @deprecated since Moodle 4.2
      * @return issuer The issuer initialised with proper default values.
      */
     public static function init(): issuer {
+        debugging('Class clever is deprecated. OAuth 2 service plugins should implement the API at '.
+            'lib/classes/oauth2/service/service.php instead', DEBUG_DEVELOPER);
+
         $record = (object) [
             'name' => 'Clever',
             'image' => 'https://apps.clever.com/favicon.ico',
@@ -50,10 +55,14 @@ class clever extends openidconnect implements issuer_interface {
     /**
      * Create endpoints for this issuer.
      *
+     * @deprecated since Moodle 4.2
      * @param issuer $issuer Issuer the endpoints should be created for.
      * @return issuer
      */
     public static function create_endpoints(issuer $issuer): issuer {
+        debugging('Class clever is deprecated. OAuth 2 service plugins should implement the API at '.
+            'lib/classes/oauth2/service/service.php instead', DEBUG_DEVELOPER);
+
         $endpoints = [
             'authorization_endpoint' => 'https://clever.com/oauth/authorize',
             'token_endpoint' => 'https://clever.com/oauth/tokens',

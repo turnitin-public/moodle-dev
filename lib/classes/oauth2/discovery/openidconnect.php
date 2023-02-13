@@ -24,6 +24,7 @@ use core\oauth2\user_field_mapping;
 /**
  * Class for Open ID Connect discovery definition.
  *
+ * @deprecated since Moodle 4.2
  * @package    core
  * @since      Moodle 3.11
  * @copyright  2021 Sara Arjona (sara@moodle.com)
@@ -34,10 +35,14 @@ class openidconnect extends base_definition {
     /**
      * Get the URL for the discovery manifest.
      *
+     * @deprecated since Moodle 4.2
      * @param issuer $issuer The OAuth issuer the endpoints should be discovered for.
      * @return string The URL of the discovery file, containing the endpoints.
      */
     public static function get_discovery_endpoint_url(issuer $issuer): string {
+        debugging('Class openidconnect is deprecated. OAuth 2 service plugins should implement the API at '.
+            'lib/classes/oauth2/service/service.php instead', DEBUG_DEVELOPER);
+
         $url = $issuer->get('baseurl');
         if (!empty($url)) {
             // Add slash at the end of the base url.

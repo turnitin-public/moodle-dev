@@ -23,7 +23,7 @@ use core\oauth2\client;
  *
  * Custom oauth2 client for linkedin as it doesn't support OIDC and has a different way to get
  * key information for users - firstname, lastname, email.
- *
+ * @deprecated since Moodle 4.2
  * @copyright  2021 Peter Dias
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @package    core
@@ -35,6 +35,9 @@ class linkedin extends client {
      * @return array|false
      */
     public function get_userinfo() {
+        debugging('Class linkedin is deprecated. Please see the linkedin plugin at lib/oauth2/linkedin instead', DEBUG_DEVELOPER);
+
+
         $user = array_merge(parent::get_userinfo(), $this->get_useremail());
         return $user;
     }

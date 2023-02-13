@@ -26,6 +26,7 @@ use core\oauth2\endpoint;
  * Class for provider discovery definition, to allow services easily discover and process information.
  * This abstract class is called from core\oauth2\api when discovery points need to be updated.
  *
+ * @deprecated since Moodle 4.2
  * @package    core
  * @since      Moodle 3.11
  * @copyright  2021 Sara Arjona (sara@moodle.com)
@@ -36,6 +37,7 @@ abstract class base_definition {
     /**
      * Get the URL for the discovery manifest.
      *
+     * @deprecated since Moodle 4.2
      * @param issuer $issuer The OAuth issuer the endpoints should be discovered for.
      * @return string The URL of the discovery file, containing the endpoints.
      */
@@ -69,10 +71,14 @@ abstract class base_definition {
     /**
      * Create endpoints for this issuer.
      *
+     * @deprecated since Moodle 4.2
      * @param issuer $issuer Issuer the endpoints should be created for.
      * @return issuer
      */
     public static function create_endpoints(issuer $issuer): issuer {
+        debugging('Class base_definition is deprecated. OAuth 2 service plugins should implement the API at '.
+            'lib/classes/oauth2/service/service.php instead', DEBUG_DEVELOPER);
+
         static::discover_endpoints($issuer);
 
         return $issuer;
@@ -81,10 +87,14 @@ abstract class base_definition {
     /**
      * If the discovery endpoint exists for this issuer, try and determine the list of valid endpoints.
      *
+     * @deprecated since Moodle 4.2
      * @param issuer $issuer
      * @return int The number of discovered services.
      */
     public static function discover_endpoints($issuer): int {
+        debugging('Class base_definition is deprecated. OAuth 2 service plugins should implement the API at '.
+            'lib/classes/oauth2/service/service.php instead', DEBUG_DEVELOPER);
+
         // Early return if baseurl is empty.
         if (empty($issuer->get('baseurl'))) {
             return 0;

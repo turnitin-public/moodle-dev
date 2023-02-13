@@ -24,6 +24,7 @@ use core\oauth2\discovery\openidconnect;
 /**
  * Class for Microsoft oAuth service, with the specific methods related to it.
  *
+ * @deprecated since Moodle 4.2
  * @package    core
  * @copyright  2021 Sara Arjona (sara@moodle.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -33,9 +34,13 @@ class microsoft extends openidconnect implements issuer_interface {
     /**
      * Build an OAuth2 issuer, with all the default values for this service.
      *
+     * @deprecated since Moodle 4.2
      * @return issuer The issuer initialised with proper default values.
      */
     public static function init(): issuer {
+        debugging('Class microsoft is deprecated. OAuth 2 service plugins should implement the API at '.
+            'lib/classes/oauth2/service/service.php instead', DEBUG_DEVELOPER);
+
         $record = (object) [
             'name' => 'Microsoft',
             'image' => 'https://www.microsoft.com/favicon.ico',
@@ -53,10 +58,14 @@ class microsoft extends openidconnect implements issuer_interface {
     /**
      * Create endpoints for this issuer.
      *
+     * @deprecated since Moodle 4.2
      * @param issuer $issuer Issuer the endpoints should be created for.
      * @return issuer
      */
     public static function create_endpoints(issuer $issuer): issuer {
+        debugging('Class microsoft is deprecated. OAuth 2 service plugins should implement the API at '.
+            'lib/classes/oauth2/service/service.php instead', DEBUG_DEVELOPER);
+
         $endpoints = [
             'authorization_endpoint' => 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
             'token_endpoint' => 'https://login.microsoftonline.com/common/oauth2/v2.0/token',

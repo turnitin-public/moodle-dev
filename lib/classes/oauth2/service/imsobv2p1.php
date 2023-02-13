@@ -22,6 +22,7 @@ use core\oauth2\discovery\imsbadgeconnect;
 /**
  * Class for IMS Open Badges v2.1 oAuth service, with the specific methods related to it.
  *
+ * @deprecated since Moodle 4.2
  * @package    core
  * @copyright  2021 Sara Arjona (sara@moodle.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -31,9 +32,13 @@ class imsobv2p1 extends imsbadgeconnect implements issuer_interface {
     /**
      * Build an OAuth2 issuer, with all the default values for this service.
      *
+     * @deprecated since Moodle 4.2
      * @return issuer|null The issuer initialised with proper default values.
      */
     public static function init(): ?issuer {
+        debugging('Class imsobv2p1 is deprecated. OAuth 2 service plugins should implement the API at '.
+            'lib/classes/oauth2/service/service.php instead', DEBUG_DEVELOPER);
+
         $record = (object) [
             'name' => 'Open Badges',
             'image' => '',
@@ -47,10 +52,14 @@ class imsobv2p1 extends imsbadgeconnect implements issuer_interface {
     /**
      * Process how to map user field information.
      *
+     * @deprecated since Moodle 4.2
      * @param issuer $issuer The OAuth issuer the endpoints should be discovered for.
      * @return void
      */
     public static function create_field_mappings(issuer $issuer): void {
+        debugging('Class imsobv2p1 is deprecated. OAuth 2 service plugins should implement the API at '.
+            'lib/classes/oauth2/service/service.php instead', DEBUG_DEVELOPER);
+
         // There are no specific field mappings for this service.
     }
 

@@ -26,6 +26,7 @@ use core\oauth2\user_field_mapping;
  * Custom oauth2 issuer for linkedin as it doesn't support OIDC and has a different way to get
  * key information for users - firstname, lastname, email.
  *
+ * @deprecated since Moodle 4.2
  * @copyright  2021 Peter Dias
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @package    core
@@ -34,9 +35,13 @@ class linkedin implements issuer_interface {
     /**
      * Build an OAuth2 issuer, with all the default values for this service.
      *
+     * @deprecated since Moodle 4.2
      * @return issuer The issuer initialised with proper default values.
      */
     public static function init(): issuer {
+        debugging('Class linkedin is deprecated. OAuth 2 service plugins should implement the API at '.
+            'lib/classes/oauth2/service/service.php instead', DEBUG_DEVELOPER);
+
         $record = (object) [
             'name' => 'LinkedIn',
             'image' => 'https://static.licdn.com/scds/common/u/images/logos/favicons/v1/favicon.ico',
@@ -54,10 +59,14 @@ class linkedin implements issuer_interface {
     /**
      * Create endpoints for this issuer.
      *
+     * @deprecated since Moodle 4.2
      * @param issuer $issuer Issuer the endpoints should be created for.
      * @return issuer
      */
     public static function create_endpoints(issuer $issuer): issuer {
+        debugging('Class linkedin is deprecated. OAuth 2 service plugins should implement the API at '.
+            'lib/classes/oauth2/service/service.php instead', DEBUG_DEVELOPER);
+
         $endpoints = [
             'authorization_endpoint' => 'https://www.linkedin.com/oauth/v2/authorization',
             'token_endpoint' => 'https://www.linkedin.com/oauth/v2/accessToken',
@@ -97,10 +106,15 @@ class linkedin implements issuer_interface {
 
     /**
      * Linkedin does not have a discovery url that could be found. Return empty.
+     *
+     * @deprecated since Moodle 4.2
      * @param issuer $issuer
      * @return int
      */
     public static function discover_endpoints($issuer): int {
+        debugging('Class linkedin is deprecated. OAuth 2 service plugins should implement the API at '.
+            'lib/classes/oauth2/service/service.php instead', DEBUG_DEVELOPER);
+
         return 0;
     }
 }

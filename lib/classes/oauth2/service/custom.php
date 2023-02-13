@@ -22,6 +22,7 @@ use core\oauth2\discovery\openidconnect;
 /**
  * Class for Custom services, with the specific methods related to it.
  *
+ * @deprecated since Moodle 4.2
  * @package    core
  * @copyright  2021 Sara Arjona (sara@moodle.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -31,9 +32,13 @@ class custom extends openidconnect implements issuer_interface {
     /**
      * Build an OAuth2 issuer, with all the default values for this service.
      *
+     * @deprecated since Moodle 4.2
      * @return issuer|null The issuer initialised with proper default values.
      */
     public static function init(): ?issuer {
+        debugging('Class custom is deprecated. OAuth 2 service plugins should implement the API at '.
+            'lib/classes/oauth2/service/service.php instead', DEBUG_DEVELOPER);
+
         // Custom service doesn't require any particular initialization.
         return null;
     }

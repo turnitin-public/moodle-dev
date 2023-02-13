@@ -21,6 +21,7 @@ use core\oauth2\client;
 /**
  * Class clever - Custom client handler to fetch data from Clever
  *
+ * @deprecated since Moodle 4.2
  * @package    core
  * @copyright  2022 OpenStax
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -29,9 +30,12 @@ class clever extends client {
     /**
      * Fetch the user id from the userinfo endpoint and then query userdata
      *
+     * @deprecated since Moodle 4.2
      * @return array|false
      */
     public function get_userinfo() {
+        debugging('Class clever is deprecated. Please see the clever plugin at lib/oauth2/clever instead', DEBUG_DEVELOPER);
+
         $userinfo = parent::get_userinfo();
         $userid = $userinfo['idnumber'];
 

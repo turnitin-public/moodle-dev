@@ -59,35 +59,45 @@ class api {
 
     /**
      * Create endpoints for standard issuers, based on the issuer created from submitted data.
-     * @param string $type One of google, facebook, microsoft, nextcloud, imsobv2p1
+     *
+     * @deprecated since Moodle 4.2
+     * @param string $unused Param unused.
      * @param issuer $issuer issuer the endpoints should be created for.
      * @return \core\oauth2\issuer
      */
-    public static function create_endpoints_for_standard_issuer($type, $issuer) {
+    public static function create_endpoints_for_standard_issuer($unused, $issuer) {
+        debugging('Method create_endpoints_for_standard_issuer() is deprecated. Endpoints now created/updated in save_issuer().',
+            DEBUG_DEVELOPER);
+
         require_capability('moodle/site:config', context_system::instance());
 
-        $classname = self::get_service_classname($type);
-        if (class_exists($classname)) {
-            $classname::create_endpoints($issuer);
-            return $issuer;
+        $service = helper::get_service_instance($issuer);
+        foreach ($service->get_endpoints() as $endpoint) {
+            $endpoint->set('issuerid', $issuer->get('id'));
+            $endpoint->save();
         }
-        throw new moodle_exception('OAuth 2 service type not recognised: ' . $type);
+
+        return $issuer;
     }
 
     /**
      * Create one of the standard issuers.
      *
+     * @deprecated since Moodle 4.2
      * @param string $type One of google, facebook, microsoft, nextcloud or imsobv2p1
      * @param string|false $baseurl Baseurl (only required for nextcloud and imsobv2p1)
      * @return \core\oauth2\issuer
      */
     public static function create_standard_issuer($type, $baseurl = false) {
+        debugging('Method create_standard_issuer() is deprecated. Issuer creation requires calling save_issuer().',
+            DEBUG_DEVELOPER);
+
         require_capability('moodle/site:config', context_system::instance());
 
         switch ($type) {
-            case 'imsobv2p1':
+            case 'openbadges':
                 if (!$baseurl) {
-                    throw new moodle_exception('IMS OBv2.1 service type requires the baseurl parameter.');
+                    throw new moodle_exception('Openbadges service type requires the baseurl parameter.');
                 }
             case 'nextcloud':
                 if (!$baseurl) {
@@ -98,11 +108,21 @@ class api {
             case 'microsoft':
                 $serviceclassname = helper::get_service_classname($type);
                 $issuer = $serviceclassname::get_template();
+                $issuer->set('servicetype', $type);
                 if ($baseurl) {
                     $issuer->set('baseurl', $baseurl);
                 }
                 $issuer->create();
-                return self::create_endpoints_for_standard_issuer($type, $issuer);
+                $service = helper::get_service_instance($issuer);
+
+                self::create_endpoints_for_standard_issuer($type, $issuer);
+
+                foreach ($service->get_field_mappings() as $userfieldmap) {
+                    $userfieldmap->set('issuerid', $issuer->get('id'));
+                    $userfieldmap->create();
+                }
+
+                return $issuer;
         }
 
         throw new moodle_exception('OAuth 2 service type not recognised: ' . $type);
@@ -317,21 +337,29 @@ class api {
     /**
      * Take the data from the mform and update the issuer.
      *
+     * @deprecated since Moodle 4.2
      * @param stdClass $data
      * @return \core\oauth2\issuer
      */
     public static function update_issuer($data) {
-        return self::create_or_update_issuer($data, false);
+        debugging('Method update_issuer() is deprecated. See save_issuer() instead.',
+            DEBUG_DEVELOPER);
+
+        return self::save_issuer($data);
     }
 
     /**
      * Take the data from the mform and create the issuer.
      *
+     * @deprecated since Moodle 4.2
      * @param stdClass $data
      * @return \core\oauth2\issuer
      */
     public static function create_issuer($data) {
-        return self::create_or_update_issuer($data, true);
+        debugging('Method create_issuer() is deprecated. See save_issuer() instead.',
+            DEBUG_DEVELOPER);
+
+        return self::save_issuer($data);
     }
 
     /**
@@ -364,54 +392,6 @@ class api {
                 $endpoint->create();
             }
         }
-    }
-
-    /**
-     * Take the data from the mform and create or update the issuer.
-     *
-     * @param stdClass $data Form data for the issuer to be created/updated.
-     * @param bool $create If true, the issuer will be created; otherwise, it will be updated.
-     * @return issuer The created/updated issuer.
-     */
-    protected static function create_or_update_issuer($data, bool $create): issuer {
-        require_capability('moodle/site:config', context_system::instance());
-        $issuer = new issuer($data->id ?? 0, $data);
-
-        // Will throw exceptions on validation failures.
-        if ($create) {
-            $issuer->create();
-
-            // Perform service discovery.
-            $classname = self::get_service_classname($issuer->get('servicetype'));
-            $classname::discover_endpoints($issuer);
-            self::guess_image($issuer);
-        } else {
-            $issuer->update();
-        }
-
-        return $issuer;
-    }
-
-    /**
-     * Get the service classname for an issuer.
-     *
-     * @param string $type The OAuth issuer type (google, facebook...).
-     *
-     * @return string The classname for this issuer or "Custom" service class if the class for the defined type doesn't exist
-     *                 or null type is defined.
-     */
-    protected static function get_service_classname(?string $type): string {
-        // Default custom service class.
-        $classname = 'core\\oauth2\\service\\custom';
-
-        if (!empty($type)) {
-            $typeclassname = 'core\\oauth2\\service\\' . $type;
-            if (class_exists($typeclassname)) {
-                $classname = $typeclassname;
-            }
-        }
-
-        return $classname;
     }
 
     /**

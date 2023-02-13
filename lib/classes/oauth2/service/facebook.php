@@ -24,6 +24,7 @@ use core\oauth2\discovery\openidconnect;
 /**
  * Class for Facebook oAuth service, with the specific methods related to it.
  *
+ * @deprecated since Moodle 4.2
  * @package    core
  * @copyright  2021 Sara Arjona (sara@moodle.com)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -36,6 +37,9 @@ class facebook extends openidconnect implements issuer_interface {
      * @return issuer The issuer initialised with proper default values.
      */
     public static function init(): issuer {
+        debugging('Class facebook is deprecated. OAuth 2 service plugins should implement the API at '.
+            'lib/classes/oauth2/service/service.php instead', DEBUG_DEVELOPER);
+
         $record = (object) [
             'name' => 'Facebook',
             'image' => 'https://facebookbrand.com/wp-content/uploads/2016/05/flogo_rgb_hex-brc-site-250.png',
@@ -53,10 +57,14 @@ class facebook extends openidconnect implements issuer_interface {
     /**
      * Create endpoints for this issuer.
      *
+     * @deprecated since Moodle 4.2
      * @param issuer $issuer Issuer the endpoints should be created for.
      * @return issuer
      */
     public static function create_endpoints(issuer $issuer): issuer {
+        debugging('Class facebook is deprecated. OAuth 2 service plugins should implement the API at '.
+            'lib/classes/oauth2/service/service.php instead', DEBUG_DEVELOPER);
+
         // The Facebook API version.
         $apiversion = '2.12';
         // The Graph API URL.

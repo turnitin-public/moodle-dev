@@ -49,13 +49,25 @@ class provider_test extends provider_testcase {
     }
 
     /**
+     * Enable the oauth2service plugins so instances of the issuers can be created for testing.
+     * @return void
+     */
+    protected function enable_service_plugins(): void {
+        $pluginclass = \core_plugin_manager::resolve_plugininfo_class('oauth2service');
+        foreach (['custom', 'google', 'nextcloud', 'microsoft', 'linkedin', 'clever', 'facebook', 'openbadges'] as $pluginname) {
+            $pluginclass::enable_plugin($pluginname, 1);
+        }
+    }
+
+    /**
      * Check that a user context is returned if there is any user data for this user.
      */
     public function test_get_contexts_for_userid() {
+        $this->enable_service_plugins();
         $user = $this->getDataGenerator()->create_user();
         $this->assertEmpty(provider::get_contexts_for_userid($user->id));
 
-        $issuer = \core\oauth2\api::create_standard_issuer('google');
+        $issuer = $this->getDataGenerator()->create_oauth2_issuer('google');
         $info = [];
         $info['username'] = 'gina';
         $info['email'] = 'gina@example.com';
@@ -74,8 +86,9 @@ class provider_test extends provider_testcase {
      * Test that user data is exported correctly.
      */
     public function test_export_user_data() {
+        $this->enable_service_plugins();
         $user = $this->getDataGenerator()->create_user();
-        $issuer = \core\oauth2\api::create_standard_issuer('google');
+        $issuer = $this->getDataGenerator()->create_oauth2_issuer('google');
         $info = [];
         $info['username'] = 'gina';
         $info['email'] = 'gina@example.com';
@@ -96,9 +109,10 @@ class provider_test extends provider_testcase {
      */
     public function test_delete_data_for_all_users_in_context() {
         global $DB;
+        $this->enable_service_plugins();
 
         $user1 = $this->getDataGenerator()->create_user();
-        $issuer1 = \core\oauth2\api::create_standard_issuer('google');
+        $issuer1 = $this->getDataGenerator()->create_oauth2_issuer('google');
         $info = [];
         $info['username'] = 'gina';
         $info['email'] = 'gina@example.com';
@@ -106,7 +120,7 @@ class provider_test extends provider_testcase {
         $user1context = \context_user::instance($user1->id);
 
         $user2 = $this->getDataGenerator()->create_user();
-        $issuer2 = \core\oauth2\api::create_standard_issuer('microsoft');
+        $issuer2 = $this->getDataGenerator()->create_oauth2_issuer('microsoft');
         $info = [];
         $info['username'] = 'jerry';
         $info['email'] = 'jerry@example.com';
@@ -136,9 +150,10 @@ class provider_test extends provider_testcase {
      */
     public function test_delete_data_for_user() {
         global $DB;
+        $this->enable_service_plugins();
 
         $user1 = $this->getDataGenerator()->create_user();
-        $issuer1 = \core\oauth2\api::create_standard_issuer('google');
+        $issuer1 = $this->getDataGenerator()->create_oauth2_issuer('google');
         $info = [];
         $info['username'] = 'gina';
         $info['email'] = 'gina@example.com';
@@ -146,7 +161,7 @@ class provider_test extends provider_testcase {
         $user1context = \context_user::instance($user1->id);
 
         $user2 = $this->getDataGenerator()->create_user();
-        $issuer2 = \core\oauth2\api::create_standard_issuer('microsoft');
+        $issuer2 = $this->getDataGenerator()->create_oauth2_issuer('microsoft');
         $info = [];
         $info['username'] = 'jerry';
         $info['email'] = 'jerry@example.com';
@@ -177,6 +192,7 @@ class provider_test extends provider_testcase {
      */
     public function test_get_users_in_context() {
         $this->resetAfterTest();
+        $this->enable_service_plugins();
 
         $component = 'auth_oauth2';
         // Create a user.
@@ -188,7 +204,7 @@ class provider_test extends provider_testcase {
         provider::get_users_in_context($userlist);
         $this->assertCount(0, $userlist);
 
-        $issuer = \core\oauth2\api::create_standard_issuer('google');
+        $issuer = $this->getDataGenerator()->create_oauth2_issuer('google');
         $info = [];
         $info['username'] = 'gina';
         $info['email'] = 'gina@example.com';
@@ -213,6 +229,7 @@ class provider_test extends provider_testcase {
      */
     public function test_delete_data_for_users() {
         $this->resetAfterTest();
+        $this->enable_service_plugins();
 
         $component = 'auth_oauth2';
         // Create user1.
@@ -222,13 +239,13 @@ class provider_test extends provider_testcase {
         $user2 = $this->getDataGenerator()->create_user();
         $usercontext2 = \context_user::instance($user2->id);
 
-        $issuer1 = \core\oauth2\api::create_standard_issuer('google');
+        $issuer1 = $this->getDataGenerator()->create_oauth2_issuer('google');
         $info1 = [];
         $info1['username'] = 'gina1';
         $info1['email'] = 'gina@example1.com';
         \auth_oauth2\api::link_login($info1, $issuer1, $user1->id, false);
 
-        $issuer2 = \core\oauth2\api::create_standard_issuer('google');
+        $issuer2 = $this->getDataGenerator()->create_oauth2_issuer('google');
         $info2 = [];
         $info2['username'] = 'gina2';
         $info2['email'] = 'gina@example2.com';

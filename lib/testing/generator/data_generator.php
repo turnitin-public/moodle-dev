@@ -1446,4 +1446,29 @@ EOD;
             "data generators yet. Class {$classname} not found.");
     }
 
+    /**
+     * Test helper to create an issuer instance.
+     *
+     * @param string $pluginname the name of the service plugin.
+     * @param string $baseurl the base url to set on the issuer.
+     * @return core\oauth2\issuer the created issuer.
+     */
+    public function create_oauth2_issuer(string $pluginname, string $baseurl = ''): \core\oauth2\issuer {
+        /** @var core\oauth2\service\service $serviceclassname the service instance. */
+        $serviceclassname = core\oauth2\service\helper::get_service_classname($pluginname);
+        $issuertemplate = $serviceclassname::get_template();
+        $issuerdata = $issuertemplate ? $issuertemplate->to_record() : (object) [];
+        $issuerdata->servicetype = $pluginname;
+        if (!empty($baseurl)) {
+            $issuerdata->baseurl = $baseurl;
+        }
+        if (empty($issuerdata->name)) {
+            $issuerdata->name = $pluginname . ' issuer';
+        }
+        if (empty($issuerdata->image)) {
+            $issuerdata->image = '';
+        }
+        return core\oauth2\api::save_issuer($issuerdata);
+    }
+
 }

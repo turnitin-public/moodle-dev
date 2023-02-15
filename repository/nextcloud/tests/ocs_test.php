@@ -42,7 +42,6 @@ class ocs_test extends \advanced_testcase {
 
         $generator = $this->getDataGenerator()->get_plugin_generator('repository_nextcloud');
         $this->issuer = $generator->test_create_issuer();
-        $generator->test_create_endpoints($this->issuer->get('id'));
     }
 
     /**

@@ -57,7 +57,7 @@ class access_controlled_link_manager_test extends \advanced_testcase {
 
         $generator = $this->getDataGenerator()->get_plugin_generator('repository_nextcloud');
         $this->issuer = $generator->test_create_issuer();
-        $generator->test_create_endpoints($this->issuer->get('id'));
+        //$generator->test_create_endpoints($this->issuer->get('id'));
 
         // Mock clients.
         $this->ocsmockclient = $this->getMockBuilder(ocs_client::class
@@ -174,7 +174,6 @@ XML;
      * Additionally mock checks whether the right params are passed to the corresponding functions.
      */
     public function test_create_folder_path_folders_are_not_created() {
-
         $mocks = $this->set_up_mocks_for_create_folder_path(true, 'somename');
         $this->set_private_property($mocks['mockclient'], 'systemwebdavclient', $this->linkmanager);
         $result = $this->linkmanager->create_folder_path_access_controlled_links($mocks['mockcontext'], "mod_resource",

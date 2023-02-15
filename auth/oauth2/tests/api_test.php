@@ -26,14 +26,26 @@ namespace auth_oauth2;
 class api_test extends \advanced_testcase {
 
     /**
+     * Enable the oauth2service plugins so instances of the issuers can be created for testing.
+     * @return void
+     */
+    protected function enable_service_plugins(): void {
+        $pluginclass = \core_plugin_manager::resolve_plugininfo_class('oauth2service');
+        foreach (['custom', 'google', 'nextcloud', 'microsoft', 'linkedin', 'clever', 'facebook', 'openbadges'] as $pluginname) {
+            $pluginclass::enable_plugin($pluginname, 1);
+        }
+    }
+
+    /**
      * Test the cleaning of orphaned linked logins for all issuers.
      */
     public function test_clean_orphaned_linked_logins() {
         $this->resetAfterTest();
+        $this->enable_service_plugins();
         $this->setAdminUser();
 
-        $issuer = \core\oauth2\api::create_standard_issuer('google');
-        \core\oauth2\api::create_standard_issuer('microsoft');
+        $issuer = $this->getDataGenerator()->create_oauth2_issuer('google');
+        $this->getDataGenerator()->create_oauth2_issuer('microsoft');
 
         $user = $this->getDataGenerator()->create_user();
         $info = [];
@@ -60,10 +72,11 @@ class api_test extends \advanced_testcase {
      */
     public function test_clean_orphaned_linked_logins_with_issuer_id() {
         $this->resetAfterTest();
+        $this->enable_service_plugins();
         $this->setAdminUser();
 
-        $issuer1 = \core\oauth2\api::create_standard_issuer('google');
-        $issuer2 = \core\oauth2\api::create_standard_issuer('microsoft');
+        $issuer1 = $this->getDataGenerator()->create_oauth2_issuer('google');
+        $issuer2 = $this->getDataGenerator()->create_oauth2_issuer('microsoft');
 
         $user1 = $this->getDataGenerator()->create_user();
         $info = [];
@@ -97,9 +110,10 @@ class api_test extends \advanced_testcase {
     public function test_create_new_confirmed_account() {
         global $DB;
         $this->resetAfterTest();
+        $this->enable_service_plugins();
         $this->setAdminUser();
 
-        $issuer = \core\oauth2\api::create_standard_issuer('microsoft');
+        $issuer = $this->getDataGenerator()->create_oauth2_issuer('microsoft');
 
         $info = [];
         $info['username'] = 'apple';
@@ -132,9 +146,9 @@ class api_test extends \advanced_testcase {
      */
     public function test_linked_logins() {
         $this->resetAfterTest();
-
+        $this->enable_service_plugins();
         $this->setAdminUser();
-        $issuer = \core\oauth2\api::create_standard_issuer('google');
+        $issuer = $this->getDataGenerator()->create_oauth2_issuer('google');
 
         $user = $this->getDataGenerator()->create_user();
 
@@ -198,9 +212,10 @@ class api_test extends \advanced_testcase {
     public function test_send_confirm_account_email() {
         global $DB;
         $this->resetAfterTest();
+        $this->enable_service_plugins();
         $this->setAdminUser();
 
-        $issuer = \core\oauth2\api::create_standard_issuer('microsoft');
+        $issuer = $this->getDataGenerator()->create_oauth2_issuer('microsoft');
 
         $info = [];
         $info['username'] = 'apple';

@@ -16,6 +16,11 @@
 
 namespace auth_oauth2;
 
+use core\oauth2\api;
+use core\oauth2\issuer;
+use core\oauth2\service\helper;
+use core\oauth2\service\service;
+
 /**
  * Auth oauth2 auth functions tests.
  *
@@ -26,6 +31,17 @@ namespace auth_oauth2;
  * @coversDefaultClass \auth_oauth2\auth
  */
 class auth_test extends \advanced_testcase {
+
+    /**
+     * Enable the oauth2service plugins so instances of the issuers can be created for testing.
+     * @return void
+     */
+    protected function enable_service_plugins(): void {
+        $pluginclass = \core_plugin_manager::resolve_plugininfo_class('oauth2service');
+        foreach (['custom', 'google', 'nextcloud', 'microsoft', 'linkedin', 'clever', 'facebook', 'openbadges'] as $pluginname) {
+            $pluginclass::enable_plugin($pluginname, 1);
+        }
+    }
 
     public function test_get_password_change_info() {
         $this->resetAfterTest();
@@ -47,10 +63,11 @@ class auth_test extends \advanced_testcase {
     public function test_oauth2_complete_login(): void {
         global $CFG;
         $this->resetAfterTest();
+        $this->enable_service_plugins();
         $this->setAdminUser();
         $wantsurl = new \moodle_url('/');
 
-        $issuer = \core\oauth2\api::create_standard_issuer('microsoft');
+        $issuer = $this->getDataGenerator()->create_oauth2_issuer('microsoft');
 
         $info = [];
         $info['username'] = 'apple';

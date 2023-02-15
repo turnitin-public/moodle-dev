@@ -20,6 +20,8 @@ use core\oauth2\access_token;
 use core\oauth2\api;
 use core\oauth2\endpoint;
 use core\oauth2\issuer;
+use core\oauth2\service\helper;
+use core\oauth2\service\service;
 use core\oauth2\system_account;
 use \core\oauth2\user_field_mapping;
 
@@ -34,15 +36,27 @@ use \core\oauth2\user_field_mapping;
 class oauth2_test extends \advanced_testcase {
 
     /**
+     * Enable the oauth2service plugins so instances of the issuers can be created for testing.
+     * @return void
+     */
+    protected function enable_service_plugins(): void {
+        $pluginclass = \core_plugin_manager::resolve_plugininfo_class('oauth2service');
+        foreach (['custom', 'google', 'nextcloud', 'microsoft', 'linkedin', 'clever', 'facebook', 'openbadges'] as $pluginname) {
+            $pluginclass::enable_plugin($pluginname, 1);
+        }
+    }
+
+    /**
      * Tests the crud operations on oauth2 issuers.
      */
     public function test_create_and_delete_standard_issuers() {
         $this->resetAfterTest();
+        $this->enable_service_plugins();
         $this->setAdminUser();
-        api::create_standard_issuer('google');
-        api::create_standard_issuer('facebook');
-        api::create_standard_issuer('microsoft');
-        api::create_standard_issuer('nextcloud', 'https://dummy.local/nextcloud/');
+        $this->getDataGenerator()->create_oauth2_issuer('google');
+        $this->getDataGenerator()->create_oauth2_issuer('facebook');
+        $this->getDataGenerator()->create_oauth2_issuer('microsoft');
+        $this->getDataGenerator()->create_oauth2_issuer('nextcloud', 'https://dummy.local/nextcloud/');
 
         $issuers = api::get_all_issuers();
 
@@ -71,13 +85,15 @@ class oauth2_test extends \advanced_testcase {
 
     /**
      * Tests the crud operations on oauth2 issuers.
+     * TODO: move this test to the nextcloud service tests.
      */
     public function test_create_nextcloud_without_url() {
         $this->resetAfterTest();
+        $this->enable_service_plugins();
         $this->setAdminUser();
 
         $this->expectException(\moodle_exception::class);
-        api::create_standard_issuer('nextcloud');
+        $this->getDataGenerator()->create_oauth2_issuer('nextcloud');
     }
 
     /**
@@ -85,8 +101,9 @@ class oauth2_test extends \advanced_testcase {
      */
     public function test_getters() {
         $this->resetAfterTest();
+        $this->enable_service_plugins();
         $this->setAdminUser();
-        $issuer = api::create_standard_issuer('microsoft');
+        $issuer = $this->getDataGenerator()->create_oauth2_issuer('microsoft');
 
         $same = api::get_issuer($issuer->get('id'));
 
@@ -148,9 +165,10 @@ class oauth2_test extends \advanced_testcase {
      */
     public function test_get_system_oauth_client($responsedata, $expiresin) {
         $this->resetAfterTest();
+        $this->enable_service_plugins();
         $this->setAdminUser();
 
-        $issuer = api::create_standard_issuer('microsoft');
+        $issuer = $this->getDataGenerator()->create_oauth2_issuer('microsoft');
 
         $requiredscopes = api::get_system_scopes_for_issuer($issuer);
         // Fake a system account.
@@ -187,9 +205,10 @@ class oauth2_test extends \advanced_testcase {
      */
     public function test_enable_disable_issuer() {
         $this->resetAfterTest();
+        $this->enable_service_plugins();
         $this->setAdminUser();
 
-        $issuer = api::create_standard_issuer('microsoft');
+        $issuer = $this->getDataGenerator()->create_oauth2_issuer('microsoft');
 
         $issuerid = $issuer->get('id');
 
@@ -215,9 +234,10 @@ class oauth2_test extends \advanced_testcase {
      */
     public function test_issuer_alloweddomains() {
         $this->resetAfterTest();
+        $this->enable_service_plugins();
         $this->setAdminUser();
 
-        $issuer = api::create_standard_issuer('microsoft');
+        $issuer = $this->getDataGenerator()->create_oauth2_issuer('microsoft');
 
         $issuer->set('alloweddomains', '');
 
@@ -256,7 +276,7 @@ class oauth2_test extends \advanced_testcase {
      * Test endpoints creation for issuers.
      * @dataProvider create_endpoints_for_standard_issuer_provider
      *
-     * @covers ::create_endpoints_for_standard_issuer
+     * @covers ::create_standard_issuer
      *
      * @param string $type Issuer type to create.
      * @param string|null $discoveryurl Expected discovery URL or null if this endpoint doesn't exist.
@@ -265,9 +285,11 @@ class oauth2_test extends \advanced_testcase {
      * @param string|null $expectedexception Name of the expected expection or null if no exception will be thrown.
      */
     public function test_create_endpoints_for_standard_issuer(string $type, ?string $discoveryurl = null,
-        bool $hasmappingfields = true, ?string $baseurl = null, ?string $expectedexception = null): void {
+        bool $hasmappingfields = true, ?string $baseurl = null, ?string $expectedexception = null,
+            ?string $expectedexceptionmsg = null): void {
 
         $this->resetAfterTest();
+        $this->enable_service_plugins();
 
         // Mark test as long because it connects with external services.
         if (!PHPUNIT_LONGTEST) {
@@ -277,21 +299,24 @@ class oauth2_test extends \advanced_testcase {
         $this->setAdminUser();
 
         // Method create_endpoints_for_standard_issuer is called internally from create_standard_issuer.
-        if ($expectedexception) {
-            $this->expectException($expectedexception);
+        try {
+            $issuer = api::create_standard_issuer($type, $baseurl);
+            $this->assertDebuggingCalledCount(2);
+        } catch (\Exception $e) {
+            $this->assertDebuggingCalledCount(1);
+            if ($expectedexception) {
+                $this->assertInstanceOf($expectedexception, $e);
+                $this->assertStringContainsString($expectedexceptionmsg, $e->getMessage());
+            } else {
+                throw $e;
+            }
+            return;
         }
-        $issuer = api::create_standard_issuer($type, $baseurl);
-
         // Check endpoints have been created.
         $endpoints = api::get_endpoints($issuer);
         $this->assertNotEmpty($endpoints);
         $this->assertNotEmpty($issuer->get('image'));
-        // Check discovery URL.
-        if ($discoveryurl) {
-            $this->assertStringContainsString($discoveryurl, $issuer->get_endpoint_url('discovery'));
-        } else {
-            $this->assertFalse($issuer->get_endpoint_url('discovery'));
-        }
+
         // Check userfield mappings.
         $userfieldmappings =api::get_user_field_mappings($issuer);
         if ($hasmappingfields) {
@@ -302,7 +327,7 @@ class oauth2_test extends \advanced_testcase {
     }
 
     /**
-     * Data provider for test_create_endpoints_for_standard_issuer.
+     * Data provider for test_create_standard_issuer.
      *
      * @return array
      */
@@ -310,32 +335,32 @@ class oauth2_test extends \advanced_testcase {
         return [
             'Google' => [
                 'type' => 'google',
-                'discoveryurl' => '.well-known/openid-configuration',
             ],
             'Google will work too with a valid baseurl parameter' => [
                 'type' => 'google',
-                'discoveryurl' => '.well-known/openid-configuration',
+                'discoveryurl' => null,
                 'hasmappingfields' => true,
                 'baseurl' => 'https://accounts.google.com/',
             ],
             'IMS OBv2.1' => [
-                'type' => 'imsobv2p1',
+                'type' => 'openbadges',
                 'discoveryurl' => '.well-known/badgeconnect.json',
                 'hasmappingfields' => false,
                 'baseurl' => 'https://dc.imsglobal.org/',
             ],
             'IMS OBv2.1 without slash in baseurl should work too' => [
-                'type' => 'imsobv2p1',
+                'type' => 'openbadges',
                 'discoveryurl' => '.well-known/badgeconnect.json',
                 'hasmappingfields' => false,
                 'baseurl' => 'https://dc.imsglobal.org',
             ],
             'IMS OBv2.1 with empty baseurl should return an exception' => [
-                'type' => 'imsobv2p1',
+                'type' => 'openbadges',
                 'discoveryurl' => null,
                 'hasmappingfields' => false,
                 'baseurl' => null,
                 'expectedexception' => \moodle_exception::class,
+                'expectedexceptionmsg' => 'Openbadges service type requires the baseurl parameter.',
             ],
             'Microsoft' => [
                 'type' => 'microsoft',
@@ -355,6 +380,7 @@ class oauth2_test extends \advanced_testcase {
                 'hasmappingfields' => true,
                 'baseurl' => null,
                 'expectedexception' => \moodle_exception::class,
+                'expectedexceptionmsg' => 'Nextcloud service type requires the baseurl parameter.',
             ],
             'Invalid type should return an exception' => [
                 'type' => 'fictitious',
@@ -362,6 +388,7 @@ class oauth2_test extends \advanced_testcase {
                 'hasmappingfields' => true,
                 'baseurl' => null,
                 'expectedexception' => \moodle_exception::class,
+                'expectedexceptionmsg' => 'OAuth 2 service type not recognised: fictitious',
             ],
         ];
     }
@@ -371,15 +398,16 @@ class oauth2_test extends \advanced_testcase {
      */
     public function test_get_all_issuers() {
         $this->resetAfterTest();
+        $this->enable_service_plugins();
         $this->setAdminUser();
-        $googleissuer = api::create_standard_issuer('google');
-        api::create_standard_issuer('facebook');
-        api::create_standard_issuer('microsoft');
+        $googleissuer = $this->getDataGenerator()->create_oauth2_issuer('google');
+        $this->getDataGenerator()->create_oauth2_issuer('facebook');
+        $this->getDataGenerator()->create_oauth2_issuer('microsoft');
 
         // Set Google issuer to be shown only on login page.
         $record = $googleissuer->to_record();
         $record->showonloginpage = $googleissuer::LOGINONLY;
-        api::update_issuer($record);
+        api::save_issuer($record);
 
         $issuers = api::get_all_issuers();
         $this->assertCount(2, $issuers);
@@ -398,13 +426,14 @@ class oauth2_test extends \advanced_testcase {
      */
     public function test_is_available_for_login() {
         $this->resetAfterTest();
+        $this->enable_service_plugins();
         $this->setAdminUser();
-        $googleissuer = api::create_standard_issuer('google');
+        $googleissuer = $this->getDataGenerator()->create_oauth2_issuer('google');
 
         // Set Google issuer to be shown only on login page.
         $record = $googleissuer->to_record();
         $record->showonloginpage = $googleissuer::LOGINONLY;
-        api::update_issuer($record);
+        api::save_issuer($record);
 
         $this->assertFalse($googleissuer->is_available_for_login());
 

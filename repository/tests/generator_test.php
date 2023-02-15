@@ -104,15 +104,9 @@ class generator_test extends \advanced_testcase {
 
         // Create a dropbox oauth issuer.
         $this->setAdminUser();
-        $params = [
-            'name' => 'Dropbox',
-            'clientid' => 'key',
-            'clientsecret' => 'secret',
-            'loginparamsoffline' => 'token_access_type=offline',
-            'image' => '',
-            'showonloginpage' => 1,
-        ];
-        $issuer = \core\oauth2\api::create_issuer((object)$params);
+        $pluginclass = \core_plugin_manager::resolve_plugininfo_class('oauth2service');
+        $pluginclass::enable_plugin('custom', true);
+        $issuer = $this->getDataGenerator()->create_oauth2_issuer('custom');
         $record = new \stdClass();
         $record->pluginname = 'Custom Dropbox';
         $record->dropbox_issuerid = $issuer->get('id');

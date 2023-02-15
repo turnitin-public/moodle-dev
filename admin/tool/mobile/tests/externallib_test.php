@@ -124,11 +124,13 @@ class externallib_test extends externallib_advanced_testcase {
         set_config('supportavailability', CONTACT_SUPPORT_ANYONE);
 
         // Enable couple of issuers.
-        $issuer = \core\oauth2\api::create_standard_issuer('google');
+        $pluginclass = \core_plugin_manager::resolve_plugininfo_class('oauth2service');
+        $pluginclass::enable_plugin('google', true);
+        $issuer = $this->getDataGenerator()->create_oauth2_issuer('google');
         $irecord = $issuer->to_record();
         $irecord->clientid = 'mock';
         $irecord->clientsecret = 'mock';
-        \core\oauth2\api::update_issuer($irecord);
+        \core\oauth2\api::save_issuer($irecord);
 
         set_config('hostname', 'localhost', 'auth_cas');
         set_config('auth_logo', 'http://invalidurl.com//invalid/', 'auth_cas');

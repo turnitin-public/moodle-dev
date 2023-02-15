@@ -59,9 +59,6 @@ class lib_test extends \advanced_testcase {
         $generator = $this->getDataGenerator()->get_plugin_generator('repository_nextcloud');
         $this->issuer = $generator->test_create_issuer();
 
-        // Create Endpoints for issuer.
-        $generator->test_create_endpoints($this->issuer->get('id'));
-
         // Params for the config form.
         $reptype = $generator->create_type([
             'visible' => 1,
@@ -235,21 +232,21 @@ class lib_test extends \advanced_testcase {
         // This is the expected response from the ls method.
         $response = array(
             array(
-                'href' => 'remote.php/webdav/',
+                'href' => '/remote.php/webdav/',
                 'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
                 'resourcetype' => 'collection',
                 'status' => 'HTTP/1.1 200 OK',
                 'getcontentlength' => ''
             ),
             array(
-                'href' => 'remote.php/webdav/Documents/',
+                'href' => '/remote.php/webdav/Documents/',
                 'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
                 'resourcetype' => 'collection',
                 'status' => 'HTTP/1.1 200 OK',
                 'getcontentlength' => ''
             ),
             array(
-                'href' => 'remote.php/webdav/welcome.txt',
+                'href' => '/remote.php/webdav/welcome.txt',
                 'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
                 'status' => 'HTTP/1.1 200 OK',
                 'getcontentlength' => '163'
@@ -305,21 +302,21 @@ class lib_test extends \advanced_testcase {
         // This is the expected response from the get_listing method in the Nextcloud client.
         $response = array(
             array(
-                'href' => 'remote.php/webdav/dir/',
+                'href' => '/remote.php/webdav/dir/',
                 'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
                 'resourcetype' => 'collection',
                 'status' => 'HTTP/1.1 200 OK',
                 'getcontentlength' => ''
             ),
             array(
-                'href' => 'remote.php/webdav/dir/Documents/',
+                'href' => '/remote.php/webdav/dir/Documents/',
                 'lastmodified' => null,
                 'resourcetype' => 'collection',
                 'status' => 'HTTP/1.1 200 OK',
                 'getcontentlength' => ''
             ),
             array(
-                'href' => 'remote.php/webdav/dir/welcome.txt',
+                'href' => '/remote.php/webdav/dir/welcome.txt',
                 'lastmodified' => 'Thu, 08 Dec 2016 16:06:26 GMT',
                 'status' => 'HTTP/1.1 200 OK',
                 'getcontentlength' => '163'
@@ -1023,7 +1020,7 @@ XML;
                 'path' => '',
             ]
         ];
-        $ret['manage'] = '';
+        $ret['manage'] = 'https://www.default.test';
         $ret['defaultreturntype'] = FILE_INTERNAL;
         $ret['list'] = array();
 

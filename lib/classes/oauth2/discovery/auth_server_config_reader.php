@@ -17,6 +17,8 @@
 namespace core\oauth2\discovery;
 
 use core\http_client;
+use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Psr7\Message;
 
 /**
  * Simple reader class, allowing OAuth 2 Authorization Server Metadata to be read from an auth server's well-known.
@@ -35,35 +37,39 @@ class auth_server_config_reader {
     /** @var array associative array of endpoint names to URLs. */
     protected array $endpoints = [];
 
+    /** @var \moodle_url the base URL for the auth server which was last used during a read.*/
+    protected \moodle_url $issuerurl;
+
+    /** @var \moodle_url the full URL to the metadata document as set during the last read.*/
+    protected \moodle_url $lastconfigurationurl;
+
     /**
      * Constructor.
      *
      * @param http_client $httpclient an http client instance.
+     * @param string $wellknownsuffix the well-known suffix, defaulting to 'oauth-authorization-server'.
      */
-    public function __construct(protected http_client $httpclient) {
+    public function __construct(protected http_client $httpclient,
+        protected string $wellknownsuffix = 'oauth-authorization-server') {
     }
 
     /**
      * Read the metadata from the remote host.
      *
-     * @param \moodle_url $issuerurl the issuer base URL.
+     * @param \moodle_url $issuerurl the auth server issuer URL.
      * @return \stdClass the configuration data object.
-     * @throws \moodle_exception if the URL is invalid, or the configuration was unable to be read.
+     * @throws ClientException|\GuzzleHttp\Exception\GuzzleException if the http client experiences any problems.
      */
     public function read_configuration(\moodle_url $issuerurl): \stdClass {
-        $this->validate_uri($issuerurl);
+        $this->issuerurl = $issuerurl;
+        $this->validate_uri();
 
-        try {
-            $url = $this->get_configuration_url($issuerurl)->out(false);
-            $response = $this->httpclient->request('GET', $url);
-            $this->metadata = json_decode($response->getBody());
-            $this->parse_endpoints_from_last_read();
-            return $this->metadata;
-        } catch (ClientException $e) {
-            $responsepretty = Psr7\Message::toString($e->getResponse());
-            throw new \moodle_exception("Metadata for issuer '{$this->issuerurl->out(false)}' not found. " .
-                "Response: '$responsepretty'");
-        }
+        $url = $this->get_configuration_url()->out(false);
+        $this->lastconfigurationurl = new \moodle_url($url);
+        $response = $this->httpclient->request('GET', $url);
+        $this->metadata = json_decode($response->getBody());
+        $this->parse_endpoints_from_last_read();
+        return $this->metadata;
     }
 
     /**
@@ -75,15 +81,30 @@ class auth_server_config_reader {
         return $this->endpoints;
     }
 
-    protected function validate_uri(\moodle_url $issuerurl) {
-        if (!empty($issuerurl->get_query_string())) {
+    /**
+     * The last read configuration URL.
+     *
+     * @return \moodle_url|null the URL, or null if nothing has been read yet.
+     */
+    public function get_last_read_config_url(): ?\moodle_url {
+        return $this->lastconfigurationurl ?? null;
+    }
+
+    /**
+     * Make sure the base URI is suitable for use in discovery.
+     *
+     * @return void
+     * @throws \moodle_exception if the URI fails validation.
+     */
+    protected function validate_uri() {
+        if (!empty($this->issuerurl->get_query_string())) {
             throw new \moodle_exception('Error: '.__METHOD__.': Auth server base URL cannot contain a query component.');
         }
-        if (strtolower($issuerurl->get_scheme()) !== 'https') {
+        if (strtolower($this->issuerurl->get_scheme()) !== 'https') {
             throw new \moodle_exception('Error: '.__METHOD__.': Auth server base URL must use HTTPS scheme.');
         }
         // This catches URL fragments. Since a query string is ruled out above, out_omit_querystring(false) returns only fragments.
-        if ($issuerurl->out_omit_querystring() != $issuerurl->out(false)) {
+        if ($this->issuerurl->out_omit_querystring() != $this->issuerurl->out(false)) {
             throw new \moodle_exception('Error: '.__METHOD__.': Auth server base URL must not contain fragments.');
         }
     }
@@ -107,21 +128,23 @@ class auth_server_config_reader {
      * Per {@see https://www.rfc-editor.org/rfc/rfc8414#section-3}, if the issuer URL contains a path component,
      * the well known suffix is added between the host and path components.
      *
-     * @param \moodle_url $issuerurl the auth server base URL, on which to append the well known suffix.
      * @return \moodle_url the full URL to the auth server metadata.
      */
-    protected function get_configuration_url(\moodle_url $issuerurl): \moodle_url {
-        if ($path = $issuerurl->get_path()) {
+    protected function get_configuration_url(): \moodle_url {
+        $path = $this->issuerurl->get_path();
+        if (!empty($path) && $path !== '/') {
             // Insert the well known suffix between the host and path components.
-            $port = $issuerurl->get_port() ? ':'.$issuerurl->get_port() : '';
-            $uri = "{$issuerurl->get_scheme()}://{$issuerurl->get_host()}$port/.well-known/oauth-authorization-server$path";
+            $port = $this->issuerurl->get_port() ? ':'.$this->issuerurl->get_port() : '';
+            $uri = "{$this->issuerurl->get_scheme()}://{$this->issuerurl->get_host()}$port/".
+                ".well-known/$this->wellknownsuffix$path";
         } else {
             // No path, just append the well known suffix.
-            $uri = $issuerurl->out(false);
+            $uri = $this->issuerurl->out(false);
             $uri .= (substr($uri, -1) == '/' ? '' : '/');
-            $uri .= '.well-known/oauth-authorization-server';
+            $uri .= ".well-known/$this->wellknownsuffix";
         }
 
-        return new \moodle_url($uri);
+        $this->lastconfigurationurl = \moodle_url($uri);
+        return $this->lastconfigurationurl;
     }
 }

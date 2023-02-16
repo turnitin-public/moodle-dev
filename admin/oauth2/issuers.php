@@ -79,8 +79,13 @@ if ($action == 'edit') {
     if ($mform->is_cancelled()) {
         redirect(new moodle_url('/admin/oauth2/issuers.php'));
     } else if ($mform->is_submitted() && $data = $mform->get_data()) {
-        core\oauth2\api::save_issuer($data);
-        redirect($PAGE->url, get_string('changessaved'), null, \core\output\notification::NOTIFY_SUCCESS);
+        try {
+            $issuer = core\oauth2\api::save_issuer($data);
+            redirect($PAGE->url, get_string('changessaved'), null, \core\output\notification::NOTIFY_SUCCESS);
+        } catch (Exception $e) {
+
+            redirect($PAGE->url, $e->getMessage(), null, \core\output\notification::NOTIFY_ERROR);
+        }
     }
 
     // Show the add form.

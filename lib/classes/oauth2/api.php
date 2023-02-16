@@ -28,7 +28,6 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/filelib.php');
 
 use core\oauth2\service\helper;
-use core\oauth2\service\service;
 use stdClass;
 use moodle_url;
 use context_system;
@@ -306,9 +305,9 @@ class api {
      */
     public static function save_issuer(stdClass $data): issuer {
         $id = $data->id ?? 0; // Record the id, to ensure plugins don't change it.
-        $issuer = new issuer($data->id ?? 0, $data);
+        $issuer = new issuer($id, $data);
 
-        // Hook allowing plugins to provide their own issuer data based on the submitted, validated form data,
+        // Extension point allowing plugins to provide their own issuer data based on the submitted, validated form data,
         // providing support for features like dynamic client registration.
         $service = helper::get_service_instance($issuer);
         $issuer = $service->get_issuer();
@@ -322,7 +321,8 @@ class api {
             $issuer->create();
             self::fix_issuer_endpoints($issuer, $service->get_endpoints());
 
-            // Extension point: Get the user field mapping from the plugin (if the plugin supports login/identity)
+            // Extension point allowing plugins to provider their user field mapping (if the plugin supports login/identity).
+            // This can only be fetched during the first save. After this, the mappings are the responsibility of the admin.
             foreach ($service->get_field_mappings() as $userfieldmap) {
                 $userfieldmap->set('issuerid', $issuer->get('id'));
                 $userfieldmap->create();

@@ -57,7 +57,11 @@ class service extends \core\oauth2\service\service {
     }
 
     public static function get_instance(issuer $issuer): \core\oauth2\service\service {
-        return new self($issuer, new openbadges_config_reader(new \curl()), new http_client());
+        return new self(
+            $issuer,
+            new openbadges_config_reader(new http_client(), new \moodle_url($issuer->get('baseurl'))),
+            new http_client()
+        );
     }
 
     public static function get_config(): config {
@@ -98,7 +102,7 @@ class service extends \core\oauth2\service\service {
             return;
         }
 
-        $this->badgeconfig = $this->configreader->read_json_configuration(new \moodle_url($issuerbaseurl));
+        $this->badgeconfig = $this->configreader->read_configuration();
 
         foreach ($this->configreader->get_endpoints() as $name => $url) {
             $record = (object) [
@@ -107,6 +111,8 @@ class service extends \core\oauth2\service\service {
             ];
             $this->endpoints[$record->name] = new endpoint(0, $record);
         }
+        $this->endpoints['discovery_endpoint'] = new endpoint(0,
+            (object) ['name' => 'discovery_endpoint', 'url' => $this->configreader->get_configuration_url()->out(false)]);
 
         if (!empty($this->badgeconfig->badgeConnectAPI[0]->scopesOffered)) {
             $this->issuer->set('scopessupported', implode(' ', $this->badgeconfig->badgeConnectAPI[0]->scopesOffered));

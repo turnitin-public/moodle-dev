@@ -17,6 +17,7 @@
 namespace core\oauth2\discovery;
 
 use core\http_client;
+use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
@@ -40,10 +41,13 @@ class auth_server_config_reader_test extends \advanced_testcase {
      * @dataProvider config_provider
      * @param string $issuerurl the auth server issuer URL.
      * @param ResponseInterface $httpresponse a stub HTTP response.
+     * @param null|string $altwellknownsuffix an alternate value for the well known suffix to use in the reader.
      * @param array $expected test expectations.
      * @return void
      */
-    public function test_read_configuration(string $issuerurl, ResponseInterface $httpresponse, array $expected = []) {
+    public function test_read_configuration(string $issuerurl, ResponseInterface $httpresponse, ?string $altwellknownsuffix = null,
+            array $expected = []) {
+
         $mock = new MockHandler([$httpresponse]);
         $handlerStack = HandlerStack::create($mock);
         if (!empty($expected['request'])) {
@@ -53,10 +57,17 @@ class auth_server_config_reader_test extends \advanced_testcase {
             $handlerStack->push($history);
         }
 
-        $configreader = new auth_server_config_reader(new http_client(['handler' => $handlerStack]));
+        $args = [
+            new http_client(['handler' => $handlerStack]),
+        ];
+        if (!is_null($altwellknownsuffix)) {
+            $args[] = $altwellknownsuffix;
+        }
+
         if (!empty($expected['exception'])) {
             $this->expectException($expected['exception']);
         }
+        $configreader = new auth_server_config_reader(...$args);
         $config = $configreader->read_configuration(new \moodle_url($issuerurl));
 
         if (!empty($expected['request'])) {
@@ -111,6 +122,7 @@ class auth_server_config_reader_test extends \advanced_testcase {
                         ]
                     ])
                 ),
+                'well_known_suffix' => null,
                 'expected' => [
                     'request' => [
                         'url' => 'https://app.example.com/.well-known/oauth-authorization-server'
@@ -185,9 +197,85 @@ class auth_server_config_reader_test extends \advanced_testcase {
                         ]
                     ])
                 ),
+                'well_known_suffix' => null,
                 'expected' => [
                     'request' => [
                         'url' => 'https://app.example.com/.well-known/oauth-authorization-server/some/path'
+                    ],
+                    'metadata' => [
+                        "issuer" => "https://app.example.com",
+                        "authorization_endpoint" => "https://app.example.com/authorize",
+                        "token_endpoint" => "https://app.example.com/token",
+                        "token_endpoint_auth_methods_supported" => [
+                            "client_secret_basic",
+                            "private_key_jwt"
+                        ],
+                        "token_endpoint_auth_signing_alg_values_supported" => [
+                            "RS256",
+                            "ES256"
+                        ],
+                        "userinfo_endpoint" => "https://app.example.com/userinfo",
+                        "jwks_uri" => "https://app.example.com/jwks.json",
+                        "registration_endpoint" => "https://app.example.com/register",
+                        "scopes_supported" => [
+                            "openid",
+                            "profile",
+                            "email",
+                        ],
+                        "response_types_supported" => [
+                            "code",
+                            "code token"
+                        ],
+                        "service_documentation" => "http://app.example.com/service_documentation.html",
+                        "ui_locales_supported" => [
+                            "en-US",
+                            "en-GB",
+                            "fr-FR",
+                        ]
+                    ]
+                ]
+            ],
+            'Valid, single trailing / path only' => [
+                'issuer_url' => 'https://app.example.com/',
+                'http_response' => new Response(
+                    200,
+                    ['Content-Type' => 'application/json'],
+                    json_encode([
+                        "issuer" => "https://app.example.com",
+                        "authorization_endpoint" => "https://app.example.com/authorize",
+                        "token_endpoint" => "https://app.example.com/token",
+                        "token_endpoint_auth_methods_supported" => [
+                            "client_secret_basic",
+                            "private_key_jwt"
+                        ],
+                        "token_endpoint_auth_signing_alg_values_supported" => [
+                            "RS256",
+                            "ES256"
+                        ],
+                        "userinfo_endpoint" => "https://app.example.com/userinfo",
+                        "jwks_uri" => "https://app.example.com/jwks.json",
+                        "registration_endpoint" => "https://app.example.com/register",
+                        "scopes_supported" => [
+                            "openid",
+                            "profile",
+                            "email",
+                        ],
+                        "response_types_supported" => [
+                            "code",
+                            "code token"
+                        ],
+                        "service_documentation" => "http://app.example.com/service_documentation.html",
+                        "ui_locales_supported" => [
+                            "en-US",
+                            "en-GB",
+                            "fr-FR",
+                        ]
+                    ])
+                ),
+                'well_known_suffix' => null,
+                'expected' => [
+                    'request' => [
+                        'url' => 'https://app.example.com/.well-known/oauth-authorization-server'
                     ],
                     'metadata' => [
                         "issuer" => "https://app.example.com",
@@ -259,6 +347,7 @@ class auth_server_config_reader_test extends \advanced_testcase {
                         ]
                     ])
                 ),
+                'well_known_suffix' => null,
                 'expected' => [
                     'exception' => \moodle_exception::class
                 ]
@@ -300,6 +389,7 @@ class auth_server_config_reader_test extends \advanced_testcase {
                         ]
                     ])
                 ),
+                'well_known_suffix' => null,
                 'expected' => [
                     'exception' => \moodle_exception::class
                 ]
@@ -341,6 +431,7 @@ class auth_server_config_reader_test extends \advanced_testcase {
                         ]
                     ])
                 ),
+                'well_known_suffix' => null,
                 'expected' => [
                     'exception' => \moodle_exception::class
                 ]
@@ -382,6 +473,7 @@ class auth_server_config_reader_test extends \advanced_testcase {
                         ]
                     ])
                 ),
+                'well_known_suffix' => null,
                 'expected' => [
                     'request' => [
                         'url' => 'https://app.example.com:8080/.well-known/oauth-authorization-server/some/path'
@@ -417,6 +509,164 @@ class auth_server_config_reader_test extends \advanced_testcase {
                             "fr-FR",
                         ]
                     ]
+                ]
+            ],
+            'Valid, alternate well known suffix, no path' => [
+                'issuer_url' => 'https://app.example.com',
+                'http_response' => new Response(
+                    200,
+                    ['Content-Type' => 'application/json'],
+                    json_encode([
+                        "issuer" => "https://app.example.com",
+                        "authorization_endpoint" => "https://app.example.com/authorize",
+                        "token_endpoint" => "https://app.example.com/token",
+                        "token_endpoint_auth_methods_supported" => [
+                            "client_secret_basic",
+                            "private_key_jwt"
+                        ],
+                        "token_endpoint_auth_signing_alg_values_supported" => [
+                            "RS256",
+                            "ES256"
+                        ],
+                        "userinfo_endpoint" => "https://app.example.com/userinfo",
+                        "jwks_uri" => "https://app.example.com/jwks.json",
+                        "registration_endpoint" => "https://app.example.com/register",
+                        "scopes_supported" => [
+                            "openid",
+                            "profile",
+                            "email",
+                        ],
+                        "response_types_supported" => [
+                            "code",
+                            "code token"
+                        ],
+                        "service_documentation" => "http://app.example.com/service_documentation.html",
+                        "ui_locales_supported" => [
+                            "en-US",
+                            "en-GB",
+                            "fr-FR",
+                        ]
+                    ])
+                ),
+                'well_known_suffix' => 'openid-configuration', // An application using the openid well known, which is valid.
+                'expected' => [
+                    'request' => [
+                        'url' => 'https://app.example.com/.well-known/openid-configuration'
+                    ],
+                    'metadata' => [
+                        "issuer" => "https://app.example.com",
+                        "authorization_endpoint" => "https://app.example.com/authorize",
+                        "token_endpoint" => "https://app.example.com/token",
+                        "token_endpoint_auth_methods_supported" => [
+                            "client_secret_basic",
+                            "private_key_jwt"
+                        ],
+                        "token_endpoint_auth_signing_alg_values_supported" => [
+                            "RS256",
+                            "ES256"
+                        ],
+                        "userinfo_endpoint" => "https://app.example.com/userinfo",
+                        "jwks_uri" => "https://app.example.com/jwks.json",
+                        "registration_endpoint" => "https://app.example.com/register",
+                        "scopes_supported" => [
+                            "openid",
+                            "profile",
+                            "email",
+                        ],
+                        "response_types_supported" => [
+                            "code",
+                            "code token"
+                        ],
+                        "service_documentation" => "http://app.example.com/service_documentation.html",
+                        "ui_locales_supported" => [
+                            "en-US",
+                            "en-GB",
+                            "fr-FR",
+                        ]
+                    ]
+                ]
+            ],
+            'Valid, alternate well known suffix, with path' => [
+                'issuer_url' => 'https://app.example.com/some/path/',
+                'http_response' => new Response(
+                    200,
+                    ['Content-Type' => 'application/json'],
+                    json_encode([
+                        "issuer" => "https://app.example.com",
+                        "authorization_endpoint" => "https://app.example.com/authorize",
+                        "token_endpoint" => "https://app.example.com/token",
+                        "token_endpoint_auth_methods_supported" => [
+                            "client_secret_basic",
+                            "private_key_jwt"
+                        ],
+                        "token_endpoint_auth_signing_alg_values_supported" => [
+                            "RS256",
+                            "ES256"
+                        ],
+                        "userinfo_endpoint" => "https://app.example.com/userinfo",
+                        "jwks_uri" => "https://app.example.com/jwks.json",
+                        "registration_endpoint" => "https://app.example.com/register",
+                        "scopes_supported" => [
+                            "openid",
+                            "profile",
+                            "email",
+                        ],
+                        "response_types_supported" => [
+                            "code",
+                            "code token"
+                        ],
+                        "service_documentation" => "http://app.example.com/service_documentation.html",
+                        "ui_locales_supported" => [
+                            "en-US",
+                            "en-GB",
+                            "fr-FR",
+                        ]
+                    ])
+                ),
+                'well_known_suffix' => 'openid-configuration', // An application using the openid well known, which is valid.
+                'expected' => [
+                    'request' => [
+                        'url' => 'https://app.example.com/.well-known/openid-configuration/some/path/'
+                    ],
+                    'metadata' => [
+                        "issuer" => "https://app.example.com",
+                        "authorization_endpoint" => "https://app.example.com/authorize",
+                        "token_endpoint" => "https://app.example.com/token",
+                        "token_endpoint_auth_methods_supported" => [
+                            "client_secret_basic",
+                            "private_key_jwt"
+                        ],
+                        "token_endpoint_auth_signing_alg_values_supported" => [
+                            "RS256",
+                            "ES256"
+                        ],
+                        "userinfo_endpoint" => "https://app.example.com/userinfo",
+                        "jwks_uri" => "https://app.example.com/jwks.json",
+                        "registration_endpoint" => "https://app.example.com/register",
+                        "scopes_supported" => [
+                            "openid",
+                            "profile",
+                            "email",
+                        ],
+                        "response_types_supported" => [
+                            "code",
+                            "code token"
+                        ],
+                        "service_documentation" => "http://app.example.com/service_documentation.html",
+                        "ui_locales_supported" => [
+                            "en-US",
+                            "en-GB",
+                            "fr-FR",
+                        ]
+                    ]
+                ]
+            ],
+            'Invalid, bad response' => [
+                'issuer_url' => 'https://app.example.com',
+                'http_response' => new Response(404),
+                'well_known_suffix' => null,
+                'expected' => [
+                    'exception' => ClientException::class
                 ]
             ]
         ];

@@ -5,7 +5,9 @@ Feature: Basic OAuth2 functionality
   I need to add a manage customised OAuth2 services.
 
   Background:
-    Given I log in as "admin"
+    Given the following config values are set as admin:
+    | oauth2service_plugins_sortorder | google,microsoft,custom,facebook,openbadges,linkedin,clever,nextcloud |
+    And I log in as "admin"
     And I change window size to "large"
     And I navigate to "Server > OAuth 2 services" in site administration
 
@@ -220,8 +222,8 @@ Feature: Basic OAuth2 functionality
       | Client secret              | supersecret                               |
       | Service base URL           | https://dc.imsglobal.org/                 |
     When I press "Save changes"
-    Then I should see "Could not discover end points for identity issuer: Invalid custom service"
-    And I should see "URL: https://dc.imsglobal.org/.well-known/openid-configuration"
+    Then I should see "Server metadata for issuer 'Invalid custom service' not found"
+    And I should see "https://dc.imsglobal.org/.well-known/openid-configuration"
     And "Allow services" "icon" should exist in the "Invalid custom service" "table_row"
     And "Do not allow login" "icon" should exist in the "Invalid custom service" "table_row"
     And I should see "-" in the "Invalid custom service" "table_row"

@@ -53,11 +53,12 @@ class openid_config_reader_test extends \advanced_testcase {
             $handlerStack->push($history);
         }
 
-        $configreader = new openid_config_reader(new http_client(['handler' => $handlerStack]));
         if (!empty($expected['exception'])) {
             $this->expectException($expected['exception']);
         }
-        $config = $configreader->read_configuration(new \moodle_url($issuerurl));
+        $configreader = new openid_config_reader(new http_client(['handler' => $handlerStack]), new \moodle_url($issuerurl));
+
+        $config = $configreader->read_configuration();
 
         if (!empty($expected['request'])) {
             // Verify the request goes to the correct URL (i.e. the well known suffix is correctly positioned).

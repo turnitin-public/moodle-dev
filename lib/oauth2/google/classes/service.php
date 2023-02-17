@@ -31,30 +31,22 @@ use core\oauth2\user_field_mapping;
  */
 class service extends \core\oauth2\service\service {
 
-    /** @var issuer the issuer instance this plugin receives after form submission. */
-    protected issuer $issuer;
-
-    /** @var openid_config_reader a config reader for openid connect. */
-    protected openid_config_reader $configreader;
-
-    /** @var bool whether or not the configuration has already been read for the service instance. */
+    /** @var bool whether the service configuration has already been read. */
     protected bool $configread = false;
-
-    /** @var \stdClass The OpenID configuration for the service. */
-    protected \stdClass $openidconfig;
 
     /** @var array the OAuth 2 endpoints found in the OpenID configuration. */
     protected array $endpoints = [];
 
+    /** @var array the array of user field mapping instances. */
+    protected array $userfieldmapping = [];
+
     /**
      * Constructor.
      *
-     * @param issuer $issuer an issuer instance.
+     * @param issuer $issuer the issuer instance this plugin receives after form submission.
      * @param openid_config_reader $configreader an openid configuration reader instance.
      */
-    public function __construct(issuer $issuer, openid_config_reader $configreader) {
-        $this->issuer = $issuer;
-        $this->configreader = $configreader;
+    public function __construct(protected issuer $issuer, protected openid_config_reader $configreader) {
     }
 
     public static function get_instance(issuer $issuer): \core\oauth2\service\service {
@@ -73,18 +65,22 @@ class service extends \core\oauth2\service\service {
     }
 
     public function get_issuer(): issuer {
-        $this->read_openid_configuration();
-
+        $this->read_configuration();
         return $this->issuer;
     }
 
     public function get_endpoints(): array {
-        $this->read_openid_configuration();
-
+        $this->read_configuration();
         return array_values($this->endpoints);
     }
 
     public function get_field_mappings(): array {
+        // User field mapping only returned when the service supports openid metadata discovery.
+        $this->read_configuration();
+        if (!$this->configread) {
+            return [];
+        }
+
         $mapping = [
             'given_name' => 'firstname',
             'middle_name' => 'middlename',
@@ -97,15 +93,42 @@ class service extends \core\oauth2\service\service {
             'locale' => 'lang',
         ];
 
-        $m = [];
         foreach ($mapping as $external => $internal) {
             $record = (object) [
                 'externalfield' => $external,
                 'internalfield' => $internal
             ];
-            $m[] = new user_field_mapping(0, $record);
+            $this->userfieldmapping[] = new user_field_mapping(0, $record);
         }
-        return $m;
+        return $this->userfieldmapping;
+    }
+
+    public function validation(array $coreerrors): array {
+        $errors = [];
+        if (!isset($coreerrors['baseurl']) && !empty($this->issuer->get('baseurl'))) {
+            // The 'baseurl' field is used to find the openid config. Make sure this URL is suitable for that.
+            $base = new \moodle_url($this->issuer->get('baseurl'));
+            $querystring = (!empty($base->get_query_string()));
+            $badcheme = (strtolower($base->get_scheme()) !== 'https');
+            // This last bit catches URL fragments. If the query string is empty, out_omit_querystring(false) returns only
+            // fragments.
+            $fragments = ($base->out_omit_querystring() != $base->out(false));
+
+            if ($querystring || $badcheme || $fragments) {
+                $errors['baseurl'] = 'The base URL is not valid for use with discovery. It must be an HTTPS URL without query '.
+                    'strings or parameters.';
+            } else {
+                // URL is suitable. Make sure the config can be read before allowing form save.
+                try {
+                    $this->read_configuration();
+                } catch (\Exception $e) {
+                    $errors['baseurl'] = 'The OpenId configuration could not be read from '
+                        . $this->configreader->get_last_read_config_url()->out(false) . '. If the service doesn\'t support '.
+                        'configuration discovery, this should be left blank';
+                }
+            }
+        }
+        return $errors;
     }
 
     /**
@@ -113,25 +136,42 @@ class service extends \core\oauth2\service\service {
      *
      * @return void
      */
-    protected function read_openid_configuration(): void {
+    protected function read_configuration(): void {
         $issuerbaseurl = $this->issuer->get('baseurl');
 
         if ($this->configread || empty($issuerbaseurl)) {
             return;
         }
 
-        $this->openidconfig = $this->configreader->read_configuration(new \moodle_url($issuerbaseurl));
+        // Only read from the remote once per request, which permits checking the configuration endpoint during form validation.
+        $cache = \cache::make('oauth2service_custom', 'openidconfiguration');
+        if (!$openidconfig = $cache->get($issuerbaseurl)) {
+            try {
+                $openidconfig = $this->configreader->read_configuration(new \moodle_url($issuerbaseurl));
 
-        foreach ($this->configreader->get_endpoints() as $name => $url) {
-            $record = (object) [
-                'name' => $name,
-                'url' => $url
-            ];
-            $this->endpoints[$record->name] = new endpoint(0, $record);
+                // This isn't openid config per se, but it's nice to have included in the list of endpoints.
+                $openidconfig->discovery_endpoint = $this->configreader->get_last_read_config_url()->out(false);
+
+                $cache->set($issuerbaseurl, $openidconfig);
+            } catch (\Exception $e) {
+                throw new \moodle_exception("Server metadata for issuer '{$this->issuer->get('name')}' not found. 
+                    The configuration document could not be read.");
+            }
         }
 
-        if (!empty($this->openidconfig->scopes_supported)) {
-            $this->issuer->set('scopessupported', implode(' ', $this->openidconfig->scopes_supported));
+        // Process the config.
+        foreach ($openidconfig as $key => $value) {
+            if (substr_compare($key, '_endpoint', - strlen('_endpoint')) === 0) {
+                $record = (object) [
+                    'name' => $key,
+                    'url' => $value
+                ];
+                $this->endpoints[$key] = new endpoint(0, $record);
+            }
+        }
+
+        if (!empty($openidconfig->scopes_supported)) {
+            $this->issuer->set('scopessupported', implode(' ', $openidconfig->scopes_supported));
         }
 
         $this->configread = true;

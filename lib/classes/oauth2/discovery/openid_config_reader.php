@@ -16,6 +16,8 @@
 
 namespace core\oauth2\discovery;
 
+use core\http_client;
+
 /**
  * Config reader allowing OpenID Provider configuration information to be read from the issuer's well-known endpoint.
  *
@@ -28,20 +30,28 @@ namespace core\oauth2\discovery;
 class openid_config_reader extends auth_server_config_reader {
 
     /**
+     * Constructor.
+     *
+     * @param http_client $httpclient an http_client instance.
+     */
+    public function __construct(http_client $httpclient) {
+        parent::__construct($httpclient, 'openid-configuration');
+    }
+
+    /**
      * Get the OpenID Configuration URL.
      *
      * Per https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfigurationRequest, if the issuer URL contains a
      * path component, the well known is added AFTER that. This differs from the OAuth 2 Authorization Server Metadata format,
      * where the well known is inserted between the host and path components.
      *
-     * @param \moodle_url $issuerurl the issuer base URL, on which to append the well known suffix.
      * @return \moodle_url the full URL to the issuer metadata.
      */
-    protected function get_configuration_url(\moodle_url $issuerurl): \moodle_url {
+    protected function get_configuration_url(): \moodle_url {
         // Regardless of path, append the well known suffix.
-        $uri = $issuerurl->out(false);
+        $uri = $this->issuerurl->out(false);
         $uri .= (substr($uri, -1) == '/' ? '' : '/');
-        $uri .= '.well-known/openid-configuration';
+        $uri .= ".well-known/$this->wellknownsuffix";
 
         return new \moodle_url($uri);
     }

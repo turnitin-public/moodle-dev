@@ -316,7 +316,7 @@ if ($hassiteconfig) {
     $ADMIN->add('server', $temp);
 
     // OAuth 2.0 service plugins and service management.
-    $ADMIN->add('server', new admin_category('oauth2services', new lang_string('type_oauth2service_plural', 'plugin')));
+    $ADMIN->add('server', new admin_category('oauth2services', new lang_string('oauth2', 'oauth2')));
 
     $temp = new admin_settingpage('manageoauth2services', new lang_string('oauth2servicesettings', 'oauth2'));
     $temp->add(new \core_oauth2\local\settings\manage_oauth2service_plugins());

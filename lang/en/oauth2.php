@@ -99,6 +99,7 @@ $string['loginissuer'] = 'Allow login';
 $string['notconfigured'] = 'Not configured';
 $string['notdiscovered'] = 'Service discovery not successful';
 $string['notloginissuer'] = 'Do not allow login';
+$string['oauth2'] = 'OAuth 2';
 $string['oauth2services'] = 'OAuth 2 services';
 $string['oauth2servicesettings'] = 'Manage OAuth 2 service plugins';
 $string['privacy:metadata'] = 'The OAuth 2 subsystem does not store any personal data.';

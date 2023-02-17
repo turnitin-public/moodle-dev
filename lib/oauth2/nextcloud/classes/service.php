@@ -42,6 +42,9 @@ class service extends \core\oauth2\service\service {
      * @param issuer $issuer the issuer instance this plugin receives after form submission.
      */
     public function __construct(protected issuer $issuer) {
+        if (empty($issuer->get('baseurl'))) {
+            throw new \moodle_exception('Base URL is required for nextcloud');
+        }
     }
 
     public static function get_instance(issuer $issuer): \core\oauth2\service\service {

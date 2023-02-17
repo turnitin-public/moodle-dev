@@ -17,6 +17,7 @@
 namespace core_oauth2\form;
 
 use core\oauth2\service\config\config;
+use core\oauth2\service\helper;
 use stdClass;
 use core\form\persistent;
 
@@ -241,7 +242,6 @@ class issuer extends persistent {
      * @return array of additional errors, or overridden errors.
      */
     protected function extra_validation($data, $files, array &$errors) {
-        $errors = [];
         if ($data->showonloginpage != \core\oauth2\issuer::SERVICEONLY) {
             if (!strlen(trim($data->loginscopes))) {
                 $errors['loginscopes'] = get_string('required');
@@ -253,6 +253,15 @@ class issuer extends persistent {
                 $errors['acceptrisk'] = get_string('required');
             }
         }
+
+        // Hook allowing oauth2service plugins to perform validation, based on any extra requirements they may have.
+        $serviceclass = helper::get_service_classname($data->servicetype);
+        /** @var \core\oauth2\service\service $serviceclass*/
+        $service = $serviceclass::get_from_formdata($data);
+
+        $pluginerrors = $service->validation($errors);
+        $errors = array_merge($errors, $pluginerrors);
+
         return $errors;
     }
 }

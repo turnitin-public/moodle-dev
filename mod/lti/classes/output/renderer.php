@@ -84,4 +84,27 @@ class renderer extends plugin_renderer_base {
         return parent::render_from_template('mod_lti/repost_crosssite', $data);
     }
 
+    /**
+     * Render the course tools page.
+     *
+     * @param course_tools_page $page the page renderable.
+     * @return string the rendered html for the page.
+     */
+    protected function render_course_tools_page(course_tools_page $page): string {
+
+        // Render the table header templatable.
+        $headerrenderable = $page->get_header();
+        $table = $page->get_table();
+        $headercontext = $headerrenderable->export_for_template($this);
+        $headeroutput = parent::render_from_template('mod_lti/course_tools_page_header', $headercontext);
+
+        // Render the table itself.
+        ob_start();
+        $table->out($table->get_default_per_page(), false);
+        $tableoutput = ob_get_contents();
+        ob_end_clean();
+
+        return $headeroutput . $tableoutput;
+    }
+
 }

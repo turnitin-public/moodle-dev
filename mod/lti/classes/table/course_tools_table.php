@@ -209,6 +209,14 @@ class course_tools_table extends table_sql implements dynamic, renderable {
             null
         ));
 
+        $menu->add(new \action_menu_link(
+            new \moodle_url('#'),
+            null,
+            get_string('delete', 'core'),
+            null,
+            ['data-action' => 'course-tool-delete', 'data-course-tool-id' => $data->id, 'data-course-tool-name' => $data->name],
+        ));
+
         return $OUTPUT->render($menu);
     }
 }

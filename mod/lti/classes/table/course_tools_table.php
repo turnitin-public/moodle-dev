@@ -170,10 +170,13 @@ class course_tools_table extends table_sql implements dynamic, renderable {
 
         // TODO move to an lti table renderer?
         $iconurl = $data->icon ?: $OUTPUT->image_url('monologo', 'lti')->out();
+        $iconclass = $data->icon ? ' nofilter' : '';
+        $iconcontainerclass = 'activityiconcontainer smaller content';
         $name = $data->name;
-        $img = \html_writer::img($iconurl, get_string('courseexternaltooliconalt', 'mod_lti', $name), ['class' => 'coursetoolicon']);
+        $img = \html_writer::img($iconurl, get_string('courseexternaltooliconalt', 'mod_lti', $name),
+            ['class' => 'activityicon' . $iconclass]);
         $name = \html_writer::span($name, 'align-self-center');
-        return \html_writer::div(\html_writer::div($img, 'p-sm-2 mr-2') . $name, 'd-flex');
+        return \html_writer::div(\html_writer::div($img, 'mr-2 '.$iconcontainerclass) . $name, 'd-flex');
     }
 
     /**

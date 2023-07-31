@@ -997,11 +997,11 @@ abstract class grade_report {
      * Returns a row of grade items averages. Override this method to change the format of the average cell.
      *
      * @param grade_item $gradeitem Grade item.
-     * @param array $aggr Average value and meancount information.
-     * @param bool $shownumberofgrades Whether to show number of grades.
+     * @param array|null $aggr Average value and meancount information.
+     * @param bool|null $shownumberofgrades Whether to show number of grades.
      * @return html_table_row HTML
      */
-    public function format_average_cell(grade_item $gradeitem, array $aggr = [], bool $shownumberofgrades = false): mixed {
+    public function format_average_cell(grade_item $gradeitem, ?array $aggr = null, ?bool $shownumberofgrades = null): mixed {
         return true;
     }
 

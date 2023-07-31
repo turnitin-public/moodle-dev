@@ -348,11 +348,11 @@ class user extends grade_report {
      * Returns a row of grade items averages
      *
      * @param grade_item $gradeitem Grade item.
-     * @param array $aggr Average value and meancount information.
-     * @param bool $shownumberofgrades Whether to show number of grades.
+     * @param array|null $aggr Average value and meancount information.
+     * @param bool|null $shownumberofgrades Whether to show number of grades.
      * @return mixed Formatted average cell.
      */
-    public function format_average_cell(grade_item $gradeitem, array $aggr = [], bool $shownumberofgrades = false): mixed {
+    public function format_average_cell(grade_item $gradeitem, ?array $aggr = null, ?bool $shownumberofgrades = null): mixed {
 
         if ($gradeitem->needsupdate) {
             $avg = '<td class="cell c' . $this->columncount++.'">' .

@@ -519,7 +519,9 @@ class mod_lti_mod_form extends moodleform_mod {
         // Add standard buttons, common to all modules.
         $this->add_action_buttons();
 
-        $PAGE->requires->js_call_amd('mod_lti/mod_form', 'init', [$COURSE->id]);
+        if ($supportscontentitemselection) {
+            $PAGE->requires->js_call_amd('mod_lti/mod_form', 'init', [$COURSE->id]);
+        }
     }
 
     /**

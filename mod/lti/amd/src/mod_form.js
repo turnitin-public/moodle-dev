@@ -23,50 +23,52 @@
 
 "use strict";
 
+import ContentItem from 'mod_lti/contentitem';
+
 /**
  * Initialise module.
  *
  * @param {int} courseId the course id.
  */
 const init = (courseId) => {
-    // Makes a content item request when the 'selectcontent' button is clicked.
-    document.addEventListener('click', event => {
-        const contentItemButton = event.target.closest('[name="selectcontent"]');
-        if (contentItemButton) {
-            const contentItemUrl = contentItemButton.getAttribute('data-contentitemurl');
-            const contentItemId = document.querySelector('#hidden_typeid').value;
-            if (contentItemId) {
-                const title = document.querySelector('#id_name').value.trim();
-                const text = document.querySelector('#id_introeditor').value.trim();
-                const postData = {
-                    id: contentItemId,
-                    course: courseId,
-                    title: title,
-                    text: text
-                };
+    const contentItemButton = document.querySelector('[name="selectcontent"]');
 
-                require(['mod_lti/contentitem'], (contentitem) => {
-                    // The callback below is called after the content item has been returned and processed.
-                    contentitem.init(contentItemUrl, postData, (returnData) => {
-                        if (!returnData.multiple) {
-                            // The state of the grade checkbox has already been set by processContentItemReturnData() but that
-                            // hasn't fired the click/change event required by formslib to show/hide the dependent grade fields.
-                            // Fire it now.
-                            const allowGrades = document.querySelector('#id_instructorchoiceacceptgrades');
-                            let allowGradesChangeEvent = new Event('change');
-                            allowGrades.dispatchEvent(allowGradesChangeEvent);
+    if (!contentItemButton) {
+        return;
+    }
 
-                            // If the tool is set to accept grades, make sure "Point" is selected.
-                            if (allowGrades.checked) {
-                                const gradeType = document.querySelector('#id_grade_modgrade_type');
-                                gradeType.value = "point";
-                                let gradeTypeChangeEvent = new Event('change');
-                                gradeType.dispatchEvent(gradeTypeChangeEvent);
-                            }
-                        }
-                    });
-                });
-            }
+    contentItemButton.addEventListener('click', () => {
+        const contentItemUrl = contentItemButton.getAttribute('data-contentitemurl');
+        const contentItemId = document.querySelector('#hidden_typeid').value;
+        if (contentItemId) {
+            const title = document.querySelector('#id_name').value.trim();
+            const text = document.querySelector('#id_introeditor').value.trim();
+            const postData = {
+                id: contentItemId,
+                course: courseId,
+                title: title,
+                text: text
+            };
+
+            // The callback below is called after the content item has been returned and processed.
+            ContentItem.init(contentItemUrl, postData, (returnData) => {
+                if (!returnData.multiple) {
+                    // The state of the grade checkbox has already been set by processContentItemReturnData() but that
+                    // hasn't fired the click/change event required by formslib to show/hide the dependent grade fields.
+                    // Fire it now.
+                    const allowGrades = document.querySelector('#id_instructorchoiceacceptgrades');
+                    let allowGradesChangeEvent = new Event('change');
+                    allowGrades.dispatchEvent(allowGradesChangeEvent);
+
+                    // If the tool is set to accept grades, make sure "Point" is selected.
+                    if (allowGrades.checked) {
+                        const gradeType = document.querySelector('#id_grade_modgrade_type');
+                        gradeType.value = "point";
+                        let gradeTypeChangeEvent = new Event('change');
+                        gradeType.dispatchEvent(gradeTypeChangeEvent);
+                    }
+                }
+            });
         }
     });
 };

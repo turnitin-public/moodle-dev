@@ -334,7 +334,7 @@ class user extends grade_report {
             $cache = \cache::make_from_params(\cache_store::MODE_REQUEST, 'gradereport_user', 'averages');
             $avg = $cache->get(get_class($this));
             if (!$avg) {
-                $ungradedcounts = $this->ungraded_counts();
+                $ungradedcounts = $this->ungraded_counts(false);
                 $this->columncount = 0;
                 $avgrow = $this->format_averages($ungradedcounts);
                 // Save to cache.
@@ -352,7 +352,7 @@ class user extends grade_report {
      * @param bool|null $shownumberofgrades Whether to show number of grades.
      * @return mixed Formatted average cell.
      */
-    public function format_average_cell(grade_item $gradeitem, ?array $aggr = null, ?bool $shownumberofgrades = null): mixed {
+    protected function format_average_cell(grade_item $gradeitem, ?array $aggr = null, ?bool $shownumberofgrades = null): mixed {
 
         if ($gradeitem->needsupdate) {
             $avg = '<td class="cell c' . $this->columncount++.'">' .

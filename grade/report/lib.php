@@ -810,12 +810,17 @@ abstract class grade_report {
      * Get ungraded grade items info and sum of all grade items in a course.
      * Based on calculate_averages function from grade/report/user/lib.php
      *
-     * @param int|null $groupid Group ID.
+     * @param bool $grouponly If we want to compute group average only.
      * @param bool $includehiddengrades Include hidden grades.
      * @return array Ungraded grade items counts with report preferences.
      */
-    public function ungraded_counts(?int $groupid = null, bool $includehiddengrades = false): array {
+    public function ungraded_counts(bool $grouponly, bool $includehiddengrades = false): array {
         global $DB, $CFG;
+
+        $groupid = null;
+        if ($grouponly && isset($this->gpr->groupid)) {
+            $groupid = $this->gpr->groupid;
+        }
 
         $info = [];
         $info['report'] = [
@@ -1006,4 +1011,3 @@ abstract class grade_report {
     }
 
 }
-

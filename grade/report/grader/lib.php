@@ -1183,11 +1183,11 @@ class grade_report_grader extends grade_report {
         $rows = $this->get_right_range_row($rows);
         if ($displayaverages && $this->canviewhidden) {
             if ($this->currentgroup) {
-                $ungradedcounts = $this->ungraded_counts($this->currentgroup, true);
+                $ungradedcounts = $this->ungraded_counts(true, true);
                 $rows[] = $this->format_averages($ungradedcounts);
             }
 
-            $ungradedcounts = $this->ungraded_counts(null, true);
+            $ungradedcounts = $this->ungraded_counts(false, true);
             $rows[] = $this->format_averages($ungradedcounts);
         }
 
@@ -1202,7 +1202,7 @@ class grade_report_grader extends grade_report {
      * @param bool|null $shownumberofgrades Whether to show number of grades.
      * @return mixed Formatted average cell.
      */
-    public function format_average_cell(grade_item $gradeitem, ?array $aggr = null, ?bool $shownumberofgrades = null): mixed {
+    protected function format_average_cell(grade_item $gradeitem, ?array $aggr = null, ?bool $shownumberofgrades = null): mixed {
         global $OUTPUT;
 
         if ($gradeitem->needsupdate) {

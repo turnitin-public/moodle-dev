@@ -19,8 +19,10 @@ defined('MOODLE_INTERNAL') || die;
 require_once($CFG->libdir.'/formslib.php');
 require_once($CFG->libdir.'/gradelib.php');
 require_once($CFG->libdir.'/plagiarismlib.php');
+require_once($CFG->libdir.'/ltixformslib.php');
 
 use core_grades\component_gradeitems;
+
 
 /**
  * This class adds extra methods to form wrapper specific to be used for module add / update forms
@@ -504,6 +506,16 @@ abstract class moodleform_mod extends moodleform {
 
         $this->data_preprocessing($default_values);
         parent::set_data($default_values);
+    }
+
+    /**
+     * Adds all the standard elements to a form for the lti module.
+     */
+    protected function standard_lti_elements() {
+        global $COURSE, $CFG, $DB, $OUTPUT, $PAGE;
+        $mform =& $this->_form;
+
+        attach_lti_elements($mform, $this->context, $this->_instance, $this->current);
     }
 
     /**

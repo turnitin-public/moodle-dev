@@ -26036,6 +26036,9 @@ blockquote {
     animation: none;
   }
 }
+body.behat-site .action-menu .dropdown-subpanel-content.show {
+  animation: none;
+}
 .action-menu .dropdown-subpanel .dropdown-item::after {
   border: 0;
   content: "\f054";
@@ -29163,9 +29166,7 @@ span.editinstructions .alert-link {
   border-radius: 1rem;
 }
 .course-section .availabilityinfo .editavailability a {
-  border-radius: 0.5rem;
-  color: #1d2125;
-  text-decoration: none;
+  border-radius: 0.25rem;
   font-weight: bold;
 }
 .course-section .availabilityinfo .editavailability a:hover {
@@ -29365,7 +29366,7 @@ span.editinstructions .alert-link {
   color: #1d2125;
   background-color: #cfe2f2;
   border-color: #cfe2f2;
-  color: #0f6cbf;
+  color: #083863;
 }
 .activity-item .activity-completion button.btn-primary:hover,
 .activity-item .activity-completion a[role=button].btn-primary:hover {
@@ -29411,7 +29412,7 @@ span.editinstructions .alert-link {
   color: #1d2125;
   background-color: #f5f6f8;
   border-color: #f5f6f8;
-  color: #ced4da;
+  color: #6b6e71;
 }
 .activity-item .activity-completion button.btn-secondary:hover,
 .activity-item .activity-completion a[role=button].btn-secondary:hover {
@@ -29457,7 +29458,7 @@ span.editinstructions .alert-link {
   color: #1d2125;
   background-color: #d7e4d6;
   border-color: #d7e4d6;
-  color: #357a32;
+  color: #1c3f1a;
 }
 .activity-item .activity-completion button.btn-success:hover,
 .activity-item .activity-completion a[role=button].btn-success:hover {
@@ -29503,7 +29504,7 @@ span.editinstructions .alert-link {
   color: #1d2125;
   background-color: #cce6ea;
   border-color: #cce6ea;
-  color: #008196;
+  color: #00434e;
 }
 .activity-item .activity-completion button.btn-info:hover,
 .activity-item .activity-completion a[role=button].btn-info:hover {
@@ -29549,7 +29550,7 @@ span.editinstructions .alert-link {
   color: #1d2125;
   background-color: #fcefdc;
   border-color: #fcefdc;
-  color: #f0ad4e;
+  color: #7d5a29;
 }
 .activity-item .activity-completion button.btn-warning:hover,
 .activity-item .activity-completion a[role=button].btn-warning:hover {
@@ -29595,7 +29596,7 @@ span.editinstructions .alert-link {
   color: #1d2125;
   background-color: #f4d6d2;
   border-color: #f4d6d2;
-  color: #ca3120;
+  color: #691911;
 }
 .activity-item .activity-completion button.btn-danger:hover,
 .activity-item .activity-completion a[role=button].btn-danger:hover {
@@ -29641,7 +29642,7 @@ span.editinstructions .alert-link {
   color: #1d2125;
   background-color: #fefefe;
   border-color: #fefefe;
-  color: #f8f9fa;
+  color: #818182;
 }
 .activity-item .activity-completion button.btn-light:hover,
 .activity-item .activity-completion a[role=button].btn-light:hover {
@@ -29687,7 +29688,7 @@ span.editinstructions .alert-link {
   color: #1d2125;
   background-color: #d6d8d9;
   border-color: #d6d8d9;
-  color: #343a40;
+  color: #1b1e21;
 }
 .activity-item .activity-completion button.btn-dark:hover,
 .activity-item .activity-completion a[role=button].btn-dark:hover {
@@ -30088,10 +30089,15 @@ body.drawer-ease {
 
 .drawer {
   background-color: #f8f9fa;
-  z-index: 1030;
+  z-index: 1015;
   position: fixed;
   height: 100vh;
   top: 0;
+}
+@media (max-width: 991.98px) {
+  .drawer {
+    z-index: 1035;
+  }
 }
 .drawer.not-initialized {
   display: none;
@@ -30144,9 +30150,6 @@ body.drawer-ease {
 }
 
 @media (min-width: 992px) {
-  .drawer {
-    z-index: inherit;
-  }
   .drawer#theme_boost-drawers-blocks:focus-within {
     z-index: 1031;
   }
@@ -30174,14 +30177,23 @@ body.drawer-ease {
   .drawer-md {
     display: block;
     background-color: #f8f9fa;
-    z-index: 1030;
+    z-index: 1015;
     position: fixed;
     height: 100vh;
     top: 0;
   }
+}
+@media (max-width: 991.98px) and (max-width: 991.98px) {
+  .drawer-md {
+    z-index: 1035;
+  }
+}
+@media (max-width: 991.98px) {
   .drawer-md.not-initialized {
     display: none;
   }
+}
+@media (max-width: 991.98px) {
   .drawer-md.drawer-right {
     transition: right 0.2s ease, top 0.2s ease, bottom 0.2s ease, visibility 0.2s ease, transform 0.5s ease;
     width: 315px;
@@ -30245,14 +30257,23 @@ body.drawer-ease {
   .drawer-sm {
     display: block;
     background-color: #f8f9fa;
-    z-index: 1030;
+    z-index: 1015;
     position: fixed;
     height: 100vh;
     top: 0;
   }
+}
+@media (max-width: 767.98px) and (max-width: 991.98px) {
+  .drawer-sm {
+    z-index: 1035;
+  }
+}
+@media (max-width: 767.98px) {
   .drawer-sm.not-initialized {
     display: none;
   }
+}
+@media (max-width: 767.98px) {
   .drawer-sm.drawer-right {
     transition: right 0.2s ease, top 0.2s ease, bottom 0.2s ease, visibility 0.2s ease, transform 0.5s ease;
     width: 315px;
@@ -33243,7 +33264,7 @@ fieldset.coursesearchbox label {
   overflow: auto;
   margin: 0.125rem 0 0;
   padding: 0.5rem 0;
-  z-index: 2;
+  z-index: 3;
 }
 
 .form-autocomplete-suggestions li {
@@ -33421,7 +33442,7 @@ textarea[data-auto-rows] {
 }
 
 .form-check.left-indented {
-  padding-left: 0px;
+  padding-left: 0;
 }
 
 .pagelayout-login #region-main {
@@ -35849,17 +35870,8 @@ p.arrow_button {
   border-top: 1px solid #dee2e6;
 }
 .path-grade-report-grader .gradeparent th.header {
+  left: 0;
   position: sticky;
-}
-@media (max-width: 767.98px) {
-  .path-grade-report-grader .gradeparent th.header {
-    left: 0;
-  }
-}
-@media (min-width: 768px) {
-  .path-grade-report-grader .gradeparent th.header {
-    left: -3rem;
-  }
 }
 .path-grade-report-grader .gradeparent th.header#studentheader {
   z-index: 1;
@@ -35867,8 +35879,8 @@ p.arrow_button {
 .path-grade-report-grader .gradeparent td.noborder {
   border-right: transparent;
 }
-.path-grade-report-grader .show-drawer-left .gradeparent th.header {
-  left: -1rem;
+.path-grade-report-grader.hasstickyfooter .gradeparent tr.lastrow {
+  bottom: calc(max(96px, 0.9375rem * 3) - 1px);
 }
 
 /**

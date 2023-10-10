@@ -16,8 +16,11 @@
 
 namespace core_communication;
 
+use communication_matrix\matrix_test_helper_trait;
+
 defined('MOODLE_INTERNAL') || die();
 
+require_once(__DIR__ . '/../provider/matrix/tests/matrix_test_helper_trait.php');
 require_once(__DIR__ . '/communication_test_helper_trait.php');
 
 /**
@@ -30,23 +33,14 @@ require_once(__DIR__ . '/communication_test_helper_trait.php');
  * @covers \core_communication\api
  */
 class api_test extends \advanced_testcase {
+    use matrix_test_helper_trait;
     use communication_test_helper_trait;
 
     public function setUp(): void {
         parent::setUp();
         $this->resetAfterTest();
         $this->setup_communication_configs();
-    }
-
-    /**
-     * Test the communication plugin list for the form element returns the correct number of plugins.
-     */
-    public function test_get_communication_plugin_list_for_form(): void {
-        $communicationplugins = \core_communication\api::get_communication_plugin_list_for_form();
-        // Get the communication plugins.
-        $plugins = \core_component::get_plugin_list('communication');
-        // Check the number of plugins matches plus 1 as we have none in the selection.
-        $this->assertCount(count($plugins) + 1, $communicationplugins);
+        $this->initialise_mock_server();
     }
 
     /**
@@ -56,9 +50,10 @@ class api_test extends \advanced_testcase {
         $course = $this->get_course();
 
         $communication = \core_communication\api::load_by_instance(
-            'core_course',
-            'coursecommunication',
-            $course->id
+            context: \core\context\course::instance($course->id),
+            component: 'core_course',
+            instancetype: 'coursecommunication',
+            instanceid: $course->id,
         );
 
         // Sample data.
@@ -80,9 +75,10 @@ class api_test extends \advanced_testcase {
         $course = $this->get_course();
 
         $communication = \core_communication\api::load_by_instance(
-            'core_course',
-            'coursecommunication',
-            $course->id
+            context: \core\context\course::instance($course->id),
+            component: 'core_course',
+            instancetype: 'coursecommunication',
+            instanceid: $course->id,
         );
 
         $this->assertEquals('communication_matrix', $communication->get_provider());
@@ -107,18 +103,21 @@ class api_test extends \advanced_testcase {
 
         // Create the room, settingthe avatar.
         $communication = \core_communication\api::load_by_instance(
-            'core_course',
-            'coursecommunication',
-            $course->id,
+            context: \core\context\course::instance($course->id),
+            component: 'core_course',
+            instancetype: 'coursecommunication',
+            instanceid: $course->id,
+            provider: $selectedcommunication,
         );
 
-        $communication->create_and_configure_room($selectedcommunication, $communicationroomname, $avatar);
+        $communication->create_and_configure_room($communicationroomname, $avatar);
 
         // Reload the communication processor.
         $communicationprocessor = processor::load_by_instance(
-            'core_course',
-            'coursecommunication',
-            $course->id,
+            context: \core\context\course::instance($course->id),
+            component: 'core_course',
+            instancetype: 'coursecommunication',
+            instanceid: $course->id,
         );
 
         // Compare result.
@@ -140,11 +139,13 @@ class api_test extends \advanced_testcase {
         $selectedcommunication = 'communication_matrix';
 
         $communication = \core_communication\api::load_by_instance(
-            'core_course',
-            'coursecommunication',
-            $course->id
+            context: \core\context\course::instance($course->id),
+            component: 'core_course',
+            instancetype: 'coursecommunication',
+            instanceid: $course->id,
+            provider: $selectedcommunication,
         );
-        $communication->create_and_configure_room($selectedcommunication, $communicationroomname);
+        $communication->create_and_configure_room($communicationroomname);
 
         // Test the tasks added.
         $adhoctask = \core\task\manager::get_adhoc_tasks('\\core_communication\\task\\create_and_configure_room_task');
@@ -155,9 +156,10 @@ class api_test extends \advanced_testcase {
 
         // Test the communication record exists.
         $communicationprocessor = processor::load_by_instance(
-            'core_course',
-            'coursecommunication',
-            $course->id
+            context: \core\context\course::instance($course->id),
+            component: 'core_course',
+            instancetype: 'coursecommunication',
+            instanceid: $course->id,
         );
 
         $this->assertEquals($communicationroomname, $communicationprocessor->get_room_name());
@@ -177,9 +179,10 @@ class api_test extends \advanced_testcase {
 
         // Test the communication record exists.
         $communicationprocessor = processor::load_by_instance(
-            'core_course',
-            'coursecommunication',
-            $course->id
+            context: \core\context\course::instance($course->id),
+            component: 'core_course',
+            instancetype: 'coursecommunication',
+            instanceid: $course->id,
         );
 
         $this->assertNull($communicationprocessor);
@@ -196,21 +199,39 @@ class api_test extends \advanced_testcase {
         $selectedcommunication = 'communication_matrix';
 
         $communication = \core_communication\api::load_by_instance(
-            'core_course',
-            'coursecommunication',
-            $course->id
+            context: \core\context\course::instance($course->id),
+            component: 'core_course',
+            instancetype: 'coursecommunication',
+            instanceid: $course->id,
         );
-        $communication->update_room($selectedcommunication, $communicationroomname);
+        $communication->update_room(processor::PROVIDER_ACTIVE, $communicationroomname);
 
         // Test the communication record exists.
         $communicationprocessor = processor::load_by_instance(
-            'core_course',
-            'coursecommunication',
-            $course->id
+            context: \core\context\course::instance($course->id),
+            component: 'core_course',
+            instancetype: 'coursecommunication',
+            instanceid: $course->id,
         );
 
         $this->assertEquals($communicationroomname, $communicationprocessor->get_room_name());
         $this->assertEquals($selectedcommunication, $communicationprocessor->get_provider());
+        $this->assertTrue($communicationprocessor->is_instance_active());
+
+        $communication->update_room(processor::PROVIDER_INACTIVE, $communicationroomname);
+
+        // Test updating active state.
+        $communicationprocessor = processor::load_by_instance(
+            context: \core\context\course::instance($course->id),
+            component: 'core_course',
+            instancetype: 'coursecommunication',
+            instanceid: $course->id,
+            provider: $selectedcommunication,
+        );
+
+        $this->assertEquals($communicationroomname, $communicationprocessor->get_room_name());
+        $this->assertEquals($selectedcommunication, $communicationprocessor->get_provider());
+        $this->assertFalse($communicationprocessor->is_instance_active());
     }
 
     /**
@@ -225,18 +246,20 @@ class api_test extends \advanced_testcase {
 
         // Test the communication record exists.
         $communicationprocessor = processor::load_by_instance(
-            'core_course',
-            'coursecommunication',
-            $course->id
+            context: \core\context\course::instance($course->id),
+            component: 'core_course',
+            instancetype: 'coursecommunication',
+            instanceid: $course->id,
         );
 
         $this->assertEquals($communicationroomname, $communicationprocessor->get_room_name());
         $this->assertEquals($selectedcommunication, $communicationprocessor->get_provider());
 
         $communication = \core_communication\api::load_by_instance(
-            'core_course',
-            'coursecommunication',
-            $course->id
+            context: \core\context\course::instance($course->id),
+            component: 'core_course',
+            instancetype: 'coursecommunication',
+            instanceid: $course->id,
         );
         $communication->delete_room();
 
@@ -261,9 +284,10 @@ class api_test extends \advanced_testcase {
 
         // First test the adding members to a room.
         $communication = \core_communication\api::load_by_instance(
-            'core_course',
-            'coursecommunication',
-            $course->id
+            context: \core\context\course::instance($course->id),
+            component: 'core_course',
+            instancetype: 'coursecommunication',
+            instanceid: $course->id,
         );
         $communication->add_members_to_room([$userid]);
 
@@ -277,18 +301,6 @@ class api_test extends \advanced_testcase {
         // Test the tasks added.
         $adhoctask = \core\task\manager::get_adhoc_tasks('\\core_communication\\task\\remove_members_from_room');
         $this->assertCount(1, $adhoctask);
-    }
-
-    /**
-     * Test the enabled communication plugin list and default.
-     */
-    public function test_get_enabled_providers_and_default(): void {
-        [$communicationproviders, $defaulprovider] = \core_communication\api::get_enabled_providers_and_default();
-        // Get the communication plugins.
-        $plugins = \core_component::get_plugin_list('communication');
-        // Check the number of plugins matches plus 1 as we have none in the selection.
-        $this->assertCount(count($plugins) + 1, $communicationproviders);
-        $this->assertEquals(processor::PROVIDER_NONE, $defaulprovider);
     }
 
     /**

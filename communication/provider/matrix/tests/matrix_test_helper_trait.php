@@ -16,6 +16,7 @@
 
 namespace communication_matrix;
 
+use core\context;
 use GuzzleHttp\Psr7\Response;
 
 /**
@@ -252,23 +253,26 @@ trait matrix_test_helper_trait {
      * @return api
      */
     protected function create_matrix_room(
-        ?string $component = 'communication_matrix',
+        ?string $component = 'core_course',
         ?string $itemtype = 'example',
         ?int $itemid = 1,
         ?string $roomname = null,
         ?string $roomtopic = null,
         ?\stored_file $roomavatar = null,
         array $members = [],
+        ?context $context = null,
     ): \core_communication\api {
+        $context = $context ?? \core\context\system::instance();
         // Create a new room.
         $communication = \core_communication\api::load_by_instance(
+            context: $context,
             component: $component,
             instancetype: $itemtype,
             instanceid: $itemid,
+            provider: 'communication_matrix',
         );
 
         $communication->create_and_configure_room(
-            selectedcommunication: 'communication_matrix',
             communicationroomname: $roomname ?? 'Room name',
             avatar: $roomavatar,
             instance: (object) [
@@ -282,6 +286,7 @@ trait matrix_test_helper_trait {
         $this->run_all_adhoc_tasks();
 
         return \core_communication\api::load_by_instance(
+            context: $context,
             component: $component,
             instancetype: $itemtype,
             instanceid: $itemid,

@@ -98,12 +98,14 @@ class communication_feature_test extends \advanced_testcase {
     protected function get_test_communication_processor(): processor {
         $course = $this->getDataGenerator()->create_course();
         $instanceid = $course->id;
+        $context = \core\context\system::instance();
         $component = 'core_course';
         $instancetype = 'coursecommunication';
         $selectedcommunication = 'communication_customlink';
         $communicationroomname = 'communicationroom';
 
         $communicationprocessor = processor::create_instance(
+            $context,
             $selectedcommunication,
             $instanceid,
             $component,
@@ -112,5 +114,15 @@ class communication_feature_test extends \advanced_testcase {
         );
 
         return $communicationprocessor;
+    }
+
+    /**
+     * Test if the selected provider is configured.
+     *
+     * @covers ::is_configured
+     */
+    public function test_is_configured(): void {
+        $communicationprocessor = $this->get_test_communication_processor();
+        $this->assertTrue($communicationprocessor->get_form_provider()->is_configured());
     }
 }

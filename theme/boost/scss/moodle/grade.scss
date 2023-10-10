@@ -635,12 +635,7 @@
         }
 
         th.header {
-            @include media-breakpoint-down(sm) {
-                left: 0;
-            }
-            @include media-breakpoint-up(md) {
-                left: -3rem;
-            }
+            left: 0;
             position: sticky;
 
             &#studentheader {
@@ -653,8 +648,14 @@
         }
     }
 
-    .show-drawer-left .gradeparent th.header {
-        left: -1rem;
+    &.hasstickyfooter {
+        .gradeparent {
+            tr.lastrow {
+                // Hack used by the observer to help detecting when the sticky 'Overall average' row is pinned when
+                // sticky footer is present.
+                bottom: calc(#{$stickyfooter-height} - 1px);
+            }
+        }
     }
 }
 

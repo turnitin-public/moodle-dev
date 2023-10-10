@@ -978,7 +978,7 @@ This program is free software; you can redistribute it and/or modify it under th
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-See the Moodle License information page for full details: https://docs.moodle.org/dev/License';
+See the Moodle License information page for full details: https://moodledev.io/general/license';
 $string['gpllicense'] = 'GPL license';
 $string['gpl3'] = 'Copyright (C) 1999 onwards Martin Dougiamas (https://moodle.com)
 
@@ -986,7 +986,7 @@ This program is free software: you can redistribute it and/or modify it under th
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-See the Moodle License information page for full details: https://docs.moodle.org/dev/License';
+See the Moodle License information page for full details: https://moodledev.io/general/license';
 $string['grades'] = 'Grades';
 $string['gradenoun'] = 'Grade';
 $string['gradeverb'] = 'Grade';
@@ -1394,8 +1394,9 @@ $string['moodlenet:issuerisnotenabled'] = 'MoodleNet issuer is not enabled';
 $string['moodlenet:issuerisnotset'] = 'MoodleNet issuer is not set at site administration';
 $string['moodlenet:nosharedresources'] = 'There are no shared resources to display at this time.';
 $string['moodlenet:outboundsettings'] = 'MoodleNet outbound settings';
-$string['moodlenet:sharenotice'] = 'This {$a->type} is being shared with MoodleNet as a {$a->sharetype}.';
-$string['moodlenet:sharenoticepartial'] = 'The selected activities are being shared with MoodleNet as a {$a}.';
+$string['moodlenet:sharenoticeactivity'] = 'This activity is being shared with MoodleNet as a resource.';
+$string['moodlenet:sharenoticecourse'] = 'This course is being shared with MoodleNet as a resource.';
+$string['moodlenet:sharenoticepartial'] = 'The selected activities are being shared with MoodleNet as a resource.';
 $string['moodlenet:sharenoticepartialactivitynumber'] = '{$a} activities will be included in the course.';
 $string['moodlenet:sharefailtitle'] = 'Something went wrong';
 $string['moodlenet:sharefailtext'] = 'There was an error sharing your content to MoodleNet.<br>Please try again later.';
@@ -1406,7 +1407,6 @@ $string['moodlenet:shareprogressinfo'] = 'The list shows courses and activities 
 $string['moodlenet:sharesuccesstitle'] = 'Saved to MoodleNet drafts';
 $string['moodlenet:sharesuccesstext'] = "Almost done! Visit your drafts in MoodleNet to finish sharing your content.";
 $string['moodlenet:sharetomoodlenet'] = 'Share to MoodleNet';
-$string['moodlenet:sharetyperesource'] = 'resource';
 $string['moodlenet:sharingstatus'] = 'Sharing to MoodleNet';
 $string['moodlenet:sharinglargefile'] = "Large files can take some time.";
 $string['moodlenet:sharingto'] = 'Sharing to: ';
@@ -2482,3 +2482,4 @@ $string['supplyinfo'] = 'More details';
 $string['clicktochangeinbrackets'] = '{$a} (Click to change)';
 $string['modshowcmtitle'] = 'Show activity';
 $string['makeavailablecmtitle'] = 'Make activity available';
+$string['moodlenet:sharetyperesource'] = 'resource';

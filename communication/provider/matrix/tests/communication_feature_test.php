@@ -16,6 +16,7 @@
 
 namespace communication_matrix;
 
+use core\context;
 use core_communication\api;
 use core_communication\communication_test_helper_trait;
 use core_communication\processor;
@@ -52,16 +53,17 @@ class communication_feature_test extends \advanced_testcase {
      *
      * @covers ::create_chat_room
      */
-    public function test_create_chat_room() {
+    public function test_create_chat_room(): void {
         // Set up the test data first.
         $communication = \core_communication\api::load_by_instance(
+            context: \core\context\system::instance(),
             component: 'communication_matrix',
             instancetype: 'example',
             instanceid: 1,
+            provider: 'communication_matrix',
         );
 
         $communication->create_and_configure_room(
-            selectedcommunication: 'communication_matrix',
             communicationroomname: 'Room name',
             instance: (object) [
                 'matrixroomtopic' => 'A fun topic',
@@ -296,7 +298,7 @@ class communication_feature_test extends \advanced_testcase {
      *
      * @return array
      */
-    public function avatar_provider(): array {
+    public static function avatar_provider(): array {
         return [
             'Empty to avatar' => [
                 null,
@@ -441,6 +443,7 @@ class communication_feature_test extends \advanced_testcase {
         $provider->update_room_membership([$user->id]);
 
         $processor = \core_communication\processor::load_by_instance(
+            context: \core\context\course::instance($course->id),
             component: 'core_course',
             instancetype: 'coursecommunication',
             instanceid: $course->id,
@@ -478,6 +481,7 @@ class communication_feature_test extends \advanced_testcase {
         role_assign($studentrole->id, $user2->id, $coursecontext->id);
 
         $communicationprocessor = processor::load_by_instance(
+            context: \core\context\course::instance($course->id),
             component: 'core_course',
             instancetype: 'coursecommunication',
             instanceid: $course->id
@@ -514,16 +518,18 @@ class communication_feature_test extends \advanced_testcase {
         ?string $roomtopic = null,
         ?\stored_file $roomavatar = null,
         array $members = [],
+        ?context $context = null,
     ): \core_communication\api {
         // Create a new room.
         $communication = \core_communication\api::load_by_instance(
+            context: $context ?? \core\context\system::instance(),
             component: $component,
             instancetype: $itemtype,
             instanceid: $itemid,
+            provider: 'communication_matrix',
         );
 
         $communication->create_and_configure_room(
-            selectedcommunication: 'communication_matrix',
             communicationroomname: $roomname ?? 'Room name',
             avatar: $roomavatar,
             instance: (object) [
@@ -538,5 +544,26 @@ class communication_feature_test extends \advanced_testcase {
 
         $communication->reload();
         return $communication;
+    }
+
+    /**
+     * Test if the selected provider is configured.
+     *
+     * @covers ::is_configured
+     */
+    public function test_is_configured(): void {
+        $course = $this->get_course();
+        $communicationprocessor = processor::load_by_instance(
+            context: \core\context\course::instance($course->id),
+            component: 'core_course',
+            instancetype: 'coursecommunication',
+            instanceid: $course->id
+        );
+        $this->assertTrue($communicationprocessor->get_room_provider()->is_configured());
+
+        // Unset communication_matrix settings.
+        unset_config('matrixhomeserverurl', 'communication_matrix');
+        unset_config('matrixaccesstoken', 'communication_matrix');
+        $this->assertFalse($communicationprocessor->get_room_provider()->is_configured());
     }
 }

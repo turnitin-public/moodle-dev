@@ -156,6 +156,12 @@ class ltix_helper
         }
 
         return $typeconfig;
+   }
+
+    public static function lti_get_type($typeid) {
+        global $DB;
+
+        return $DB->get_record('lti_types', array('id' => $typeid));
     }
 
 }

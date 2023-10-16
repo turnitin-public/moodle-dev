@@ -1,15 +1,15 @@
 <?php
 /**
- * This file contains the class for the ltix_helper class
+ * This file contains the class for the lti_helper class
  *
  * @package    core
- * @subpackage ltix
+ * @subpackage lti
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 declare(strict_types = 1);
 
-namespace core_ltix;
+namespace core_lti;
 
 use context_course;
 defined('MOODLE_INTERNAL') || die();
@@ -57,7 +57,7 @@ define('LTI_ACCESS_TOKEN_LIFE', 3600);
 define('LTI_JWT_CLAIM_PREFIX', 'https://purl.imsglobal.org/spec/lti');
 
 
-class ltix_helper
+class lti_helper
 {
 
     /**
@@ -70,8 +70,8 @@ class ltix_helper
         $admintypes = self::lti_get_lti_types_by_course($COURSE->id);
 
         $types = array();
-        if (has_capability('moodle/ltix:addmanualinstance', context_course::instance($COURSE->id))) {
-            $types[0] = (object)array('name' => get_string('automatic', 'ltix'), 'course' => 0, 'toolproxyid' => null);
+        if (has_capability('moodle/lti:addmanualinstance', context_course::instance($COURSE->id))) {
+            $types[0] = (object)array('name' => get_string('automatic', 'core_lti'), 'course' => 0, 'toolproxyid' => null);
         }
 
         foreach ($admintypes as $type) {
@@ -98,10 +98,10 @@ class ltix_helper
 
         list($coursevisiblesql, $coursevisparams) = $DB->get_in_or_equal($coursevisible, SQL_PARAMS_NAMED, 'coursevisible');
         $courseconds = [];
-        if (has_capability('moodle/ltix:addmanualinstance', context_course::instance($courseid))) {
+        if (has_capability('moodle/lti:addmanualinstance', context_course::instance($courseid))) {
             $courseconds[] = "course = :courseid";
         }
-        if (has_capability('moodle/ltix:addpreconfiguredinstance', context_course::instance($courseid))) {
+        if (has_capability('moodle/lti:addpreconfiguredinstance', context_course::instance($courseid))) {
             $courseconds[] = "course = :siteid";
         }
         if (!$courseconds) {

@@ -19,7 +19,7 @@ defined('MOODLE_INTERNAL') || die;
 require_once($CFG->libdir.'/formslib.php');
 require_once($CFG->libdir.'/gradelib.php');
 require_once($CFG->libdir.'/plagiarismlib.php');
-require_once($CFG->libdir.'/ltixformslib.php');
+require_once($CFG->libdir.'/ltiformslib.php');
 
 use core_grades\component_gradeitems;
 

@@ -1,9 +1,9 @@
-This files describes API changes in ltix/source/* - LTI source plugins,
+This files describes API changes in lti/source/* - LTI source plugins,
 information provided here is intended especially for developers.
 
 === 4.3 ===
 
-* Plugin has been moved to ltix.
+* Plugin has been moved to lti.
 
 This files describes API changes in /mod/lti/source/* - LTI source plugins,
 information provided here is intended especially for developers.

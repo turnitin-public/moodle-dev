@@ -23,4 +23,4 @@
  */
 
 require_once(__DIR__ . "/../../config.php");
-require_once($CFG->dirroot . '/ltix/auth.php');
+require_once($CFG->dirroot . '/lti/auth.php');

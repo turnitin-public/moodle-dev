@@ -17,7 +17,7 @@
 /**
  * This file responds to a login authentication request
  *
- * @package    core_ltix
+ * @package    core_lti
  * @copyright  2019 Stephen Vickers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -120,7 +120,7 @@ if ($ok) {
         $cm = get_coursemodule_from_id('lti', $id, 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
         require_login($course, true, $cm);
-        require_capability('moodle/ltix:view', $context);
+        require_capability('moodle/lti:view', $context);
         $lti = $DB->get_record('lti', array('id' => $cm->instance), '*', MUST_EXIST);
         $lti->cmid = $cm->id;
         list($endpoint, $params) = lti_get_launch_data($lti, $nonce, $messagetype, $foruserid);
@@ -128,7 +128,7 @@ if ($ok) {
         require_login($course);
         $context = context_course::instance($courseid);
         require_capability('moodle/course:manageactivities', $context);
-        require_capability('moodle/ltix:addcoursetool', $context);
+        require_capability('moodle/lti:addcoursetool', $context);
         // Set the return URL. We send the launch container along to help us avoid frames-within-frames when the user returns.
         $returnurlparams = [
             'course' => $courseid,

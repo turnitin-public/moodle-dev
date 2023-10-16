@@ -2743,7 +2743,7 @@ $capabilities = array(
     ],
 
     // The ability to create or edit tool configurations for particular courses.
-    'moodle/ltix:addcoursetool' => array(
+    'moodle/lti:addcoursetool' => array(
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
         'archetypes' => array(
@@ -2753,7 +2753,7 @@ $capabilities = array(
     ),
 
     // Add an External tool activity to a course.
-    'moodle/ltix:addinstance' => array(
+    'moodle/lti:addinstance' => array(
         'riskbitmask' => RISK_XSS,
 
         'captype' => 'write',
@@ -2766,29 +2766,29 @@ $capabilities = array(
     ),
 
     // The ability to add a manual instance (i.e. not from a preconfigured tool) to the course.
-    'moodle/ltix:addmanualinstance' => array(
+    'moodle/lti:addmanualinstance' => array(
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
         'archetypes' => array(
             'editingteacher' => CAP_ALLOW,
             'manager' => CAP_ALLOW
         ),
-        'clonepermissionsfrom' => 'moodle/ltix:addinstance',
+        'clonepermissionsfrom' => 'moodle/lti:addinstance',
     ),
 
     // The ability to a preconfigured instance to the course.
-    'moodle/ltix:addpreconfiguredinstance' => array(
+    'moodle/lti:addpreconfiguredinstance' => array(
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
         'archetypes' => array(
             'editingteacher' => CAP_ALLOW,
             'manager' => CAP_ALLOW
         ),
-        'clonepermissionsfrom' => 'moodle/ltix:addinstance',
+        'clonepermissionsfrom' => 'moodle/lti:addinstance',
     ),
 
     // Whether the user can see the link to the external tool and follow it.
-    'moodle/ltix:view' => array(
+    'moodle/lti:view' => array(
         'captype' => 'read',
         'contextlevel' => CONTEXT_MODULE,
         'archetypes' => array(

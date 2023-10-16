@@ -15,16 +15,16 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * ltixformslib.php - library of classes for creating lti forms in Moodle, based on PEAR QuickForms.
+ * ltiformslib.php - library of classes for creating lti forms in Moodle, based on PEAR QuickForms.
  *
  *
- * @package   core_ltix
+ * @package   core_lti
  * @copyright 2023 TII
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
-use core_ltix\ltix_helper;
+use core_lti\lti_helper;
 global $CFG;
 
 
@@ -38,11 +38,11 @@ function attach_lti_elements($mform, $context, $_instance, $current) {
     // Determine whether this tool instance is using a domain-matched site tool which is not visible at the course level.
     // In such a case, the instance has a typeid (the site tool) and toolurl (the url used to domain match the site tool) set,
     // and the type still exists (is not deleted).
-    $instancetypes = ltix_helper::lti_get_types_for_add_instance();
+    $instancetypes = lti_helper::lti_get_types_for_add_instance();
     $matchestoolnotavailabletocourse = false;
 
     $tooltypeid = $current->typeid;
-    $tooltype = ltix_helper::lti_get_type($tooltypeid);
+    $tooltype = lti_helper::lti_get_type($tooltypeid);
 
     // Store the id of the tool type should it be linked to a tool proxy, to aid in disabling certain form elements.
     $toolproxytypeid = $tooltype->toolproxyid ? $tooltypeid : '';
@@ -51,19 +51,19 @@ function attach_lti_elements($mform, $context, $_instance, $current) {
 
     //$mform =& $this->_form;
 
-    $showtypes = has_capability('moodle/ltix:addpreconfiguredinstance', $context);
+    $showtypes = has_capability('moodle/lti:addpreconfiguredinstance', $context);
 
     if($showtypes) {
         // Adding the "general" fieldset, where all the common settings are shown.
         $mform->addElement('html', "<div data-attribute='dynamic-import' hidden aria-hidden='true' role='alert'></div>");
-        $mform->addElement('header', 'externaltool', get_string('externaltool', 'ltix'));
+        $mform->addElement('header', 'externaltool', get_string('externaltool', 'core_lti'));
 
         //Dropdown for preconfigured tools.
-        $tooltypes = $mform->addElement('select', 'externaltooltypeid', get_string('external_tool_type', 'ltix'));
+        $tooltypes = $mform->addElement('select', 'externaltooltypeid', get_string('external_tool_type', 'core_lti'));
 
-        $mform->addHelpButton('externaltooltypeid', 'external_tool_type', 'ltix');
+        $mform->addHelpButton('externaltooltypeid', 'external_tool_type', 'lti');
 
-        foreach (ltix_helper::lti_get_types_for_add_instance() as $id => $type) {
+        foreach (lti_helper::lti_get_types_for_add_instance() as $id => $type) {
             if (!empty($type->toolproxyid)) {
                 $toolproxy[] = $type->id;
                 $attributes = array('globalTool' => 1, 'toolproxy' => 1);
@@ -89,7 +89,7 @@ function attach_lti_elements($mform, $context, $_instance, $current) {
             }
 
             if ($id) {
-                $config = ltix_helper::lti_get_type_config($id);
+                $config = lti_helper::lti_get_type_config($id);
                 if (!empty($config['contentitem'])) {
                     $attributes['data-contentitem'] = 1;
                     $attributes['data-id'] = $id;

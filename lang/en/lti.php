@@ -35,7 +35,7 @@
 /**
  * This file contains en_utf8 translation of the Basic LTI module
  *
- * @package core_ltix
+ * @package core_lti
  * @copyright  2009 Marc Alier, Jordi Piguillem, Nikolas Galanis
  *  marc.alier@upc.edu
  * @copyright  2009 Universitat Politecnica de Catalunya http://www.upc.edu
@@ -591,8 +591,8 @@ $string['using_tool_cartridge'] = 'Using tool cartridge';
 $string['using_tool_configuration'] = 'Using tool configuration: ';
 $string['validurl'] = 'A valid URL must start with http(s)://';
 $string['viewsubmissions'] = 'View submissions and grading screen';
-$string['ltix:addmanualinstance'] = 'Add a manually-configured tool';
-$string['ltix:addinstance'] = 'Add a new external tool';
-$string['ltix:addpreconfiguredinstance'] = 'Add a preconfigured tool';
+$string['lti:addmanualinstance'] = 'Add a manually-configured tool';
+$string['lti:addinstance'] = 'Add a new external tool';
+$string['lti:addpreconfiguredinstance'] = 'Add a preconfigured tool';
 // For the new external tools section
 $string['externaltool'] = 'External Tool';

@@ -16,7 +16,7 @@
 /**
  * Readme file for local customisations
  *
- * @package    core_ltix
+ * @package    core_lti
  * @copyright  2012 Mark Nielsen
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

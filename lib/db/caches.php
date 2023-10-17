@@ -599,4 +599,8 @@ $definitions = array(
             'changesincourse',
         ],
     ],
+
+    'ltix_keyset' => [
+        'mode' => cache_store::MODE_APPLICATION
+    ],
 );

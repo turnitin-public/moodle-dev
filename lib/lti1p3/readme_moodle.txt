@@ -5,6 +5,8 @@ This library is a patched for use in Moodle - it requires the following changes 
 2. Removal of Guzzle dependency (replaced with generic http client interfaces which are more compatible with Moodle's curl.)
 3. Small fix to http_build_query() usages, to make sure the arg separator is explicitly set to '&', so as not to trip up
 on Moodle's definition of PHP's arg_separator.output which is set to '&amp;' in lib/setup.php.
+4. Apply the fix from https://github.com/packbackbooks/lti-1-3-php-library/pull/107. If this is already merged upstream, please
+remove this line.
 
 To upgrade to a new version of this library:
 1. Clone the latest version of the upstream library from github:

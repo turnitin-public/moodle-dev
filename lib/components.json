@@ -23,6 +23,7 @@
         "gradeimport": "grade\/import",
         "gradereport": "grade\/report",
         "gradingform": "grade\/grading\/form",
+        "ltixsource": "ltix/source",
         "mlbackend": "lib\/mlbackend",
         "mnetservice": "mnet\/service",
         "webservice": "webservice",

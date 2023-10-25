@@ -1922,6 +1922,8 @@ class core_plugin_manager {
                 'gradebookservices', 'memberships', 'profile', 'toolproxy', 'toolsettings', 'basicoutcomes'
             ),
 
+            "ltixsource" => [],
+
             'mlbackend' => array(
                 'php', 'python'
             ),

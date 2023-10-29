@@ -448,4 +448,13 @@ $tasks = array(
         'month' => '*',
         'disabled' => true,
     ],
+    [
+        'classname' => 'core_ltix\task\clean_access_tokens',
+        'blocking' => 0,
+        'minute' => 'R',
+        'hour' => 'R',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*',
+    ],
 );

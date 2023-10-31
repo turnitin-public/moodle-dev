@@ -350,9 +350,9 @@ class user extends grade_report {
      * @param grade_item $gradeitem Grade item.
      * @param array|null $aggr Average value and meancount information.
      * @param bool|null $shownumberofgrades Whether to show number of grades.
-     * @return mixed Formatted average cell.
+     * @return \html_table_cell Formatted average cell.
      */
-    protected function format_average_cell(grade_item $gradeitem, ?array $aggr = null, ?bool $shownumberofgrades = null): mixed {
+    protected function format_average_cell(grade_item $gradeitem, ?array $aggr = null, ?bool $shownumberofgrades = null): \html_table_cell {
 
         if ($gradeitem->needsupdate) {
             $avg = '<td class="cell c' . $this->columncount++.'">' .
@@ -368,7 +368,7 @@ class user extends grade_report {
                 $avg = $aggr['average'] . $numberofgrades;
             }
         }
-        return $avg;
+        return new \html_table_cell($avg);
     }
 
     /**
@@ -852,8 +852,8 @@ class user extends grade_report {
                     $cache = \cache::make_from_params(\cache_store::MODE_REQUEST, 'gradereport_user', 'averages');
                     $avg = $cache->get(get_class($this));
 
-                    $data['average']['content'] = $avg[$eid];
-                    $gradeitemdata['averageformatted'] = $avg[$eid];
+                    $data['average']['content'] = $avg[$eid]->text;
+                    $gradeitemdata['averageformatted'] = $avg[$eid]->text;
                     $data['average']['headers'] = "$headercat $headerrow average$userid";
                 }
 

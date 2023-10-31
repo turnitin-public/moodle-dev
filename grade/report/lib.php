@@ -950,9 +950,10 @@ abstract class grade_report {
      * Returns a row of grade items averages
      *
      * @param array $ungradedcounts Ungraded grade items counts with report preferences.
-     * @return mixed Row with averages
+     * @return html_table_row Row with averages
      */
-    protected function format_averages(array $ungradedcounts): mixed {
+    protected function format_averages(array $ungradedcounts): html_table_row
+    {
 
         $avgrow = new html_table_row();
         $avgrow->attributes['class'] = 'avg';
@@ -1004,9 +1005,9 @@ abstract class grade_report {
      * @param grade_item $gradeitem Grade item.
      * @param array|null $aggr Average value and meancount information.
      * @param bool|null $shownumberofgrades Whether to show number of grades.
-     * @return html_table_row HTML
+     * @return html_table_cell table cell.
      */
-    protected function format_average_cell(grade_item $gradeitem, ?array $aggr = null, ?bool $shownumberofgrades = null): mixed {
+    protected function format_average_cell(grade_item $gradeitem, ?array $aggr = null, ?bool $shownumberofgrades = null): html_table_cell {
         return true;
     }
 

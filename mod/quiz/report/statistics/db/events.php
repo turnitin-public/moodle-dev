@@ -30,4 +30,8 @@ $observers = [
         'eventname' => '\mod_quiz\event\attempt_submitted',
         'callback' => '\quiz_statistics\event\observer\attempt_submitted::process',
     ],
+    [
+        'eventname' => '\mod_quiz\event\attempt_deleted',
+        'callback' => '\quiz_statistics\event\observer\attempt_deleted::process',
+    ],
 ];

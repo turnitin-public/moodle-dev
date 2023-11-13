@@ -1062,8 +1062,15 @@ class core_admin_renderer extends plugin_renderer_base {
 
             $header = new html_table_cell($pluginman->plugintype_name_plural($type));
             $header->header = true;
-            $header->colspan = count($table->head);
-            $header = new html_table_row(array($header));
+            if ($pluginman::is_deprecated_plugin_type($type)) {
+                $header->colspan = count($table->head)-1; // Leave space in last column for type deprecated pill.
+                $statuspill = html_writer::span(get_string('plugintypedeprecated', 'core_plugin'),
+                    'statustext badge badge-warning');
+                $header = new html_table_row(array($header, $statuspill));
+            } else {
+                $header->colspan = count($table->head);
+                $header = new html_table_row(array($header));
+            }
             $header->attributes['class'] = 'plugintypeheader type-' . $type;
 
             $numdisplayed[$type] = 0;
@@ -1145,6 +1152,12 @@ class core_admin_renderer extends plugin_renderer_base {
                 }
                 $status = html_writer::span(get_string('status_' . $statuscode, 'core_plugin'), $statusclass);
 
+                $deprecationstatus = '';
+                if ($pluginman::is_deprecated_standard_plugin($plugin->type, $plugin->name)) {
+                    $deprecationstatus = html_writer::span(get_string('plugindeprecated', 'core_plugin'),
+                        'statustext badge badge-warning');
+                }
+
                 if (!empty($installabortable[$plugin->component])) {
                     $status .= $this->output->single_button(
                         new moodle_url($this->page->url, array('abortinstall' => $plugin->component, 'confirmplugincheck' => 0)),
@@ -1170,7 +1183,7 @@ class core_admin_renderer extends plugin_renderer_base {
                     }
                 }
 
-                $status = new html_table_cell($sourcelabel.' '.$status);
+                $status = new html_table_cell($sourcelabel.' '.$status.' '.$deprecationstatus);
                 if ($plugin->pluginsupported != null) {
                     $requires = new html_table_cell($this->required_column($plugin, $pluginman, $version, $CFG->branch));
                 } else {
@@ -1188,8 +1201,9 @@ class core_admin_renderer extends plugin_renderer_base {
 
                 } else if ($statusisboring and $dependenciesok and empty($availableupdates)) {
                     // no change is going to happen to the plugin - display it only
-                    // if the user wants to see the full list
-                    if (empty($options['full'])) {
+                    // if the user wants to see the full list, or it's a deprecated plugin.
+                    if (empty($options['full']) && !$pluginman::is_deprecated_plugin_type($plugin->type) &&
+                            !$pluginman::is_deprecated_standard_plugin($plugin->type, $plugin->name)) {
                         continue;
                     }
 

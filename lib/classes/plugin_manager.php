@@ -1756,6 +1756,47 @@ class core_plugin_manager {
     }
 
     /**
+     * Defines a list of all plugins that were originally shipped in the standard Moodle distribution,
+     * but have been deprecated, or of plugins which are of a deprecated type.
+     *
+     * The main purpose of this list is to highlight deprecated plugins during upgrade.
+     *
+     * Final deprecation of a core plugin should result in removal of the plugin, at which point the plugin should be listed in the
+     * is_deleted_standard_plugin() method.
+     *
+     * @param string $type plugin type
+     * @param string $name plugin name
+     * @return bool true if deprecated, false otherwise.
+     */
+    public static function is_deprecated_standard_plugin($type, $name) {
+        if (self::is_deprecated_plugin_type($type)) {
+            return true;
+        }
+        $plugins = [
+            'ltisource' => []
+        ];
+        if (!isset($plugins[$type])) {
+            return false;
+        }
+        return in_array($name, $plugins[$type]);
+    }
+
+    /**
+     * A list of all plugin types which have been deprecated.
+     *
+     * The main purpose of this list is to highlight deprecated plugin types during upgrade.
+     *
+     * @param string $type the string type, e.g. 'ltisource'
+     * @return bool true if deprecated, false otherwise.
+     */
+    public static function is_deprecated_plugin_type($type) {
+        $plugins = [
+            'ltisource'
+        ];
+        return in_array($type, $plugins);
+    }
+
+    /**
      * Defines a white list of all plugins shipped in the standard Moodle distribution
      *
      * @param string $type
@@ -1921,6 +1962,8 @@ class core_plugin_manager {
             'ltiservice' => array(
                 'gradebookservices', 'memberships', 'profile', 'toolproxy', 'toolsettings', 'basicoutcomes'
             ),
+
+            "ltisource" => [],
 
             "ltixsource" => [],
 

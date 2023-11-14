@@ -1924,7 +1924,7 @@ class core_plugin_manager {
             ),
 
             'ltixservice' => [
-                'basicoutcomes'
+                'basicoutcomes', 'gradebookservices'
             ],
 
             'mlbackend' => array(

@@ -231,12 +231,18 @@ class tool_helper {
      */
     public static function get_services() {
         $services = array();
-        $definedservices = core_component::get_plugin_list('ltiservice');
-        foreach ($definedservices as $name => $location) {
+        $definedltiservices = core_component::get_plugin_list('ltiservice');
+        $definedltixservices = core_component::get_plugin_list('ltixservice');
+
+        foreach ($definedltiservices as $name => $location) {
             $classname = "\\ltiservice_{$name}\\local\\service\\{$name}";
             $services[] = new $classname();
         }
 
+        foreach ($definedltixservices as $name => $location) {
+            $classname = "\\ltixservice_{$name}\\local\\service\\{$name}";
+            $services[] = new $classname();
+        }
         return $services;
     }
 

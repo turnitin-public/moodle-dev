@@ -3706,6 +3706,16 @@ privatefiles,moodle|/user/files.php';
             set_config('kid', null, 'mod_lti');
             set_config('privatekey', null, 'mod_lti');
         }
+
+        $servicetypes = ['basicoutcomes'];
+        foreach ($servicetypes as $type) {
+            $versionFile = $CFG->dirroot . "mod/lti/service/{$type}/version.php";
+        
+            if (!file_exists($versionFile)) {
+                // Clean config.
+                unset_all_config_for_plugin("ltiservice_$type");
+            }
+        }
         // Main savepoint reached.
         upgrade_main_savepoint(true, 2023102000);
     }

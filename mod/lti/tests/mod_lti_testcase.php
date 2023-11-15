@@ -52,7 +52,7 @@ abstract class mod_lti_testcase extends externallib_advanced_testcase  {
         $config = new stdClass();
         $config->lti_coursevisible = LTI_COURSEVISIBLE_ACTIVITYCHOOSER;
 
-        $type->id = \core_ltix\types_helper::add_type($type, $config);
+        $type->id = \core_ltix\helper::add_type($type, $config);
         return $type;
     }
 

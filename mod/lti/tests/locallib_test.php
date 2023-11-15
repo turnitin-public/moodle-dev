@@ -353,7 +353,7 @@ class locallib_test extends mod_lti_testcase {
         $type = new \stdClass();
         $type->lti_toolurl = $this->getExternalTestFileUrl('/ims_cartridge_basic_lti_link.xml');
 
-        \core_ltix\types_helper::load_type_if_cartridge($type);
+        \core_ltix\helper::load_type_if_cartridge($type);
 
         $this->assertEquals('Example tool', $type->lti_typename);
         $this->assertEquals('Example tool description', $type->lti_description);
@@ -399,9 +399,9 @@ class locallib_test extends mod_lti_testcase {
         $type->toolproxyid = $proxy->id;
         $type->baseurl = $this->getExternalTestFileUrl('/test.html');
 
-        $typeid = \core_ltix\types_helper::add_type($type, $data);
+        $typeid = \core_ltix\helper::add_type($type, $data);
 
-        $typeconfig = \core_ltix\types_helper::get_type_config($typeid);
+        $typeconfig = \core_ltix\helper::get_type_config($typeid);
 
         $course = $this->getDataGenerator()->create_course();
         $returnurl = new \moodle_url('/');
@@ -500,7 +500,7 @@ class locallib_test extends mod_lti_testcase {
         $type->description = "Example description";
         $type->baseurl = $this->getExternalTestFileUrl('/test.html');
 
-        $typeid = \core_ltix\types_helper::add_type($type, $data);
+        $typeid = \core_ltix\helper::add_type($type, $data);
         $course = $this->getDataGenerator()->create_course();
         $returnurl = new \moodle_url('/');
 
@@ -527,7 +527,7 @@ class locallib_test extends mod_lti_testcase {
         $type->description = "Example description";
         $type->baseurl = $this->getExternalTestFileUrl('/test.html');
 
-        $typeid = \core_ltix\types_helper::add_type($type, $data);
+        $typeid = \core_ltix\helper::add_type($type, $data);
         $course = $this->getDataGenerator()->create_course();
         $returnurl = new \moodle_url('/');
 
@@ -1247,7 +1247,7 @@ MwIDAQAB
 
         $config->lti_keytype = LTI_RSA_KEY;
 
-        $typeid = \core_ltix\types_helper::add_type($type, $config);
+        $typeid = \core_ltix\helper::add_type($type, $config);
 
         lti_verify_jwt_signature($typeid, '', 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4g' .
             'RG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.POstGetfAytaZS82wHcjoTyoqhMyxXiWdR7Nn7A29DNSl0EiXLdwJ6xC6AfgZWF1bOs' .
@@ -1277,7 +1277,7 @@ MwIDAQAB
 
         $config->lti_keytype = LTI_JWK_KEYSET;
 
-        $typeid = \core_ltix\types_helper::add_type($type, $config);
+        $typeid = \core_ltix\helper::add_type($type, $config);
 
         $jwt = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjU3YzExNzdkMmQ1M2EwMjFjNzM';
         $jwt .= '3NTY0OTFjMTM3YjE3In0.eyJpc3MiOiJnclJvbkd3RTd1WjRwZ28iLCJzdWIiOiJnclJvb';
@@ -1320,7 +1320,7 @@ MwIDAQAB
         $data = new \stdClass();
         $data->lti_contentitem = true;
 
-        $typeid = \core_ltix\types_helper::add_type($type, $data);
+        $typeid = \core_ltix\helper::add_type($type, $data);
 
         $this->expectExceptionMessage('JWT security not supported with LTI 2');
         \core_ltix\oauth_helper::verify_jwt_signature($typeid, '', '');
@@ -1343,7 +1343,7 @@ MwIDAQAB
         $type->baseurl = $this->getExternalTestFileUrl('/test.html');
 
         $config = new \stdClass();
-        $typeid = \core_ltix\types_helper::add_type($type, $config);
+        $typeid = \core_ltix\helper::add_type($type, $config);
 
         $this->expectExceptionMessage(get_string('errorincorrectconsumerkey', 'core_ltix'));
         \core_ltix\oauth_helper::verify_jwt_signature($typeid, '', '');
@@ -1366,7 +1366,7 @@ MwIDAQAB
 
         $config = new \stdClass();
         $config->lti_keytype = LTI_RSA_KEY;
-        $typeid = \core_ltix\types_helper::add_type($type, $config);
+        $typeid = \core_ltix\helper::add_type($type, $config);
 
         $this->expectExceptionMessage('No public key configured');
         \core_ltix\oauth_helper::verify_jwt_signature($typeid, 'consumerkey', '');
@@ -1470,7 +1470,7 @@ MwIDAQAB
         $type->baseurl = "http://example.com";
         $config = new \stdClass();
         $config->lti_acceptgrades = LTI_SETTING_DELEGATE;
-        $typeid = \core_ltix\types_helper::add_type($type, $config);
+        $typeid = \core_ltix\helper::add_type($type, $config);
 
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_lti');
         $contentitems = [];
@@ -1486,7 +1486,7 @@ MwIDAQAB
             'frame' => []
         ];
         $contentitemsjson13 = json_encode($contentitems);
-        $json11 = \core_ltix\tool_helper::convert_content_items($contentitemsjson13);
+        $json11 = \core_ltix\helper::convert_content_items($contentitemsjson13);
 
         $config = lti_tool_configuration_from_content_item($typeid,
                                                            'ContentItemSelection',
@@ -1518,7 +1518,7 @@ MwIDAQAB
         $type->baseurl = "http://example.com";
         $config = new \stdClass();
         $config->lti_acceptgrades = LTI_SETTING_DELEGATE;
-        $typeid = \core_ltix\types_helper::add_type($type, $config);
+        $typeid = \core_ltix\helper::add_type($type, $config);
 
         $contentitems = [];
         $contentitems[] = [
@@ -1536,7 +1536,7 @@ MwIDAQAB
             'frame' => []
         ];
         $contentitemsjson13 = json_encode($contentitems);
-        $json11 = \core_ltix\tool_helper::convert_content_items($contentitemsjson13);
+        $json11 = \core_ltix\helper::convert_content_items($contentitemsjson13);
 
         $config = lti_tool_configuration_from_content_item($typeid,
                                                            'ContentItemSelection',
@@ -1563,7 +1563,7 @@ MwIDAQAB
         $type->baseurl = "http://example.com";
         $config = new \stdClass();
         $config->lti_acceptgrades = LTI_SETTING_DELEGATE;
-        $typeid = \core_ltix\types_helper::add_type($type, $config);
+        $typeid = \core_ltix\helper::add_type($type, $config);
 
         $contentitems = [];
         $contentitems[] = [
@@ -1579,7 +1579,7 @@ MwIDAQAB
             'frame' => []
         ];
         $contentitemsjson13 = json_encode($contentitems);
-        $json11 = \core_ltix\tool_helper::convert_content_items($contentitemsjson13);
+        $json11 = \core_ltix\helper::convert_content_items($contentitemsjson13);
 
         $config = lti_tool_configuration_from_content_item($typeid,
                                                            'ContentItemSelection',
@@ -1609,7 +1609,7 @@ MwIDAQAB
         $type->baseurl = "http://example.com";
         $config = new \stdClass();
         $config->lti_acceptgrades = LTI_SETTING_DELEGATE;
-        $typeid = \core_ltix\types_helper::add_type($type, $config);
+        $typeid = \core_ltix\helper::add_type($type, $config);
 
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_lti');
         $contentitems = [];
@@ -1640,7 +1640,7 @@ MwIDAQAB
             'frame' => []
         ];
         $contentitemsjson13 = json_encode($contentitems);
-        $json11 = \core_ltix\tool_helper::convert_content_items($contentitemsjson13);
+        $json11 = \core_ltix\helper::convert_content_items($contentitemsjson13);
 
         $config = lti_tool_configuration_from_content_item($typeid,
                                                            'ContentItemSelection',
@@ -1673,7 +1673,7 @@ MwIDAQAB
         $type->name = "Test tool";
         $type->baseurl = "http://example.com";
         $config = new \stdClass();
-        $typeid = \core_ltix\types_helper::add_type($type, $config);
+        $typeid = \core_ltix\helper::add_type($type, $config);
 
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_lti');
         $contentitems = [];
@@ -1689,7 +1689,7 @@ MwIDAQAB
             'frame' => []
         ];
         $contentitemsjson13 = json_encode($contentitems);
-        $json11 = \core_ltix\tool_helper::convert_content_items($contentitemsjson13);
+        $json11 = \core_ltix\helper::convert_content_items($contentitemsjson13);
 
         $config = lti_tool_configuration_from_content_item($typeid,
                                                            'ContentItemSelection',
@@ -1722,7 +1722,7 @@ MwIDAQAB
         $type->baseurl = $this->getExternalTestFileUrl('/test.html');
 
         $config = new \stdClass();
-        $typeid = \core_ltix\types_helper::add_type($type, $config);
+        $typeid = \core_ltix\helper::add_type($type, $config);
 
         $params = [];
         $params['roles'] = 'urn:lti:role:ims/lis/testrole,' .
@@ -1779,7 +1779,7 @@ MwIDAQAB
 -----END PUBLIC KEY-----';
         $config->lti_keytype = LTI_RSA_KEY;
 
-        $typeid = \core_ltix\types_helper::add_type($type, $config);
+        $typeid = \core_ltix\helper::add_type($type, $config);
 
         $params = lti_convert_from_jwt($typeid, 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwib' .
             'mFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMiwiaXNzIjoic3NvLmV4YW1wbGUuY29tIn0.XURVvEb5ueAvFsn-S9EB' .
@@ -1810,11 +1810,11 @@ MwIDAQAB
         $typeconfig = new \stdClass();
         $typeconfig->lti_acceptgrades = true;
 
-        $typeid = \core_ltix\types_helper::add_type($type, $typeconfig);
+        $typeid = \core_ltix\helper::add_type($type, $typeconfig);
 
-        $tool = \core_ltix\types_helper::get_type($typeid);
+        $tool = \core_ltix\helper::get_type($typeid);
 
-        $config = \core_ltix\types_helper::get_type_config($typeid);
+        $config = \core_ltix\helper::get_type_config($typeid);
         $permittedscopes = lti_get_permitted_service_scopes($tool, $config);
 
         $expected = [
@@ -1841,9 +1841,9 @@ MwIDAQAB
 
         $config = new \stdClass();
 
-        $typeid = \core_ltix\types_helper::add_type($type, $config);
+        $typeid = \core_ltix\helper::add_type($type, $config);
 
-        $type = \core_ltix\types_helper::get_type($typeid);
+        $type = \core_ltix\helper::get_type($typeid);
 
         $typeconfig = get_tool_type_config($type);
 
@@ -1875,11 +1875,11 @@ MwIDAQAB
 
         $config = new \stdClass();
 
-        $typeid = \core_ltix\types_helper::add_type($type, $config);
+        $typeid = \core_ltix\helper::add_type($type, $config);
 
         $scopes = ['lti_some_scope', 'lti_another_scope'];
 
-        \core_ltix\types_helper::new_access_token($typeid, $scopes);
+        \core_ltix\helper::new_access_token($typeid, $scopes);
 
         $token = $DB->get_records('lti_access_tokens');
         $this->assertEquals(1, count($token));
@@ -2254,7 +2254,7 @@ MwIDAQAB
         \curl::mock_response('');
 
         $this->expectException(\moodle_exception::class);
-        \core_ltix\tool_helper::load_cartridge('http://example.com/mocked/empty/response', []);
+        \core_ltix\helper::load_cartridge('http://example.com/mocked/empty/response', []);
     }
 
     /**
@@ -2277,8 +2277,8 @@ MwIDAQAB
         $configbase->lti_sendname = LTI_SETTING_NEVER;
         $configbase->lti_sendemailaddr = LTI_SETTING_NEVER;
         $mergedconfig = (object) array_merge( (array) $configbase, (array) $config);
-        $typeid = \core_ltix\types_helper::add_type($type, $mergedconfig);
-        return \core_ltix\types_helper::get_type($typeid);
+        $typeid = \core_ltix\helper::add_type($type, $mergedconfig);
+        return \core_ltix\helper::get_type($typeid);
     }
 
     /**

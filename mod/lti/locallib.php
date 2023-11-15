@@ -96,12 +96,12 @@ function lti_get_jwt_claim_mapping() {
  */
 function lti_get_instance_type(object $instance) : ?object {
     if (empty($instance->typeid)) {
-        if (!$tool = \core_ltix\tool_helper::get_tool_by_url_match($instance->toolurl, $instance->course)) {
-            $tool = \core_ltix\tool_helper::get_tool_by_url_match($instance->securetoolurl,  $instance->course);
+        if (!$tool = \core_ltix\helper::get_tool_by_url_match($instance->toolurl, $instance->course)) {
+            $tool = \core_ltix\helper::get_tool_by_url_match($instance->securetoolurl,  $instance->course);
         }
         return $tool;
     }
-    return \core_ltix\types_helper::get_type($instance->typeid);
+    return \core_ltix\helper::get_type($instance->typeid);
 }
 
 /**
@@ -125,7 +125,7 @@ function lti_get_launch_data($instance, $nonce = '', $messagetype = 'basic-lti-l
     }
 
     if ($typeid) {
-        $typeconfig = \core_ltix\types_helper::get_type_config($typeid);
+        $typeconfig = \core_ltix\helper::get_type_config($typeid);
     } else {
         // There is no admin configuration for this tool. Use configuration in the lti instance record plus some defaults.
         $typeconfig = (array)$instance;
@@ -139,7 +139,7 @@ function lti_get_launch_data($instance, $nonce = '', $messagetype = 'basic-lti-l
     }
 
     if (isset($tool->toolproxyid)) {
-        $toolproxy = \core_ltix\tool_helper::get_tool_proxy($tool->toolproxyid);
+        $toolproxy = \core_ltix\helper::get_tool_proxy($tool->toolproxyid);
         $key = $toolproxy->guid;
         $secret = $toolproxy->secret;
     } else {
@@ -166,7 +166,7 @@ function lti_get_launch_data($instance, $nonce = '', $messagetype = 'basic-lti-l
     $endpoint = trim($endpoint);
 
     // If the current request is using SSL and a secure tool URL is specified, use it.
-    if (\core_ltix\tool_helper::request_is_using_ssl() && !empty($instance->securetoolurl)) {
+    if (\core_ltix\helper::request_is_using_ssl() && !empty($instance->securetoolurl)) {
         $endpoint = trim($instance->securetoolurl);
     }
 
@@ -177,19 +177,19 @@ function lti_get_launch_data($instance, $nonce = '', $messagetype = 'basic-lti-l
         }
 
         if ($endpoint !== '') {
-            $endpoint = \core_ltix\tool_helper::ensure_url_is_https($endpoint);
+            $endpoint = \core_ltix\helper::ensure_url_is_https($endpoint);
         }
     } else if ($endpoint !== '' && !strstr($endpoint, '://')) {
         $endpoint = 'http://' . $endpoint;
     }
 
-    $orgid = \core_ltix\types_helper::get_organizationid($typeconfig);
+    $orgid = \core_ltix\helper::get_organizationid($typeconfig);
 
     $course = $PAGE->course;
     $islti2 = isset($tool->toolproxyid);
     $allparams = lti_build_request($instance, $typeconfig, $course, $typeid, $islti2, $messagetype, $foruserid);
     if ($islti2) {
-        $requestparams = \core_ltix\tool_helper::build_request_lti2($tool, $allparams);
+        $requestparams = \core_ltix\helper::build_request_lti2($tool, $allparams);
     } else {
         $requestparams = $allparams;
     }
@@ -198,7 +198,7 @@ function lti_get_launch_data($instance, $nonce = '', $messagetype = 'basic-lti-l
     if (isset($typeconfig['customparameters'])) {
         $customstr = $typeconfig['customparameters'];
     }
-    $services = \core_ltix\tool_helper::get_services();
+    $services = \core_ltix\helper::get_services();
     foreach ($services as $service) {
         [$endpoint, $customstr] = $service->override_endpoint($messagetype,
             $endpoint, $customstr, $instance->course, $instance);
@@ -217,7 +217,7 @@ function lti_get_launch_data($instance, $nonce = '', $messagetype = 'basic-lti-l
     $returnurl = $url->out(false);
 
     if (isset($typeconfig['forcessl']) && ($typeconfig['forcessl'] == '1')) {
-        $returnurl = \core_ltix\tool_helper::ensure_url_is_https($returnurl);
+        $returnurl = \core_ltix\helper::ensure_url_is_https($returnurl);
     }
 
     $target = '';
@@ -241,12 +241,12 @@ function lti_get_launch_data($instance, $nonce = '', $messagetype = 'basic-lti-l
 
     // Add the parameters configured by the LTI services.
     if ($typeid && !$islti2) {
-        $services = \core_ltix\tool_helper::get_services();
+        $services = \core_ltix\helper::get_services();
         foreach ($services as $service) {
             $serviceparameters = $service->get_launch_parameters('basic-lti-launch-request',
                     $course->id, $USER->id , $typeid, $instance->id);
             foreach ($serviceparameters as $paramkey => $paramvalue) {
-                $requestparams['custom_' . $paramkey] = \core_ltix\tool_helper::parse_custom_parameter($toolproxy, $tool,
+                $requestparams['custom_' . $paramkey] = \core_ltix\helper::parse_custom_parameter($toolproxy, $tool,
                     $requestparams, $paramvalue, $islti2);
             }
         }
@@ -318,7 +318,7 @@ function lti_register($toolproxy) {
 
     // Change the status to pending.
     $toolproxy->state = LTI_TOOL_PROXY_STATE_PENDING;
-    \core_ltix\tool_helper::update_tool_proxy($toolproxy);
+    \core_ltix\helper::update_tool_proxy($toolproxy);
 
     $requestparams = lti_build_registration_request($toolproxy);
 
@@ -368,10 +368,10 @@ function lti_build_registration_request($toolproxy) {
  * @return string
  */
 function lti_get_organizationid($typeconfig) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::get_organizationid() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_organizationid() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\types_helper::get_organizationid($typeconfig);
+    return \core_ltix\helper::get_organizationid($typeconfig);
 }
 
 /**
@@ -487,7 +487,7 @@ function lti_build_request($instance, $typeconfig, $course, $typeid = null, $isl
         }
 
         if ((isset($typeconfig['forcessl']) && ($typeconfig['forcessl'] == '1')) or $forcessl) {
-            $serviceurl = \core_ltix\tool_helper::ensure_url_is_https($serviceurl);
+            $serviceurl = \core_ltix\helper::ensure_url_is_https($serviceurl);
         }
 
         $requestparams['lis_outcome_service_url'] = $serviceurl;
@@ -524,10 +524,10 @@ function lti_build_request($instance, $typeconfig, $course, $typeid = null, $isl
  * @return array                    Request details
  */
 function lti_build_request_lti2($tool, $params) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::build_request_lti2() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::build_request_lti2() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::build_request_lti2($tool, $params);
+    return \core_ltix\helper::build_request_lti2($tool, $params);
 }
 
 /**
@@ -619,23 +619,23 @@ function lti_build_custom_parameters($toolproxy, $tool, $instance, $params, $cus
     // has given permission.
     $custom = array();
     if ($customstr) {
-        $custom = \core_ltix\tool_helper::split_custom_parameters($toolproxy, $tool, $params, $customstr, $islti2);
+        $custom = \core_ltix\helper::split_custom_parameters($toolproxy, $tool, $params, $customstr, $islti2);
     }
     if ($instructorcustomstr) {
-        $custom = array_merge(\core_ltix\tool_helper::split_custom_parameters($toolproxy, $tool, $params,
+        $custom = array_merge(\core_ltix\helper::split_custom_parameters($toolproxy, $tool, $params,
             $instructorcustomstr, $islti2), $custom);
     }
     if ($islti2) {
-        $custom = array_merge(\core_ltix\tool_helper::split_custom_parameters($toolproxy, $tool, $params,
+        $custom = array_merge(\core_ltix\helper::split_custom_parameters($toolproxy, $tool, $params,
             $tool->parameter, true), $custom);
-        $settings = \core_ltix\tool_helper::get_tool_settings($tool->toolproxyid);
-        $custom = array_merge($custom, \core_ltix\tool_helper::get_custom_parameters($toolproxy, $tool, $params, $settings));
+        $settings = \core_ltix\helper::get_tool_settings($tool->toolproxyid);
+        $custom = array_merge($custom, \core_ltix\helper::get_custom_parameters($toolproxy, $tool, $params, $settings));
         if (!empty($instance->course)) {
-            $settings = \core_ltix\tool_helper::get_tool_settings($tool->toolproxyid, $instance->course);
-            $custom = array_merge($custom, \core_ltix\tool_helper::get_custom_parameters($toolproxy, $tool, $params, $settings));
+            $settings = \core_ltix\helper::get_tool_settings($tool->toolproxyid, $instance->course);
+            $custom = array_merge($custom, \core_ltix\helper::get_custom_parameters($toolproxy, $tool, $params, $settings));
             if (!empty($instance->id)) {
-                $settings = \core_ltix\tool_helper::get_tool_settings($tool->toolproxyid, $instance->course, $instance->id);
-                $custom = array_merge($custom, \core_ltix\tool_helper::get_custom_parameters($toolproxy, $tool, $params,
+                $settings = \core_ltix\helper::get_tool_settings($tool->toolproxyid, $instance->course, $instance->id);
+                $custom = array_merge($custom, \core_ltix\helper::get_custom_parameters($toolproxy, $tool, $params,
                     $settings));
             }
         }
@@ -675,7 +675,7 @@ function lti_build_content_item_selection_request($id, $course, moodle_url $retu
                                                   $unsigned = false, $canconfirm = false, $copyadvice = false, $nonce = '') {
     global $USER;
 
-    $tool = \core_ltix\types_helper::get_type($id);
+    $tool = \core_ltix\helper::get_type($id);
     // Validate parameters.
     if (!$tool) {
         throw new moodle_exception('errortooltypenotfound', 'core_ltix');
@@ -692,14 +692,14 @@ function lti_build_content_item_selection_request($id, $course, moodle_url $retu
         $title = $tool->name;
     }
 
-    $typeconfig = \core_ltix\types_helper::get_type_config($id);
+    $typeconfig = \core_ltix\helper::get_type_config($id);
     $key = '';
     $secret = '';
     $islti2 = false;
     $islti13 = false;
     if (isset($tool->toolproxyid)) {
         $islti2 = true;
-        $toolproxy = \core_ltix\tool_helper::get_tool_proxy($tool->toolproxyid);
+        $toolproxy = \core_ltix\helper::get_tool_proxy($tool->toolproxyid);
         $key = $toolproxy->guid;
         $secret = $toolproxy->secret;
     } else {
@@ -751,12 +751,12 @@ function lti_build_content_item_selection_request($id, $course, moodle_url $retu
 
     // Get LTI2-specific request parameters and merge to the request parameters if applicable.
     if ($islti2) {
-        $lti2params = \core_ltix\tool_helper::build_request_lti2($tool, $requestparams);
+        $lti2params = \core_ltix\helper::build_request_lti2($tool, $requestparams);
         $requestparams = array_merge($requestparams, $lti2params);
     }
 
     // Get standard request parameters and merge to the request parameters.
-    $orgid = \core_ltix\types_helper::get_organizationid($typeconfig);
+    $orgid = \core_ltix\helper::get_organizationid($typeconfig);
     $standardparams = lti_build_standard_message(null, $orgid, $tool->ltiversion, 'ContentItemSelectionRequest');
     $requestparams = array_merge($requestparams, $standardparams);
 
@@ -770,12 +770,12 @@ function lti_build_content_item_selection_request($id, $course, moodle_url $retu
 
     // Add the parameters configured by the LTI services.
     if ($id && !$islti2) {
-        $services = \core_ltix\tool_helper::get_services();
+        $services = \core_ltix\helper::get_services();
         foreach ($services as $service) {
             $serviceparameters = $service->get_launch_parameters('ContentItemSelectionRequest',
                 $course->id, $USER->id , $id);
             foreach ($serviceparameters as $paramkey => $paramvalue) {
-                $requestparams['custom_' . $paramkey] = \core_ltix\tool_helper::parse_custom_parameter($toolproxy, $tool,
+                $requestparams['custom_' . $paramkey] = \core_ltix\helper::parse_custom_parameter($toolproxy, $tool,
                     $requestparams, $paramvalue, $islti2);
             }
         }
@@ -872,7 +872,7 @@ function lti_build_content_item_selection_request($id, $course, moodle_url $retu
  * @throws lti\OAuthException
  */
 function lti_verify_oauth_signature($typeid, $consumerkey) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::verify_oauth_signature() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::verify_oauth_signature() instead.',
         DEBUG_DEVELOPER);
 
     return \core_ltix\oauth_helper::verify_oauth_signature($typeid, $consumerkey);
@@ -950,10 +950,10 @@ function params_to_string(object $params) {
  * @return stdClass Form config for the item
  */
 function content_item_to_form(object $tool, object $typeconfig, object $item) : stdClass {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::content_item_to_form() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::content_item_to_form() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::content_item_to_form($tool, $typeconfig, $item);
+    return \core_ltix\helper::content_item_to_form($tool, $typeconfig, $item);
 }
 
 /**
@@ -971,10 +971,10 @@ function content_item_to_form(object $tool, object $typeconfig, object $item) : 
  * @throws lti\OAuthException
  */
 function lti_tool_configuration_from_content_item($typeid, $messagetype, $ltiversion, $consumerkey, $contentitemsjson) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::tool_configuration_from_content_item() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::tool_configuration_from_content_item() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::tool_configuration_from_content_item($typeid, $messagetype, $ltiversion, $consumerkey,
+    return \core_ltix\helper::tool_configuration_from_content_item($typeid, $messagetype, $ltiversion, $consumerkey,
         $contentitemsjson);
 }
 
@@ -986,10 +986,10 @@ function lti_tool_configuration_from_content_item($typeid, $messagetype, $ltiver
  * @return string  JSON representation of content-items
  */
 function lti_convert_content_items($param) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::convert_content_items() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::convert_content_items() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::convert_content_items($param);
+    return \core_ltix\helper::convert_content_items($param);
 }
 
 function lti_get_tool_table($tools, $id) {
@@ -1201,10 +1201,10 @@ EOD;
  * @return array List of enabled capabilities
  */
 function lti_get_enabled_capabilities($tool) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::get_enabled_capabilities() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_enabled_capabilities() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::get_enabled_capabilities($tool);
+    return \core_ltix\helper::get_enabled_capabilities($tool);
 }
 
 /**
@@ -1216,10 +1216,10 @@ function lti_get_enabled_capabilities($tool) {
  * @return array of custom parameters
  */
 function lti_split_parameters($customstr) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::split_parameters() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::split_parameters() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::split_parameters($customstr);
+    return \core_ltix\helper::split_parameters($customstr);
 }
 
 /**
@@ -1235,10 +1235,10 @@ function lti_split_parameters($customstr) {
  * @return array of custom parameters
  */
 function lti_split_custom_parameters($toolproxy, $tool, $params, $customstr, $islti2 = false) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::split_custom_parameters() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::split_custom_parameters() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::split_custom_parameters($toolproxy, $tool, $params, $customstr, $islti2);
+    return \core_ltix\helper::split_custom_parameters($toolproxy, $tool, $params, $customstr, $islti2);
 }
 
 /**
@@ -1253,10 +1253,10 @@ function lti_split_custom_parameters($toolproxy, $tool, $params, $customstr, $is
  * @return array    Array of custom parameters
  */
 function lti_get_custom_parameters($toolproxy, $tool, $params, $parameters) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::get_custom_parameters() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_custom_parameters() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::get_custom_parameters($toolproxy, $tool, $params, $parameters);
+    return \core_ltix\helper::get_custom_parameters($toolproxy, $tool, $params, $parameters);
 }
 
 /**
@@ -1272,10 +1272,10 @@ function lti_get_custom_parameters($toolproxy, $tool, $params, $parameters) {
  * @return string Parsed value of custom parameter
  */
 function lti_parse_custom_parameter($toolproxy, $tool, $params, $value, $islti2) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::parse_custom_parameter() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::parse_custom_parameter() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::parse_custom_parameter($toolproxy, $tool, $params, $value, $islti2);
+    return \core_ltix\helper::parse_custom_parameter($toolproxy, $tool, $params, $value, $islti2);
 }
 
 /**
@@ -1287,10 +1287,10 @@ function lti_parse_custom_parameter($toolproxy, $tool, $params, $value, $islti2)
  * @return string Calculated value of custom parameter
  */
 function lti_calculate_custom_parameter($value) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::calculate_custom_parameter() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::calculate_custom_parameter() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::calculate_custom_parameter($value);
+    return \core_ltix\helper::calculate_custom_parameter($value);
 }
 
 /**
@@ -1302,10 +1302,10 @@ function lti_calculate_custom_parameter($value) {
  * @return array ids of the source course in ancestry order, immediate parent 1st.
  */
 function get_course_history($course) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::get_course_history() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_course_history() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::get_course_history($course);
+    return \core_ltix\helper::get_course_history($course);
 }
 
 /**
@@ -1317,10 +1317,10 @@ function get_course_history($course) {
  * @return string       Processed name
  */
 function lti_map_keyname($key, $tolower = true) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::map_keyname() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::map_keyname() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::map_keyname($key, $tolower);
+    return \core_ltix\helper::map_keyname($key, $tolower);
 }
 
 /**
@@ -1379,10 +1379,10 @@ function lti_get_ims_role($user, $cmid, $courseid, $islti2) {
  * @return array        Tool Configuration
  */
 function lti_get_type_config($typeid) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::get_type_config() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_type_config() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\types_helper::get_type_config($typeid);
+    return \core_ltix\helper::get_type_config($typeid);
 }
 
 /**
@@ -1395,10 +1395,10 @@ function lti_get_type_config($typeid) {
  * @return array
  */
 function lti_get_tools_by_url($url, $state, $courseid = null) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::get_tools_by_url() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_tools_by_url() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::get_tools_by_url($url, $state, $courseid);
+    return \core_ltix\helper::get_tools_by_url($url, $state, $courseid);
 }
 
 /**
@@ -1411,10 +1411,10 @@ function lti_get_tools_by_url($url, $state, $courseid = null) {
  * @return array
  */
 function lti_get_tools_by_domain($domain, $state = null, $courseid = null) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::get_tools_by_domain() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_tools_by_domain() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::get_tools_by_domain($domain, $state, $courseid);
+    return \core_ltix\helper::get_tools_by_domain($domain, $state, $courseid);
 }
 
 /**
@@ -1426,10 +1426,10 @@ function lti_get_tools_by_domain($domain, $state = null, $courseid = null) {
  * @return array
  */
 function lti_filter_get_types($course) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::filter_get_types() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::filter_get_types() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\types_helper::filter_get_types($course);
+    return \core_ltix\helper::filter_get_types($course);
 }
 
 /**
@@ -1441,10 +1441,10 @@ function lti_filter_get_types($course) {
  * @return array
  */
 function lti_filter_tool_types(array $tools, $state) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::filter_tool_types() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::filter_tool_types() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::filter_tool_types($tools, $state);
+    return \core_ltix\helper::filter_tool_types($tools, $state);
 }
 
 /**
@@ -1533,10 +1533,10 @@ function lti_get_configured_types($courseid, $sectionreturn = 0) {
  * @return mixed|void
  */
 function lti_get_domain_from_url($url) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::get_domain_from_url() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_domain_from_url() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::get_domain_from_url($url);
+    return \core_ltix\helper::get_domain_from_url($url);
 }
 
 /**
@@ -1549,10 +1549,10 @@ function lti_get_domain_from_url($url) {
  * @return mixed|null
  */
 function lti_get_tool_by_url_match($url, $courseid = null, $state = LTI_TOOL_STATE_CONFIGURED) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::get_tool_by_url_match() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_tool_by_url_match() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::get_tool_by_url_match($url, $courseid, $state);
+    return \core_ltix\helper::get_tool_by_url_match($url, $courseid, $state);
 }
 
 /**
@@ -1563,10 +1563,10 @@ function lti_get_tool_by_url_match($url, $courseid = null, $state = LTI_TOOL_STA
  * @return string
  */
 function lti_get_url_thumbprint($url) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::get_url_thumbprint() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_url_thumbprint() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::get_url_thumbprint($url);
+    return \core_ltix\helper::get_url_thumbprint($url);
 }
 
 /**
@@ -1579,10 +1579,10 @@ function lti_get_url_thumbprint($url) {
  * @return mixed|null
  */
 function lti_get_best_tool_by_url($url, $tools, $courseid = null) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::get_best_tool_by_url() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_best_tool_by_url() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::get_best_tool_by_url($url, $tools, $courseid);
+    return \core_ltix\helper::get_best_tool_by_url($url, $tools, $courseid);
 }
 
 function lti_get_shared_secrets_by_key($key) {
@@ -1630,10 +1630,10 @@ function lti_get_shared_secrets_by_key($key) {
  * @param int $id   Configuration id
  */
 function lti_delete_type($id) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::delete_type() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::delete_type() instead.',
         DEBUG_DEVELOPER);
 
-    \core_ltix\types_helper::delete_type($id);
+    \core_ltix\helper::delete_type($id);
 }
 
 /**
@@ -1644,10 +1644,10 @@ function lti_delete_type($id) {
  * @param $state
  */
 function lti_set_state_for_type($id, $state) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::set_state_for_type() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::set_state_for_type() instead.',
         DEBUG_DEVELOPER);
 
-    \core_ltix\types_helper::set_state_for_type($id, $state);
+    \core_ltix\helper::set_state_for_type($id, $state);
 }
 
 /**
@@ -1659,7 +1659,7 @@ function lti_set_state_for_type($id, $state) {
  */
 function lti_get_config($ltiobject) {
     $typeconfig = (array)$ltiobject;
-    $additionalconfig = \core_ltix\types_helper::get_type_config($ltiobject->typeid);
+    $additionalconfig = \core_ltix\helper::get_type_config($ltiobject->typeid);
     $typeconfig = array_merge($typeconfig, $additionalconfig);
     return $typeconfig;
 }
@@ -1712,10 +1712,10 @@ function lti_get_type_config_from_instance($id) {
  * @return stdClass Configuration details
  */
 function lti_get_type_type_config($id) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::get_type_type_config() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_type_type_config() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\types_helper::get_type_type_config($id);
+    return \core_ltix\helper::get_type_type_config($id);
 }
 
 /**
@@ -1726,10 +1726,10 @@ function lti_get_type_type_config($id) {
  * @param $config
  */
 function lti_prepare_type_for_save($type, $config) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::prepare_type_for_save() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::prepare_type_for_save() instead.',
         DEBUG_DEVELOPER);
 
-    \core_ltix\types_helper::prepare_type_for_save($type, $config);
+    \core_ltix\helper::prepare_type_for_save($type, $config);
 }
 
 /**
@@ -1740,10 +1740,10 @@ function lti_prepare_type_for_save($type, $config) {
  * @param $config
  */
 function lti_update_type($type, $config) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::update_type() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::update_type() instead.',
         DEBUG_DEVELOPER);
 
-    \core_ltix\types_helper::update_type($type, $config);
+    \core_ltix\helper::update_type($type, $config);
 }
 
 /**
@@ -1755,10 +1755,10 @@ function lti_update_type($type, $config) {
  * @return void
  */
 function lti_type_add_categories(int $typeid, string $lticoursecategories = '') : void {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::type_add_categories() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::type_add_categories() instead.',
         DEBUG_DEVELOPER);
 
-    \core_ltix\types_helper::type_add_categories($typeid, $lticoursecategories);
+    \core_ltix\helper::type_add_categories($typeid, $lticoursecategories);
 }
 
 /**
@@ -1770,10 +1770,10 @@ function lti_type_add_categories(int $typeid, string $lticoursecategories = '') 
  * @return bool|int
  */
 function lti_add_type($type, $config) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::add_type() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::add_type() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\types_helper::add_type($type, $config);
+    return \core_ltix\helper::add_type($type, $config);
 }
 
 /**
@@ -1786,10 +1786,10 @@ function lti_add_type($type, $config) {
  * @return array
  */
 function lti_filter_tool_proxy_types(array $toolproxies, $state) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::filter_tool_proxy_types() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::filter_tool_proxy_types() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::filter_tool_proxy_types($toolproxies, $state);
+    return \core_ltix\helper::filter_tool_proxy_types($toolproxies, $state);
 }
 
 /**
@@ -1801,10 +1801,10 @@ function lti_filter_tool_proxy_types(array $toolproxies, $state) {
  * @return object
  */
 function lti_get_tool_proxy_from_guid($toolproxyguid) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::get_tool_proxy_from_guid() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_tool_proxy_from_guid() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::get_tool_proxy_from_guid($toolproxyguid);
+    return \core_ltix\helper::get_tool_proxy_from_guid($toolproxyguid);
 }
 
 /**
@@ -1817,10 +1817,10 @@ function lti_get_tool_proxy_from_guid($toolproxyguid) {
  */
 function lti_get_tool_proxies_from_registration_url($regurl) {
     debugging(__FUNCTION__ . '() is deprecated. ' .
-        'Please use \core_ltix\tool_helper::get_tool_proxies_from_registration_url() instead.',
+        'Please use \core_ltix\helper::get_tool_proxies_from_registration_url() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::get_tool_proxies_from_registration_url($regurl);
+    return \core_ltix\helper::get_tool_proxies_from_registration_url($regurl);
 }
 
 /**
@@ -1832,10 +1832,10 @@ function lti_get_tool_proxies_from_registration_url($regurl) {
  * @return mixed Tool Proxy details
  */
 function lti_get_tool_proxy($id) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::get_tool_proxy() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_tool_proxy() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::get_tool_proxy($id);
+    return \core_ltix\helper::get_tool_proxy($id);
 }
 
 /**
@@ -1846,10 +1846,10 @@ function lti_get_tool_proxy($id) {
  * @return array of basicLTI types
  */
 function lti_get_tool_proxies($orphanedonly) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::get_tool_proxies() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_tool_proxies() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::get_tool_proxies($orphanedonly);
+    return \core_ltix\helper::get_tool_proxies($orphanedonly);
 }
 
 /**
@@ -1861,10 +1861,10 @@ function lti_get_tool_proxies($orphanedonly) {
  * @return mixed  Tool Proxy details
  */
 function lti_get_tool_proxy_config($id) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::get_tool_proxy_config() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_tool_proxy_config() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::get_tool_proxy_config($id);
+    return \core_ltix\helper::get_tool_proxy_config($id);
 }
 
 /**
@@ -1876,10 +1876,10 @@ function lti_get_tool_proxy_config($id) {
  * @return int  Record id number
  */
 function lti_add_tool_proxy($config) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::add_tool_proxy() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::add_tool_proxy() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::add_tool_proxy($config);
+    return \core_ltix\helper::add_tool_proxy($config);
 }
 
 /**
@@ -1891,10 +1891,10 @@ function lti_add_tool_proxy($config) {
  * @return int    Record id number
  */
 function lti_update_tool_proxy($toolproxy) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::update_tool_proxy() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::update_tool_proxy() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::update_tool_proxy($toolproxy);
+    return \core_ltix\helper::update_tool_proxy($toolproxy);
 }
 
 /**
@@ -1904,10 +1904,10 @@ function lti_update_tool_proxy($toolproxy) {
  * @param int $id   Tool Proxy id
  */
 function lti_delete_tool_proxy($id) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::delete_tool_proxy() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::delete_tool_proxy() instead.',
         DEBUG_DEVELOPER);
 
-    \core_ltix\tool_helper::delete_tool_proxy($id);
+    \core_ltix\helper::delete_tool_proxy($id);
 }
 
 /**
@@ -1926,10 +1926,10 @@ function lti_delete_tool_proxy($id) {
  * @return array list(proxies[], types[]) List containing array of tool proxies and array of tool types.
  */
 function lti_get_lti_types_and_proxies(int $limit = 0, int $offset = 0, bool $orphanedonly = false, int $toolproxyid = 0): array {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::get_lti_types_and_proxies() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_lti_types_and_proxies() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\types_helper::get_lti_types_and_proxies($limit, $offset, $orphanedonly, $toolproxyid);
+    return \core_ltix\helper::get_lti_types_and_proxies($limit, $offset, $orphanedonly, $toolproxyid);
 }
 
 /**
@@ -1941,10 +1941,10 @@ function lti_get_lti_types_and_proxies(int $limit = 0, int $offset = 0, bool $or
  * @return int Count of tools.
  */
 function lti_get_lti_types_and_proxies_count(bool $orphanedonly = false, int $toolproxyid = 0): int {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::get_lti_types_and_proxies_count() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_lti_types_and_proxies_count() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\types_helper::get_lti_types_and_proxies_count($orphanedonly, $toolproxyid);
+    return \core_ltix\helper::get_lti_types_and_proxies_count($orphanedonly, $toolproxyid);
 }
 
 /**
@@ -1956,10 +1956,10 @@ function lti_get_lti_types_and_proxies_count(bool $orphanedonly = false, int $to
  * @return int Record id number
  */
 function lti_add_config($config) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::add_config() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::add_config() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\types_helper::add_config($config);
+    return \core_ltix\helper::add_config($config);
 }
 
 /**
@@ -1971,10 +1971,10 @@ function lti_add_config($config) {
  * @return mixed Record id number
  */
 function lti_update_config($config) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::update_config() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::update_config() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\types_helper::update_config($config);
+    return \core_ltix\helper::update_config($config);
 }
 
 /**
@@ -1988,10 +1988,10 @@ function lti_update_config($config) {
  * @return array  Array settings
  */
 function lti_get_tool_settings($toolproxyid, $courseid = null, $instanceid = null) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::get_tool_settings() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_tool_settings() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::get_tool_settings($toolproxyid, $courseid, $instanceid);
+    return \core_ltix\helper::get_tool_settings($toolproxyid, $courseid, $instanceid);
 }
 
 /**
@@ -2003,10 +2003,10 @@ function lti_get_tool_settings($toolproxyid, $courseid = null, $instanceid = nul
  * @param int    $instanceid    Id of course module (null if system or context settings)
  */
 function lti_set_tool_settings($settings, $toolproxyid, $courseid = null, $instanceid = null) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::set_tool_settings() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::set_tool_settings() instead.',
         DEBUG_DEVELOPER);
 
-    \core_ltix\tool_helper::set_tool_settings($settings, $toolproxyid, $courseid, $instanceid);
+    \core_ltix\helper::set_tool_settings($settings, $toolproxyid, $courseid, $instanceid);
 }
 
 /**
@@ -2199,7 +2199,7 @@ function lti_build_login_request($courseid, $cmid, $instance, $config, $messaget
             "{$courseid},{$config->typeid},,{$messagetype},{$foruserid}," . base64_encode($title) . ',' . base64_encode($text);
     }
     $endpoint = trim($endpoint);
-    $services = \core_ltix\tool_helper::get_services();
+    $services = \core_ltix\helper::get_services();
     foreach ($services as $service) {
         [$endpoint] = $service->override_endpoint($messagetype ?? 'basic-lti-launch-request', $endpoint, '', $courseid, $instance);
     }
@@ -2207,7 +2207,7 @@ function lti_build_login_request($courseid, $cmid, $instance, $config, $messaget
     $ltihint['launchid'] = $launchid;
     // If SSL is forced make sure https is on the normal launch URL.
     if (isset($config->lti_forcessl) && ($config->lti_forcessl == '1')) {
-        $endpoint = \core_ltix\tool_helper::ensure_url_is_https($endpoint);
+        $endpoint = \core_ltix\helper::ensure_url_is_https($endpoint);
     } else if (!strstr($endpoint, '://')) {
         $endpoint = 'http://' . $endpoint;
     }
@@ -2230,10 +2230,10 @@ function lti_build_login_request($courseid, $cmid, $instance, $config, $messaget
  * @return false|mixed|stdClass
  */
 function lti_get_type($typeid) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::get_type() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_type() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\types_helper::get_type($typeid);
+    return \core_ltix\helper::get_type($typeid);
 }
 
 function lti_get_launch_container($lti, $toolconfig) {
@@ -2270,10 +2270,10 @@ function lti_get_launch_container($lti, $toolconfig) {
  * @return bool
  */
 function lti_request_is_using_ssl() {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::request_is_using_ssl() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::request_is_using_ssl() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::request_is_using_ssl();
+    return \core_ltix\helper::request_is_using_ssl();
 }
 
 /**
@@ -2284,10 +2284,10 @@ function lti_request_is_using_ssl() {
  * @return mixed|string
  */
 function lti_ensure_url_is_https($url) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::ensure_url_is_https() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::ensure_url_is_https() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::ensure_url_is_https($url);
+    return \core_ltix\helper::ensure_url_is_https($url);
 }
 
 /**
@@ -2392,7 +2392,7 @@ function lti_log_response($responsexml, $e = null) {
 function lti_get_type_config_by_instance($instance) {
     $typeid = null;
     if (empty($instance->typeid)) {
-        $tool = \core_ltix\tool_helper::get_tool_by_url_match($instance->toolurl, $instance->course);
+        $tool = \core_ltix\helper::get_tool_by_url_match($instance->toolurl, $instance->course);
         if ($tool) {
             $typeid = $tool->id;
         }
@@ -2400,7 +2400,7 @@ function lti_get_type_config_by_instance($instance) {
         $typeid = $instance->typeid;
     }
     if (!empty($typeid)) {
-        return \core_ltix\types_helper::get_type_config($typeid);
+        return \core_ltix\helper::get_type_config($typeid);
     }
     return array();
 }
@@ -2432,10 +2432,10 @@ function lti_force_type_config_settings($instance, array $typeconfig) {
  * @return array List of capability names (without a dollar sign prefix)
  */
 function lti_get_capabilities() {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::get_capabilities() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_capabilities() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::get_capabilities();
+    return \core_ltix\helper::get_capabilities();
 }
 
 /**
@@ -2445,10 +2445,10 @@ function lti_get_capabilities() {
  * @return array List of services
  */
 function lti_get_services() {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::get_services() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_services() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::get_services();
+    return \core_ltix\helper::get_services();
 }
 
 /**
@@ -2505,7 +2505,7 @@ function lti_get_service_by_resource_id($services, $resourceid) {
  */
 function lti_get_permitted_service_scopes($type, $typeconfig) {
 
-    $services = \core_ltix\tool_helper::get_services();
+    $services = \core_ltix\helper::get_services();
     $scopes = array();
     foreach ($services as $service) {
         $service->set_type($type);
@@ -2683,10 +2683,10 @@ function get_tool_proxy_urls(stdClass $proxy) {
  * pending, configured, rejected, unknown
  */
 function get_tool_type_state_info(stdClass $type) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::get_tool_type_state_info() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_tool_type_state_info() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\types_helper::get_tool_type_state_info($type);
+    return \core_ltix\helper::get_tool_type_state_info($type);
 }
 
 /**
@@ -2729,10 +2729,10 @@ function get_tool_type_config($type) {
  * @return array An array of text descriptions of each of the capabilities this tool type requires
  */
 function get_tool_type_capability_groups($type) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::get_tool_type_capability_groups() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_tool_type_capability_groups() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\types_helper::get_tool_type_capability_groups($type);
+    return \core_ltix\helper::get_tool_type_capability_groups($type);
 }
 
 
@@ -2759,7 +2759,7 @@ function get_tool_type_instance_ids($type) {
 function serialise_tool_type(stdClass $type) {
     global $CFG;
 
-    $capabilitygroups = \core_ltix\types_helper::get_tool_type_capability_groups($type);
+    $capabilitygroups = \core_ltix\helper::get_tool_type_capability_groups($type);
     $instanceids = get_tool_type_instance_ids($type);
     // Clean the name. We don't want tags here.
     $name = clean_param($type->name, PARAM_NOTAGS);
@@ -2774,7 +2774,7 @@ function serialise_tool_type(stdClass $type) {
         'name' => $name,
         'description' => $description,
         'urls' => get_tool_type_urls($type),
-        'state' => \core_ltix\types_helper::get_tool_type_state_info($type),
+        'state' => \core_ltix\helper::get_tool_type_state_info($type),
         'platformid' => $CFG->wwwroot,
         'clientid' => $type->clientid,
         'deploymentid' => $type->id,
@@ -2795,10 +2795,10 @@ function serialise_tool_type(stdClass $type) {
  * @since Moodle 3.1
  */
 function lti_load_type_if_cartridge($type) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::load_type_if_cartridge() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::load_type_if_cartridge() instead.',
         DEBUG_DEVELOPER);
 
-    \core_ltix\types_helper::load_type_if_cartridge($type);
+    \core_ltix\helper::load_type_if_cartridge($type);
 }
 
 /**
@@ -2808,7 +2808,7 @@ function lti_load_type_if_cartridge($type) {
  * @since Moodle 3.1
  */
 function lti_load_tool_if_cartridge($lti) {
-    if (!empty($lti->toolurl) && \core_ltix\tool_helper::is_cartridge($lti->toolurl)) {
+    if (!empty($lti->toolurl) && \core_ltix\helper::is_cartridge($lti->toolurl)) {
         lti_load_tool_from_cartridge($lti->toolurl, $lti);
     }
 }
@@ -2822,10 +2822,10 @@ function lti_load_tool_if_cartridge($lti) {
  * @since Moodle 3.1
  */
 function lti_is_cartridge($url) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::is_cartridge() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::is_cartridge() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::is_cartridge($url);
+    return \core_ltix\helper::is_cartridge($url);
 }
 
 /**
@@ -2838,10 +2838,10 @@ function lti_is_cartridge($url) {
  * @since Moodle 3.1
  */
 function lti_load_type_from_cartridge($url, $type) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::load_type_from_cartridge() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::load_type_from_cartridge() instead.',
         DEBUG_DEVELOPER);
 
-    \core_ltix\types_helper::load_type_from_cartridge($url, $type);
+    \core_ltix\helper::load_type_from_cartridge($url, $type);
 }
 
 /**
@@ -2853,7 +2853,7 @@ function lti_load_type_from_cartridge($url, $type) {
  * @since Moodle 3.1
  */
 function lti_load_tool_from_cartridge($url, $lti) {
-    $toolinfo = \core_ltix\tool_helper::load_cartridge($url,
+    $toolinfo = \core_ltix\helper::load_cartridge($url,
         array(
             "title" => "name",
             "launch_url" => "toolurl",
@@ -2900,10 +2900,10 @@ function lti_load_tool_from_cartridge($url, $lti) {
  * @since Moodle 3.1
  */
 function lti_load_cartridge($url, $map, $propertiesmap = array()) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::load_cartridge() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::load_cartridge() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::load_cartridge($url, $map, $propertiesmap);
+    return \core_ltix\helper::load_cartridge($url, $map, $propertiesmap);
 }
 
 /**
@@ -2917,10 +2917,10 @@ function lti_load_cartridge($url, $map, $propertiesmap = array()) {
  * @since Moodle 3.1
  */
 function get_tag($tagname, $xpath, $attribute = null) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\tool_helper::get_tag() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_tag() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\tool_helper::get_tag($tagname, $xpath, $attribute);
+    return \core_ltix\helper::get_tag($tagname, $xpath, $attribute);
 }
 
 /**
@@ -2933,10 +2933,10 @@ function get_tag($tagname, $xpath, $attribute = null) {
  * @return stdClass Access token
  */
 function lti_new_access_token($typeid, $scopes) {
-    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\types_helper::new_access_token() instead.',
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::new_access_token() instead.',
         DEBUG_DEVELOPER);
 
-    return \core_ltix\types_helper::new_access_token($typeid, $scopes);
+    return \core_ltix\helper::new_access_token($typeid, $scopes);
 }
 
 

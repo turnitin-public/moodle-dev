@@ -122,8 +122,8 @@ class toolproxy extends \mod_lti\local\ltiservice\resource_base {
         // Check all services requested were offered (only tool services currently supported).
         $requestsbasicoutcomes = false;
         if ($ok && isset($toolproxyjson->security_contract->tool_service)) {
-            $contexts = lti_get_contexts($toolproxyjson);
-            $profileservice = lti_get_service_by_name('profile');
+            $contexts = \core_ltix\helper::get_contexts($toolproxyjson);
+            $profileservice = \core_ltix\helper::get_service_by_name('profile');
             $profileservice->set_tool_proxy($toolproxy);
             $context = $profileservice->get_service_path() . $profileservice->get_resources()[0]->get_path() . '#';
             $offeredservices = explode("\n", $toolproxy->serviceoffered);
@@ -131,13 +131,13 @@ class toolproxy extends \mod_lti\local\ltiservice\resource_base {
             $tpservices = $toolproxyjson->security_contract->tool_service;
             $errors = array();
             foreach ($tpservices as $service) {
-                $fqid = lti_get_fqid($contexts, $service->service);
+                $fqid = \core_ltix\helper::get_fqid($contexts, $service->service);
                 $requestsbasicoutcomes = $requestsbasicoutcomes || (substr($fqid, -13) === 'Outcomes.LTI1');
                 if (substr($fqid, 0, strlen($context)) !== $context) {
                     $errors[] = $service->service;
                 } else {
                     $id = explode('#', $fqid, 2);
-                    $aservice = lti_get_service_by_resource_id($services, $id[1]);
+                    $aservice = \core_ltix\helper::get_service_by_resource_id($services, $id[1]);
                     $classname = explode('\\', get_class($aservice));
                     if (empty($aservice) || !in_array($classname[count($classname) - 1], $offeredservices)) {
                         $errors[] = $service->service;

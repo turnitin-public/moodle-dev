@@ -256,11 +256,11 @@ class memberships extends \mod_lti\local\ltiservice\service_base {
             $member->{"@type" } = 'LISPerson';
             $membership = new \stdClass();
             $membership->status = 'Active';
-            $membership->role = explode(',', lti_get_ims_role($user->id, null, $contextid, true));
+            $membership->role = explode(',', \core_ltix\helper::get_ims_role($user->id, null, $contextid, true));
 
             $instanceconfig = null;
             if (!is_null($lti)) {
-                $instanceconfig = lti_get_type_config_from_instance($lti->id);
+                $instanceconfig = \core_ltix\helper::get_type_config_from_instance($lti->id);
             }
             $isallowedlticonfig = self::is_allowed_field_set($toolconfig, $instanceconfig,
                                     ['name' => 'sendname', 'email' => 'sendemailaddr']);
@@ -296,10 +296,11 @@ class memberships extends \mod_lti\local\ltiservice\service_base {
                         'itemmodule' => 'lti', 'iteminstance' => $lti->id);
 
                 if (!empty($lti->servicesalt) && $DB->record_exists('grade_items', $conditions)) {
-                    $message->lis_result_sourcedid = json_encode(lti_build_sourcedid($lti->id,
-                                                                                     $user->id,
-                                                                                     $lti->servicesalt,
-                                                                                     $lti->typeid));
+                    $message->lis_result_sourcedid = json_encode(
+                        \core_ltix\helper::build_sourcedid($lti->id,
+                                                           $user->id,
+                                                           $lti->servicesalt,
+                                                           $lti->typeid));
                     // Not per specification but added to comply with earlier version of the service.
                     $member->resultSourcedId = $message->lis_result_sourcedid;
                 }
@@ -397,11 +398,11 @@ class memberships extends \mod_lti\local\ltiservice\service_base {
 
             $member = new \stdClass();
             $member->status = 'Active';
-            $member->roles = explode(',', lti_get_ims_role($user->id, null, $course->id, true));
+            $member->roles = explode(',', \core_ltix\helper::get_ims_role($user->id, null, $course->id, true));
 
             $instanceconfig = null;
             if (!is_null($lti)) {
-                $instanceconfig = lti_get_type_config_from_instance($lti->id);
+                $instanceconfig = \core_ltix\helper::get_type_config_from_instance($lti->id);
             }
             if (!$islti2) {
                 $isallowedlticonfig = self::is_allowed_field_set($toolconfig, $instanceconfig,
@@ -444,10 +445,11 @@ class memberships extends \mod_lti\local\ltiservice\service_base {
 
                 if (!empty($lti->servicesalt) && $DB->record_exists('grade_items', $conditions)) {
                     $basicoutcome = new \stdClass();
-                    $basicoutcome->lis_result_sourcedid = json_encode(lti_build_sourcedid($lti->id,
-                                                                                     $user->id,
-                                                                                     $lti->servicesalt,
-                                                                                     $lti->typeid));
+                    $basicoutcome->lis_result_sourcedid = json_encode(
+                        \core_ltix\helper::build_sourcedid($lti->id,
+                                                           $user->id,
+                                                           $lti->servicesalt,
+                                                           $lti->typeid));
                     // Add outcome service URL.
                     $serviceurl = new \moodle_url('/mod/lti/service.php');
                     $serviceurl = $serviceurl->out();

@@ -214,7 +214,7 @@ class mod_lti_external extends external_api {
         require_capability('mod/lti:view', $context);
 
         $lti->cmid = $cm->id;
-        list($endpoint, $parms) = lti_get_launch_data($lti);
+        list($endpoint, $parms) = \core_ltix\helper::get_launch_data($lti);
 
         $parameters = array();
         foreach ($parms as $name => $value) {
@@ -626,7 +626,7 @@ class mod_lti_external extends external_api {
         require_capability('moodle/site:config', $context);
 
         $toolproxy = \core_ltix\helper::get_tool_proxy($id);
-        return lti_build_registration_request($toolproxy);
+        return \core_ltix\helper::build_registration_request($toolproxy);
     }
 
     /**
@@ -777,7 +777,7 @@ class mod_lti_external extends external_api {
 
         if (!empty($id)) {
             $type = \core_ltix\helper::get_type($id);
-            return serialise_tool_type($type);
+            return \core_ltix\helper::serialise_tool_type($type);
         } else {
             throw new moodle_exception('unabletocreatetooltype', 'mod_lti');
         }
@@ -863,7 +863,7 @@ class mod_lti_external extends external_api {
 
         \core_ltix\helper::update_type($type, new stdClass());
 
-        return serialise_tool_type($type);
+        return \core_ltix\helper::serialise_tool_type($type);
     }
 
     /**

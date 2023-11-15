@@ -122,7 +122,7 @@ if ($ok) {
         require_capability('mod/lti:view', $context);
         $lti = $DB->get_record('lti', array('id' => $cm->instance), '*', MUST_EXIST);
         $lti->cmid = $cm->id;
-        list($endpoint, $params) = lti_get_launch_data($lti, $nonce, $messagetype, $foruserid);
+        list($endpoint, $params) = \core_ltix\helper::get_launch_data($lti, $nonce, $messagetype, $foruserid);
     } else {
         require_login($course);
         $context = context_course::instance($courseid);
@@ -138,7 +138,7 @@ if ($ok) {
         // Prepare the request.
         $title = base64_decode($titleb64);
         $text = base64_decode($textb64);
-        $request = lti_build_content_item_selection_request($typeid, $course, $returnurl, $title, $text,
+        $request = \core_ltix\helper::build_content_item_selection_request($typeid, $course, $returnurl, $title, $text,
                                                             [], [], false, true, false, false, false, $nonce);
         $endpoint = $request->url;
         $params = $request->params;

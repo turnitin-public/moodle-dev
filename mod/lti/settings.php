@@ -104,15 +104,15 @@ if ($ADMIN->fulltree) {
 
     $configuredtools = \core_ltix\helper::filter_tool_types($types, LTI_TOOL_STATE_CONFIGURED);
 
-    $configuredtoolshtml = lti_get_tool_table($configuredtools, 'lti_configured');
+    $configuredtoolshtml = \core_ltix\helper::get_tool_table($configuredtools, 'lti_configured');
 
     $pendingtools = \core_ltix\helper::filter_tool_types($types, LTI_TOOL_STATE_PENDING);
 
-    $pendingtoolshtml = lti_get_tool_table($pendingtools, 'lti_pending');
+    $pendingtoolshtml = \core_ltix\helper::get_tool_table($pendingtools, 'lti_pending');
 
     $rejectedtools = \core_ltix\helper::filter_tool_types($types, LTI_TOOL_STATE_REJECTED);
 
-    $rejectedtoolshtml = lti_get_tool_table($rejectedtools, 'lti_rejected');
+    $rejectedtoolshtml = \core_ltix\helper::get_tool_table($rejectedtools, 'lti_rejected');
 
     $tab = optional_param('tab', '', PARAM_ALPHAEXT);
     $activeselected = '';

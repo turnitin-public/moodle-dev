@@ -73,7 +73,7 @@ if ($typeid) {
                 if ($action === 'gradeReport') {
                     $msgtype = 'LtiSubmissionReviewRequest';
                 }
-                echo lti_initiate_login($cm->course, $cmid, $lti, $config, $msgtype, '', '', $foruserid);
+                echo \core_ltix\helper::initiate_login($cm->course, $cmid, $lti, $config, $msgtype, '', '', $foruserid);
                 exit;
             } else {
                 unset($SESSION->lti_initiatelogin_status);
@@ -104,4 +104,4 @@ if ($triggerview) {
 }
 
 $lti->cmid = $cm->id;
-lti_launch_tool($lti, $foruserid);
+\core_ltix\helper::launch_tool($lti, $foruserid);

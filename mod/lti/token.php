@@ -84,7 +84,7 @@ if ($ok) {
     $scopes = array();
     $requestedscopes = explode(' ', $scope);
     $typeconfig = \core_ltix\helper::get_type_config($tool->id);
-    $permittedscopes = lti_get_permitted_service_scopes($tool, $typeconfig);
+    $permittedscopes = \core_ltix\helper::get_permitted_service_scopes($tool, $typeconfig);
     $scopes = array_intersect($requestedscopes, $permittedscopes);
     $ok = !empty($scopes);
     $error = 'invalid_scope';

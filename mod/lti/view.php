@@ -105,7 +105,7 @@ if (!empty($missingtooltype)) {
     throw new moodle_exception('tooltypenotfounderror', 'mod_lti');
 }
 
-$launchcontainer = lti_get_launch_container($lti, $toolconfig);
+$launchcontainer = \core_ltix\helper::get_launch_container($lti, $toolconfig);
 
 if ($launchcontainer == LTI_LAUNCH_CONTAINER_EMBED_NO_BLOCKS) {
     $PAGE->set_pagelayout('incourse');

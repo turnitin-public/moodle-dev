@@ -58,7 +58,7 @@ $capabilities = array(
 
     // When the user arrives at the external tool, if they have this capability
     // in Moodle, then they are given the Instructor role in the remote system,
-    // otherwise they are given Learner. See the lti_get_ims_role function.
+    // otherwise they are given Learner. See the \core_ltix\helper::get_ims_role function.
     'mod/lti:manage' => array(
         'riskbitmask' => RISK_PERSONAL, // A bit of a guess, but seems likely.
 
@@ -73,7 +73,7 @@ $capabilities = array(
 
     // When the user arrives at the external tool, if they have this capability
     // in Moodle, then they are given the Administrator role in the remote system,
-    // otherwise they are given Learner. See the lti_get_ims_role function.
+    // otherwise they are given Learner. See the \core_ltix\helper::get_ims_role function.
     'mod/lti:admin' => array(
         'riskbitmask' => RISK_PERSONAL, // A bit of a guess, but seems likely.
 

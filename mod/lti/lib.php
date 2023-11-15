@@ -90,7 +90,7 @@ function lti_add_instance($lti, $mform) {
         $lti->toolurl = '';
     }
 
-    lti_load_tool_if_cartridge($lti);
+    \core_ltix\helper::load_tool_if_cartridge($lti);
 
     $lti->timecreated = time();
     $lti->timemodified = $lti->timecreated;
@@ -99,7 +99,7 @@ function lti_add_instance($lti, $mform) {
         $lti->typeid = null;
     }
 
-    lti_force_type_config_settings($lti, lti_get_type_config_by_instance($lti));
+    \core_ltix\helper::orce_type_config_settings($lti, \core_ltix\helper::get_type_config_by_instance($lti));
 
     if (empty($lti->typeid) && isset($lti->urlmatchedtypeid)) {
         $lti->typeid = $lti->urlmatchedtypeid;
@@ -143,7 +143,7 @@ function lti_update_instance($lti, $mform) {
     global $DB, $CFG;
     require_once($CFG->dirroot.'/mod/lti/locallib.php');
 
-    lti_load_tool_if_cartridge($lti);
+    \core_ltix\helper::load_tool_if_cartridge($lti);
 
     $lti->timemodified = time();
     $lti->id = $lti->instance;
@@ -156,7 +156,7 @@ function lti_update_instance($lti, $mform) {
         $lti->showdescriptionlaunch = 0;
     }
 
-    lti_force_type_config_settings($lti, lti_get_type_config_by_instance($lti));
+    \core_ltix\helper::force_type_config_settings($lti, \core_ltix\helper::get_type_config_by_instance($lti));
 
     if (isset($lti->instructorchoiceacceptgrades) && $lti->instructorchoiceacceptgrades == LTI_SETTING_ALWAYS) {
         lti_grade_item_update($lti);
@@ -381,7 +381,7 @@ function lti_get_coursemodule_info($coursemodule) {
     }
 
     // Does the link open in a new window?
-    $launchcontainer = lti_get_launch_container($lti, $toolconfig);
+    $launchcontainer = \core_ltix\helper::get_launch_container($lti, $toolconfig);
     if ($launchcontainer == LTI_LAUNCH_CONTAINER_WINDOW) {
         $launchurl = new moodle_url('/mod/lti/launch.php', array('id' => $coursemodule->id));
         $info->onclick = "window.open('" . $launchurl->out(false) . "', 'lti-".$coursemodule->id."'); return false;";

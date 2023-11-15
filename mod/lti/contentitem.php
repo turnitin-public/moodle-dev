@@ -35,7 +35,7 @@ $text = optional_param('text', '', PARAM_RAW);
 $config = \core_ltix\helper::get_type_type_config($id);
 if ($config->lti_ltiversion === LTI_VERSION_1P3) {
     if (!isset($SESSION->lti_initiatelogin_status)) {
-        echo lti_initiate_login($courseid, 0, null, $config, 'ContentItemSelectionRequest', $title, $text);
+        echo \core_ltix\helper::initiate_login($courseid, 0, null, $config, 'ContentItemSelectionRequest', $title, $text);
         exit;
     } else {
         unset($SESSION->lti_initiatelogin_status);
@@ -58,9 +58,9 @@ $returnurlparams = [
 $returnurl = new \moodle_url('/mod/lti/contentitem_return.php', $returnurlparams);
 
 // Prepare the request.
-$request = lti_build_content_item_selection_request($id, $course, $returnurl, $title, $text, [], []);
+$request = \core_ltix\helper::build_content_item_selection_request($id, $course, $returnurl, $title, $text, [], []);
 
 // Get the launch HTML.
-$content = lti_post_launch_html($request->params, $request->url, false);
+$content = \core_ltix\helper::post_launch_html($request->params, $request->url, false);
 
 echo $content;

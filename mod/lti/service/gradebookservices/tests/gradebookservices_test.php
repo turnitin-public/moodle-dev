@@ -415,6 +415,6 @@ class gradebookservices_test extends \advanced_testcase {
 
         $config = new \stdClass();
         $config->ltiservice_gradesynchronization = 2;
-        return \core_ltix\types_helper::add_type($type, $config);
+        return \core_ltix\helper::add_type($type, $config);
     }
 }

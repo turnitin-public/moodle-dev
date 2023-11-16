@@ -56,31 +56,6 @@ $capabilities = array(
         'clonepermissionsfrom' => 'moodle/course:manageactivities'
     ),
 
-    // When the user arrives at the external tool, if they have this capability
-    // in Moodle, then they are given the Instructor role in the remote system,
-    // otherwise they are given Learner. See the \core_ltix\helper::get_ims_role function.
-    'mod/lti:manage' => array(
-        'riskbitmask' => RISK_PERSONAL, // A bit of a guess, but seems likely.
-
-        'captype' => 'write',
-        'contextlevel' => CONTEXT_MODULE,
-        'archetypes' => array(
-            'teacher' => CAP_ALLOW,
-            'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW
-        )
-    ),
-
-    // When the user arrives at the external tool, if they have this capability
-    // in Moodle, then they are given the Administrator role in the remote system,
-    // otherwise they are given Learner. See the \core_ltix\helper::get_ims_role function.
-    'mod/lti:admin' => array(
-        'riskbitmask' => RISK_PERSONAL, // A bit of a guess, but seems likely.
-
-        'captype' => 'write',
-        'contextlevel' => CONTEXT_MODULE
-    ),
-
     // The ability to create or edit tool configurations for particular courses.
     'mod/lti:addcoursetool' => array(
         'captype' => 'write',

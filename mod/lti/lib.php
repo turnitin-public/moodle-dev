@@ -99,7 +99,7 @@ function lti_add_instance($lti, $mform) {
         $lti->typeid = null;
     }
 
-    \core_ltix\helper::orce_type_config_settings($lti, \core_ltix\helper::get_type_config_by_instance($lti));
+    \core_ltix\helper::force_type_config_settings($lti, \core_ltix\helper::get_type_config_by_instance($lti));
 
     if (empty($lti->typeid) && isset($lti->urlmatchedtypeid)) {
         $lti->typeid = $lti->urlmatchedtypeid;
@@ -289,7 +289,7 @@ function mod_lti_get_all_content_items(\core_course\local\entity\content_item $d
 
     $types = [];
 
-    foreach (lti_get_lti_types() as $ltitype) {
+    foreach (\core_ltix\helper::get_lti_types() as $ltitype) {
         if ($ltitype->coursevisible != LTI_COURSEVISIBLE_ACTIVITYCHOOSER) {
             continue;
         }
@@ -511,25 +511,29 @@ function lti_uninstall() {
 /**
  * Returns available Basic LTI types
  *
+* @deprecated since Moodle 4.4
  * @return array of basicLTI types
  */
 function lti_get_lti_types() {
-    global $DB;
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_config() instead.',
+    DEBUG_DEVELOPER);
 
-    return $DB->get_records('lti_types', null, 'state DESC, timemodified DESC');
+    return \core_ltix\helper::get_lti_types();
 }
 
 /**
  * Returns available Basic LTI types that match the given
  * tool proxy id
  *
+ * @deprecated since Moodle 4.4
  * @param int $toolproxyid Tool proxy id
  * @return array of basicLTI types
  */
 function lti_get_lti_types_from_proxy_id($toolproxyid) {
-    global $DB;
+    debugging(__FUNCTION__ . '() is deprecated. Please use \core_ltix\helper::get_config() instead.',
+    DEBUG_DEVELOPER);
 
-    return $DB->get_records('lti_types', array('toolproxyid' => $toolproxyid), 'state DESC, timemodified DESC');
+    return \core_ltix\helper::get_lti_types_from_proxy_id($toolproxyid);
 }
 
 /**
@@ -673,7 +677,7 @@ function lti_check_updates_since(cm_info $cm, $from, $filter = array()) {
     }
 
     // Now, teachers should see other students updates.
-    if (has_capability('mod/lti:manage', $cm->context)) {
+    if (has_capability('moodle/ltix:manage', $cm->context)) {
         $select = 'ltiid = :id AND (datesubmitted > :since1 OR dateupdated > :since2)';
         $params = array('id' => $cm->instance, 'since1' => $from, 'since2' => $from);
 

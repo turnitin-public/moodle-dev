@@ -686,12 +686,12 @@ class mod_lti_external extends external_api {
         require_capability('moodle/site:config', $context);
 
         if (!empty($toolproxyid)) {
-            $types = lti_get_lti_types_from_proxy_id($toolproxyid);
+            $types = \core_ltix\helper::get_lti_types_from_proxy_id($toolproxyid);
         } else {
-            $types = lti_get_lti_types();
+            $types = \core_ltix\helper::get_lti_types();
         }
 
-        return array_map("serialise_tool_type", array_values($types));
+        return array_map("\core_ltix\helper::serialise_tool_type", array_values($types));
     }
 
     /**
@@ -916,7 +916,7 @@ class mod_lti_external extends external_api {
 
             // If this is the last type for this proxy then remove the proxy
             // as well so that it isn't orphaned.
-            $types = lti_get_lti_types_from_proxy_id($type->toolproxyid);
+            $types = \core_ltix\helper::get_lti_types_from_proxy_id($type->toolproxyid);
             if (empty($types)) {
                 \core_ltix\helper::delete_tool_proxy($type->toolproxyid);
             }

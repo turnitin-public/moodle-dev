@@ -1900,7 +1900,7 @@ class helper {
         $types = $DB->get_records('lti_types', $typesparams, 'name ASC, state DESC, timemodified DESC',
             '*', $typesoffset, $typeslimit);
 
-        return [$proxies, array_map('serialise_tool_type', $types)];
+        return [$proxies, array_map('\core_ltix\helper::serialise_tool_type', $types)];
     }
 
     /**
@@ -3041,14 +3041,14 @@ class helper {
         } else {
             $context = \context_module::instance($cmid);
 
-            if (has_capability('mod/lti:manage', $context)) {
+            if (has_capability('moodle/ltix:manage', $context)) {
                 array_push($roles, 'Instructor');
             } else {
                 array_push($roles, 'Learner');
             }
         }
 
-        if (!is_role_switched($courseid) && (is_siteadmin($user)) || has_capability('mod/lti:admin', $context)) {
+        if (!is_role_switched($courseid) && (is_siteadmin($user)) || has_capability('moodle/ltix:admin', $context)) {
             // Make sure admins do not have the Learner role, then set admin role.
             $roles = array_diff($roles, array('Learner'));
             if (!$islti2) {
@@ -3780,5 +3780,28 @@ class helper {
         foreach ($toolinfo as $property => $value) {
             $lti->$property = $value;
         }
+    }
+    /**
+     * Returns available Basic LTI types
+     *
+     * @return array of basicLTI types
+     */
+    public static function get_lti_types() {
+        global $DB;
+
+        return $DB->get_records('lti_types', null, 'state DESC, timemodified DESC');
+    }
+
+    /**
+     * Returns available Basic LTI types that match the given
+     * tool proxy id
+     *
+     * @param int $toolproxyid Tool proxy id
+     * @return array of basicLTI types
+     */
+    public static function get_lti_types_from_proxy_id($toolproxyid) {
+        global $DB;
+
+        return $DB->get_records('lti_types', array('toolproxyid' => $toolproxyid), 'state DESC, timemodified DESC');
     }
 }

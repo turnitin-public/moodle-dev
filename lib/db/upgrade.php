@@ -3707,17 +3707,21 @@ privatefiles,moodle|/user/files.php';
             set_config('privatekey', null, 'mod_lti');
         }
 
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2023102000);
+    }
+
+    if ($oldversion < 2023111600.00) {
         $servicetypes = ['basicoutcomes'];
         foreach ($servicetypes as $type) {
-            $versionFile = $CFG->dirroot . "mod/lti/service/{$type}/version.php";
-        
+            $versionFile = $CFG->dirroot . "mod/lti/service/$type/version.php";
+
             if (!file_exists($versionFile)) {
-                // Clean config.
-                unset_all_config_for_plugin("ltiservice_$type");
+                uninstall_plugin('ltiservice', 'basicoutcomes');
             }
         }
         // Main savepoint reached.
-        upgrade_main_savepoint(true, 2023102000);
+        upgrade_main_savepoint(true, 2023111600.00);
     }
 
     return true;

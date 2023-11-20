@@ -324,7 +324,6 @@ class locallib_test extends mod_lti_testcase {
 
         // Try when the forcessl config property is not set.
         \core_ltix\helper::prepare_type_for_save($type, $config);
-        $this->assertDebuggingCalled();
         $this->assertObjectHasAttribute('lti_forcessl', $config);
         $this->assertEquals(0, $config->lti_forcessl);
         $this->assertEquals(0, $type->forcessl);
@@ -332,7 +331,6 @@ class locallib_test extends mod_lti_testcase {
         // Try when forcessl config property is set.
         $config->lti_forcessl = 1;
         \core_ltix\helper::prepare_type_for_save($type, $config);
-        $this->assertDebuggingCalled();
         $this->assertObjectHasAttribute('lti_forcessl', $config);
         $this->assertEquals(1, $config->lti_forcessl);
         $this->assertEquals(1, $type->forcessl);
@@ -340,7 +338,6 @@ class locallib_test extends mod_lti_testcase {
         // Try when forcessl config property is set to 0.
         $config->lti_forcessl = 0;
         \core_ltix\helper::prepare_type_for_save($type, $config);
-        $this->assertDebuggingCalled();
         $this->assertObjectHasAttribute('lti_forcessl', $config);
         $this->assertEquals(0, $config->lti_forcessl);
         $this->assertEquals(0, $type->forcessl);
@@ -645,7 +642,6 @@ class locallib_test extends mod_lti_testcase {
      */
     public function test_lti_get_best_tool_by_url($url, $expected, $tools) {
         $actual = \core_ltix\helper::get_best_tool_by_url($url, $tools, null);
-        $this->assertDebuggingCalled();
         $this->assertSame($expected, $actual);
     }
 
@@ -679,7 +675,6 @@ class locallib_test extends mod_lti_testcase {
         ]);
 
         $records = \core_ltix\helper::get_tools_by_domain('example.com', LTI_TOOL_STATE_CONFIGURED);
-        $this->assertDebuggingCalled();
         $this->assertCount(1, $records);
         $this->assertEmpty(array_diff(
             ['https://example.com/i/am/?where=here'],
@@ -736,7 +731,6 @@ class locallib_test extends mod_lti_testcase {
 
         // Get tool types for domain 'exampleone' in course 1 and verify only the one result under course category 1 is included.
         $records = \core_ltix\helper::get_tools_by_domain('exampleone.com', LTI_TOOL_STATE_CONFIGURED, $course1->id);
-        $this->assertDebuggingCalled();
         $this->assertCount(1, $records);
         $this->assertEmpty(array_diff(
             ['https://exampleone.com/tool/1'],
@@ -745,7 +739,6 @@ class locallib_test extends mod_lti_testcase {
 
         // Get tool types for domain 'exampleone' in course 2 and verify only the one result under course category 2 is included.
         $records = \core_ltix\helper::get_tools_by_domain('exampleone.com', LTI_TOOL_STATE_CONFIGURED, $course2->id);
-        $this->assertDebuggingCalled();
         $this->assertCount(1, $records);
         $this->assertEmpty(array_diff(
             ['https://exampleone.com/tool/2'],
@@ -754,7 +747,6 @@ class locallib_test extends mod_lti_testcase {
 
         // Get tool types for domain 'exampletwo' in course 1 and verify that no results are found.
         $records = \core_ltix\helper::get_tools_by_domain('exampletwo.com', LTI_TOOL_STATE_CONFIGURED, $course1->id);
-        $this->assertDebuggingCalled();
         $this->assertCount(0, $records);
     }
 
@@ -770,7 +762,6 @@ class locallib_test extends mod_lti_testcase {
         ];
 
         $this->assertEquals($mapping, \core_ltix\oauth_helper::get_jwt_message_type_mapping());
-        $this->assertDebuggingCalled();
     }
 
     /**
@@ -1163,7 +1154,6 @@ class locallib_test extends mod_lti_testcase {
             ],
         ];
         $actual = \core_ltix\oauth_helper::get_jwt_claim_mapping();
-        $this->assertDebuggingCalled();
         $this->assertEquals($mapping, $actual);
     }
 
@@ -1254,7 +1244,6 @@ MwIDAQAB
             'S_TuYI3OG85AmiExREkrS6tDfTQ2B3WXlrr-wp5AokiRbz3_oB4OxG-W9KcEEbDRcZc0nH3L7LzYptiy1PtAylQGxHTWZXtGz4ht0bAecBgmpdgXMgu' .
             'EIcoqPJ1n3pIWk_dUZegpqx0Lka21H6XxUTxiy8OcaarA8zdnPUnV6AmNP3ecFawIFYdvJB_cm-GvpCSbr8G8y_Mllj8f4x9nBH8pQux89_6gUY618iY' .
             'v7tuPWBFfEbLxtF2pZS6YC1aSfLQxeNe8djT9YjpvRZA');
-        $this->assertDebuggingCalled();
     }
 
     /**
@@ -1295,7 +1284,6 @@ MwIDAQAB
         $jwt .= 'MkQAHuCI90DFmXB4leflAu7wNlIK_U8xkGl8X8Mnv6MWgg94Ki8jgIq_kA85JAqI';
 
         \core_ltix\oauth_helper::verify_jwt_signature($typeid, '', $jwt);
-        $this->assertDebuggingCalled();
     }
 
     /**
@@ -1454,7 +1442,6 @@ MwIDAQAB
         $expected->{$strgraph}[] = $objgraph2;
         $expected->{$strgraph}[] = $objgraph3;
 
-        $this->assertDebuggingCalled();
         $this->assertEquals($expected, $jsondecode);
     }
 
@@ -1494,7 +1481,6 @@ MwIDAQAB
                                                                           'ConsumerKey',
                                                                           $json11);
 
-        $this->assertDebuggingCalled();
         $this->assertEquals($contentitems[0]['url'], $config->toolurl);
         $this->assertEquals(LTI_SETTING_ALWAYS, $config->instructorchoiceacceptgrades);
         $this->assertEquals($contentitems[0]['lineItem']['tag'], $config->lineitemtag);
@@ -1544,7 +1530,6 @@ MwIDAQAB
                                                                           'ConsumerKey',
                                                                           $json11);
 
-        $this->assertDebuggingCalled();
         $this->assertEquals('DEFAULT', $config->lineitemsubreviewurl);
         $this->assertEquals('', $config->lineitemsubreviewparams);
     }
@@ -1587,7 +1572,6 @@ MwIDAQAB
                                                                           'ConsumerKey',
                                                                           $json11);
 
-        $this->assertDebuggingCalled();
         $this->assertEquals($contentitems[0]['url'], $config->toolurl);
         $this->assertEquals(LTI_SETTING_ALWAYS, $config->instructorchoiceacceptgrades);
         $this->assertEquals($contentitems[0]['lineItem']['tag'], $config->lineitemtag);
@@ -1647,7 +1631,6 @@ MwIDAQAB
                                                                            $type->ltiversion,
                                                                            'ConsumerKey',
                                                                            $json11);
-        $this->assertDebuggingCalled();
         $this->assertNotNull($config->multiple);
         $this->assertEquals(2, count( $config->multiple ));
         $this->assertEquals($contentitems[0]['title'], $config->multiple[0]->name);
@@ -1696,7 +1679,6 @@ MwIDAQAB
                                                                          $type->ltiversion,
                                                                          'ConsumerKey',
                                                                          $json11);
-        $this->assertDebuggingCalled();
         $this->assertEquals($contentitems[0]['title'], $config->name);
         $this->assertEquals($contentitems[0]['text'], $config->introeditor['text']);
         $this->assertEquals($contentitems[0]['url'], $config->toolurl);
@@ -1787,7 +1769,6 @@ MwIDAQAB
             '3exTjPBEn69__w40o0AhCsBohPMh0ZsAyHug5dhm8vIuOP667repUJzM8uKCD6L4bEL6vQE8EwU6WQOmfJ2SDmRs-1pFkiaFd6hmPn6AVX7ETtzQmlT' .
             'X-nXe9weQjU1lH4AQG2Yfnn-7lS94bt6E76Zt-XndP3IY7W48EpnRfUK9Ff1fZlomT4MPahdNP1eP8gT2iMz7vYpCfmA');
 
-        $this->assertDebuggingCalled();
         $this->assertEquals('sso.example.com', $params['oauth_consumer_key']);
         $this->assertEquals('John Doe', $params['lis_person_name_full']);
     }
@@ -1990,15 +1971,11 @@ MwIDAQAB
         $course->originalcourseid = $parentcourse->id;
         $DB->update_record('course', $course);
         $this->assertEquals(\core_ltix\helper::get_course_history($parentparentcourse), []);
-        $this->assertDebuggingCalled();
         $this->assertEquals(\core_ltix\helper::get_course_history($parentcourse), [$parentparentcourse->id]);
-        $this->assertDebuggingCalled();
         $this->assertEquals(\core_ltix\helper::get_course_history($course), [$parentcourse->id, $parentparentcourse->id]);
-        $this->assertDebuggingCalled();
         $course->originalcourseid = 38903;
         $DB->update_record('course', $course);
         $this->assertEquals(\core_ltix\helper::get_course_history($course), [38903]);
-        $this->assertDebuggingCalled();
     }
 
     /**
@@ -2107,7 +2084,6 @@ MwIDAQAB
         $this->generate_tool_types_and_proxies(10);
         list($proxies, $types) = \core_ltix\helper::get_lti_types_and_proxies();
 
-        $this->assertDebuggingCalled();
         $this->assertCount(10, $proxies);
         $this->assertCount(10, $types);
     }
@@ -2123,21 +2099,18 @@ MwIDAQAB
         // Get the middle 10 data sets (of 20 total).
         list($proxies, $types) = \core_ltix\helper::get_lti_types_and_proxies(10, 5);
 
-        $this->assertDebuggingCalled();
         $this->assertCount(5, $proxies);
         $this->assertCount(5, $types);
 
         // Get the last 5 data sets with large limit (of 20 total).
         list($proxies, $types) = \core_ltix\helper::get_lti_types_and_proxies(50, 15);
 
-        $this->assertDebuggingCalled();
         $this->assertCount(0, $proxies);
         $this->assertCount(5, $types);
 
         // Get the last 13 data sets with large limit (of 20 total).
         list($proxies, $types) = \core_ltix\helper::get_lti_types_and_proxies(50, 7);
 
-        $this->assertDebuggingCalled();
         $this->assertCount(3, $proxies);
         $this->assertCount(10, $types);
     }
@@ -2153,21 +2126,17 @@ MwIDAQAB
         // Get the first 10 data sets (of 15 total).
         list($proxies, $types) = \core_ltix\helper::get_lti_types_and_proxies(10, 0, true);
 
-        $this->assertDebuggingCalled();
         $this->assertCount(5, $proxies);
         $this->assertCount(5, $types);
 
         // Get the middle 10 data sets with large limit (of 15 total).
         list($proxies, $types) = \core_ltix\helper::get_lti_types_and_proxies(10, 2, true);
-
-        $this->assertDebuggingCalled();
         $this->assertCount(3, $proxies);
         $this->assertCount(7, $types);
 
         // Get the last 5 data sets with large limit (of 15 total).
         list($proxies, $types) = \core_ltix\helper::get_lti_types_and_proxies(50, 10, true);
 
-        $this->assertDebuggingCalled();
         $this->assertCount(0, $proxies);
         $this->assertCount(5, $types);
     }
@@ -2181,7 +2150,6 @@ MwIDAQAB
         $this->generate_tool_types_and_proxies(10, 5);
 
         $totalcount = \core_ltix\helper::get_lti_types_and_proxies_count();
-        $this->assertDebuggingCalled();
         $this->assertEquals(25, $totalcount); // 10 types, 15 proxies.
     }
 
@@ -2194,7 +2162,6 @@ MwIDAQAB
         $this->generate_tool_types_and_proxies(10, 5);
 
         $orphanedcount = \core_ltix\helper::get_lti_types_and_proxies_count(true);
-        $this->assertDebuggingCalled();
         $this->assertEquals(15, $orphanedcount); // 10 types, 5 proxies.
     }
 
@@ -2207,7 +2174,6 @@ MwIDAQAB
         ['proxies' => $proxies, 'types' => $types] = $this->generate_tool_types_and_proxies(10, 5);
 
         $countwithproxyid = \core_ltix\helper::get_lti_types_and_proxies_count(false, $proxies[0]->id);
-        $this->assertDebuggingCalled();
         $this->assertEquals(16, $countwithproxyid); // 1 type, 15 proxies.
     }
 
@@ -2353,8 +2319,7 @@ MwIDAQAB
         $this->setUser($teacher); // Important: this deprecated method depends on the global user for cap checks.
 
         // Request using the default 'coursevisible' param will include all tools except the one configured as "Do not show".
-        $coursetooltypes = \core_ltix\helper::get_lti_types_by_course($course->id);
-        $this->assertDebuggingCalled();
+        $coursetooltypes = \core_ltix\helper::get_lti_types_by_course($course->id, $teacher->id);
         $this->assertCount(3, $coursetooltypes);
         $this->assertEmpty(array_diff(
             ['http://example.com/tool/2', 'http://example.com/tool/3', 'http://example.com/tool/4'],
@@ -2362,8 +2327,7 @@ MwIDAQAB
         ));
 
         // Request for only those tools configured to show in the activity chooser for the teacher.
-        $coursetooltypes = \core_ltix\helper::get_lti_types_by_course($course->id, [LTI_COURSEVISIBLE_ACTIVITYCHOOSER]);
-        $this->assertDebuggingCalled();
+        $coursetooltypes = \core_ltix\helper::get_lti_types_by_course($course->id, $teacher->id, [LTI_COURSEVISIBLE_ACTIVITYCHOOSER]);
         $this->assertCount(2, $coursetooltypes);
         $this->assertEmpty(array_diff(
             ['http://example.com/tool/3', 'http://example.com/tool/4'],
@@ -2371,8 +2335,7 @@ MwIDAQAB
         ));
 
         // Request for only those tools configured to show as a preconfigured tool for the teacher.
-        $coursetooltypes = \core_ltix\helper::get_lti_types_by_course($course->id, [LTI_COURSEVISIBLE_PRECONFIGURED]);
-        $this->assertDebuggingCalled();
+        $coursetooltypes = \core_ltix\helper::get_lti_types_by_course($course->id, $teacher->id, [LTI_COURSEVISIBLE_PRECONFIGURED]);
         $this->assertCount(1, $coursetooltypes);
         $this->assertEmpty(array_diff(
             ['http://example.com/tool/2'],
@@ -2381,8 +2344,7 @@ MwIDAQAB
 
         // Request for teacher2 in course2 (course category 2).
         $this->setUser($teacher2);
-        $coursetooltypes = \core_ltix\helper::get_lti_types_by_course($course2->id);
-        $this->assertDebuggingCalled();
+        $coursetooltypes = \core_ltix\helper::get_lti_types_by_course($course2->id, $teacher2->id);
         $this->assertCount(3, $coursetooltypes);
         $this->assertEmpty(array_diff(
             ['http://example.com/tool/2', 'http://example.com/tool/3', 'http://example.com/tool/5'],
@@ -2395,8 +2357,7 @@ MwIDAQAB
         $teacherrole = $DB->get_record('role', array('shortname' => 'editingteacher'));
         assign_capability('mod/lti:addpreconfiguredinstance', CAP_PROHIBIT, $teacherrole->id,
             \core\context\course::instance($course->id));
-        $coursetooltypes = \core_ltix\helper::get_lti_types_by_course($course->id);
-        $this->assertDebuggingCalled();
+        $coursetooltypes = \core_ltix\helper::get_lti_types_by_course($course->id, $teacher->id);
         $this->assertCount(0, $coursetooltypes);
         $this->unassignUserCapability('mod/lti:addpreconfiguredinstance', (\core\context\course::instance($course->id))->id,
             $teacherrole->id);

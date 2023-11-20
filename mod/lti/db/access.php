@@ -94,4 +94,13 @@ $deprecatedcapabilities = [
         'message' => 'Manual instance configuration is deprecated. Please create a course tool (mod/lti:addcoursetool) and ensure '.
             'users are able to add an instance of the course tool via the activity chooser (mod/lti:addpreconfiguredinstance).'
     ],
+    'mod/lti:manage' => [
+        'replacement' => 'moodle/ltix:manage',
+        'mssage' => 'This capability should not be used anymore, please use moodle/ltix:manage instead.',
+
+    ],
+    'mod/lti:admin' => [
+        'replacement' => 'moodle/ltix:admin',
+        'message' => 'This capability should not be used anymore, please use moodle/ltix:admin instead.'
+    ],
 ];

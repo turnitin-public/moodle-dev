@@ -180,6 +180,17 @@ function xmldb_lti_upgrade($oldversion) {
                                                 rc.contextid = 1 AND
                                                 r.shortname IN ('editingteacher', 'teacher', 'manager')");
 
+        // Addcoursetool already has been given to editingteacher and manager roles at site context during core install.
+        $DB->execute("UPDATE {role_capabilities}
+                        SET capability = 'moodle/ltix:addcoursetool'
+                      WHERE capability = 'mod/lti:addcoursetool' AND
+                            id NOT IN (SELECT rc.id
+                                         FROM {role_capabilities} rc
+                                         JOIN {role} r on r.id = rc.roleid
+                                        WHERE rc.capability = 'mod/lti:addcoursetool' AND
+                                              rc.contextid = 1 AND
+                                              r.shortname IN ('editingteacher', 'manager')");
+
         // The ltix:admin is not given to any roles by default.
         $DB->execute("UPDATE {role_capabilities}
                          SET capability = 'moodle/ltix:admin'

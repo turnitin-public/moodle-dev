@@ -86,16 +86,17 @@ $deprecatedcapabilities = [
     ],
     'mod/lti:manage' => [
         'replacement' => 'moodle/ltix:manage',
-        'mssage' => 'This capability should not be used anymore, please use moodle/ltix:manage instead.',
-
+        'message' => 'This capability has been replaced by an equivalent core capability as part of moving large parts of mod_lti'.
+            ' to core.'
     ],
     'mod/lti:admin' => [
         'replacement' => 'moodle/ltix:admin',
-        'message' => 'This capability should not be used anymore, please use moodle/ltix:admin instead.'
+        'message' => 'This capability has been replaced by an equivalent core capability as part of moving large parts of mod_lti'.
+            ' to core.'
     ],
     'mod/lti:addcoursetool' => [
         'replacement' => 'moodle/ltix:addcoursetool',
-        'message' => 'This capability should not be used anymore, please use moodle/ltix:addcoursetool instead.'
-
+        'message' => 'This capability has been replaced by an equivalent core capability as part of moving large parts of mod_lti'.
+            ' to core.'
     ],
 ];

@@ -168,36 +168,38 @@ function xmldb_lti_upgrade($oldversion) {
     // Put any upgrade step following this.
     if ($oldversion < 2023112000) {
         // Capabilities have been renamed - modify any existing roles with custom changes.
-        // Manage role has already been given to editingteacher/teacher/manager role at site context during core install
-        // so make sure we ignore those records.
-        $DB->execute("UPDATE {role_capabilities}
-                         SET capability = 'moodle/ltix:manage'
-                       WHERE capability = 'mod/lti:manage' AND
-                             id NOT IN (SELECT rc.id
-                                          FROM {role_capabilities} rc
-                                          JOIN {role} r on r.id = rc.roleid
-                                          WHERE rc.capability = 'mod/lti:manage' AND
-                                                rc.contextid = 1 AND
-                                                r.shortname IN ('editingteacher', 'teacher', 'manager')");
 
-        // Addcoursetool already has been given to editingteacher and manager roles at site context during core install.
-        $DB->execute("UPDATE {role_capabilities}
-                        SET capability = 'moodle/ltix:addcoursetool'
-                      WHERE capability = 'mod/lti:addcoursetool' AND
-                            id NOT IN (SELECT rc.id
-                                         FROM {role_capabilities} rc
-                                         JOIN {role} r on r.id = rc.roleid
-                                        WHERE rc.capability = 'mod/lti:addcoursetool' AND
-                                              rc.contextid = 1 AND
-                                              r.shortname IN ('editingteacher', 'manager')");
+        // The following capabilities have already been assigned to all relevant roles at site context (during core upgrade)
+        // Now, ensure any custom role overrides are updated such that they reflect the new capability, at which point any users
+        // who had the old capability now have the replacement capability in any relevant contexts.
+        $capmapping = ['mod/lti:manage' => 'moodle/ltix:manage', 'mod/lti:addcoursetool' => 'moodle/ltix:addcoursetool'];
+        foreach ($capmapping as $oldcap => $newcap) {
 
-        // The ltix:admin is not given to any roles by default.
-        $DB->execute("UPDATE {role_capabilities}
-                         SET capability = 'moodle/ltix:admin'
-                       WHERE capability = 'mod/lti:admin'");
+            $sql = "UPDATE {role_capabilities}
+                   SET capability = :newcapname
+                 WHERE capability = :oldcapname
+                   AND contextid != :sitecontextid
+                   AND id NOT IN (SELECT rc.id
+                                    FROM {role_capabilities} rc
+                                    JOIN {role} r ON r.id = rc.roleid
+                                   WHERE rc.capability = :newcapname2
+                                     AND rc.contextid = :sitecontextid2)";
+            $params = [
+                'newcapname' => $newcap,
+                'oldcapname' => $oldcap,
+                'sitecontextid' => 1,
+                'newcapname2' => $newcap,
+                'sitecontextid2' => 1,
+            ];
+            $DB->execute($sql, $params);
+        }
 
-        // We manually modifyied capabilities, for safety, clear the capabilities cache.
-        cache::make('core', 'capabilities')->delete('core_capabilities');
+        // The capability 'moodle/ltix:admin' is not given to any roles by default, so we can migrate all records unconditionally.
+        $sql = "UPDATE {role_capabilities}
+                   SET capability = :newcapname
+                 WHERE capability = :oldcapname";
+        $params = ['newcapname' => 'moodle/ltix:admin', 'oldcapname' => 'mod/lti:admin'];
+        $DB->execute($sql, $params);
 
         // Lti savepoint reached.
         upgrade_mod_savepoint(true, 2023112000, 'lti');

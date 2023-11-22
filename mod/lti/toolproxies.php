@@ -26,6 +26,7 @@
 require_once('../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->dirroot.'/mod/lti/locallib.php');
+require_once($CFG->dirroot.'/ltix/constants.php');
 
 // No guest autologin.
 require_login(0, false);
@@ -54,17 +55,17 @@ $createdon = get_string('createdon', 'lti');
 
 $toolproxies = $DB->get_records('lti_tool_proxies');
 
-$configuredtoolproxies = lti_filter_tool_proxy_types($toolproxies, LTI_TOOL_PROXY_STATE_CONFIGURED);
-$configuredtoolproxieshtml = lti_get_tool_proxy_table($configuredtoolproxies, 'tp_configured');
+$configuredtoolproxies = \core_ltix\helper::filter_tool_proxy_types($toolproxies, LTI_TOOL_PROXY_STATE_CONFIGURED);
+$configuredtoolproxieshtml = \core_ltix\helper::get_tool_proxy_table($configuredtoolproxies, 'tp_configured');
 
-$pendingtoolproxies = lti_filter_tool_proxy_types($toolproxies, LTI_TOOL_PROXY_STATE_PENDING);
-$pendingtoolproxieshtml = lti_get_tool_proxy_table($pendingtoolproxies, 'tp_pending');
+$pendingtoolproxies = \core_ltix\helper::filter_tool_proxy_types($toolproxies, LTI_TOOL_PROXY_STATE_PENDING);
+$pendingtoolproxieshtml = \core_ltix\helper::get_tool_proxy_table($pendingtoolproxies, 'tp_pending');
 
-$acceptedtoolproxies = lti_filter_tool_proxy_types($toolproxies, LTI_TOOL_PROXY_STATE_ACCEPTED);
-$acceptedtoolproxieshtml = lti_get_tool_proxy_table($acceptedtoolproxies, 'tp_accepted');
+$acceptedtoolproxies = \core_ltix\helper::filter_tool_proxy_types($toolproxies, LTI_TOOL_PROXY_STATE_ACCEPTED);
+$acceptedtoolproxieshtml = \core_ltix\helper::get_tool_proxy_table($acceptedtoolproxies, 'tp_accepted');
 
-$rejectedtoolproxies = lti_filter_tool_proxy_types($toolproxies, LTI_TOOL_PROXY_STATE_REJECTED);
-$rejectedtoolproxieshtml = lti_get_tool_proxy_table($rejectedtoolproxies, 'tp_rejected');
+$rejectedtoolproxies = \core_ltix\helper::filter_tool_proxy_types($toolproxies, LTI_TOOL_PROXY_STATE_REJECTED);
+$rejectedtoolproxieshtml = \core_ltix\helper::get_tool_proxy_table($rejectedtoolproxies, 'tp_rejected');
 
 $tab = optional_param('tab', '', PARAM_ALPHAEXT);
 $configuredselected = '';

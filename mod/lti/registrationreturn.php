@@ -25,6 +25,7 @@
 
 require_once('../../config.php');
 require_once($CFG->dirroot.'/mod/lti/locallib.php');
+require_once($CFG->dirroot.'/ltix/constants.php');
 
 $top = optional_param('top', 0, PARAM_INT);
 $msg = optional_param('lti_msg', '', PARAM_TEXT);
@@ -108,7 +109,7 @@ EOD;
             case LTI_TOOL_PROXY_STATE_PENDING:
                 // Change the status to configured.
                 $toolproxy->state = LTI_TOOL_PROXY_STATE_CONFIGURED;
-                lti_update_tool_proxy($toolproxy);
+                \core_ltix\helper::update_tool_proxy($toolproxy);
         }
     }
 

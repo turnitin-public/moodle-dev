@@ -14,43 +14,27 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * A scheduled task for lti module.
- *
- * @package    mod_lti
- * @copyright  2019 Stephen Vickers
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-namespace mod_lti\task;
+namespace core_ltix\privacy;
 
-use core\task\scheduled_task;
-
-defined('MOODLE_INTERNAL') || die();
+use core_privacy\local\metadata\null_provider;
 
 /**
- * Class containing the scheduled task for lti module.
+ * Privacy Subsystem for core_ltix implementing null_provider.
  *
- * @package    mod_lti
- * @copyright  2018 Stephen Vickers
+ * @package    core_ltix
+ * @author     Alex Morris <alex.morris@catalyst.net.nz>
+ * @copyright  2023 Catalyst IT
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class clean_access_tokens extends scheduled_task {
+class provider implements null_provider {
 
     /**
-     * Get a descriptive name for this task (shown to admins).
+     * Get the language string identifier with the component's language
+     * file to explain why this plugin stores no data.
      *
-     * @return string
+     * @return  string
      */
-    public function get_name() {
-        return get_string('cleanaccesstokens', 'mod_lti');
-    }
-
-    /**
-     * Run lti cron.
-     */
-    public function execute() {
-        global $DB;
-
-        $DB->delete_records_select('lti_access_tokens', 'validuntil < ?', [time()]);
+    public static function get_reason(): string {
+        return 'privacy:metadata';
     }
 }

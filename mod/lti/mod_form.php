@@ -50,6 +50,7 @@ defined('MOODLE_INTERNAL') || die;
 
 require_once($CFG->dirroot.'/course/moodleform_mod.php');
 require_once($CFG->dirroot.'/mod/lti/locallib.php');
+require_once($CFG->dirroot.'/ltix/constants.php');
 
 class mod_lti_mod_form extends moodleform_mod {
 
@@ -109,9 +110,9 @@ class mod_lti_mod_form extends moodleform_mod {
         // Since 'mod/lti:addmanualinstance' capability is deprecated, determining which users may have had access to the certain
         // form fields (the manual config fields) isn't straightforward. Users without 'mod/lti:addmanualinstance' would have only
         // been permitted to edit the basic instance fields (name, etc.), so care must be taken not to display the config fields to
-        // these users. Users who can add/edit course tools (mod/lti:addcoursetool) are able to view tool information anyway, via
+        // these users. Users who can add/edit course tools (moodle/ltix:addcoursetool) are able to view tool information anyway, via
         // the tool definitions, so this capability is used as a replacement, to control access to these tool config fields.
-        $canviewmanualconfig = has_capability('mod/lti:addcoursetool', $this->context);
+        $canviewmanualconfig = has_capability('moodle/ltix:addcoursetool', $this->context);
         $showtypes = has_capability('mod/lti:addpreconfiguredinstance', $this->context);
 
         if ($manualinstance && !$canviewmanualconfig) {
@@ -326,7 +327,7 @@ class mod_lti_mod_form extends moodleform_mod {
         $instancetypes = lti_get_types_for_add_instance();
         $matchestoolnotavailabletocourse = false;
         if (!$manualinstance && !empty($this->current->toolurl)) {
-            if (lti_get_type_config($this->current->typeid)) {
+            if (\core_ltix\helper::get_type_config($this->current->typeid)) {
                 $matchestoolnotavailabletocourse = !in_array($this->current->typeid, array_keys($instancetypes));
             }
         }
@@ -342,7 +343,7 @@ class mod_lti_mod_form extends moodleform_mod {
         }
 
         $tooltypeid = $this->current->typeid ?? $this->typeid;
-        $tooltype = lti_get_type($tooltypeid);
+        $tooltype = \core_ltix\helper::get_type($tooltypeid);
 
         // Store the id of the tool type should it be linked to a tool proxy, to aid in disabling certain form elements.
         $toolproxytypeid = $tooltype->toolproxyid ? $tooltypeid : '';
@@ -356,7 +357,7 @@ class mod_lti_mod_form extends moodleform_mod {
         $mform->addElement('header', 'general', get_string('general', 'form'));
 
         // For tools supporting content selection, add the 'Select content button'.
-        $config = lti_get_type_config($tooltypeid);
+        $config = \core_ltix\helper::get_type_config($tooltypeid);
         $supportscontentitemselection = !empty($config['contentitem']);
 
         if ($supportscontentitemselection) {
@@ -529,7 +530,7 @@ class mod_lti_mod_form extends moodleform_mod {
      * @param object $defaultvalues default values to populate the form with.
      */
     public function set_data($defaultvalues) {
-        $services = lti_get_services();
+        $services = \core_ltix\helper::get_services();
         if (is_object($defaultvalues)) {
             foreach ($services as $service) {
                 $service->set_instance_form_values( $defaultvalues );

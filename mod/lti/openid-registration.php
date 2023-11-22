@@ -24,8 +24,8 @@
 define('NO_DEBUG_DISPLAY', true);
 define('NO_MOODLE_COOKIES', true);
 
-use mod_lti\local\ltiopenid\registration_helper;
-use mod_lti\local\ltiopenid\registration_exception;
+use core_ltix\local\ltiopenid\registration_helper;
+use core_ltix\local\ltiopenid\registration_exception;
 
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->dirroot . '/mod/lti/locallib.php');
@@ -35,7 +35,7 @@ $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' or ($_SERVER['REQUEST_METHOD'] === 'GET')) {
     $doregister = $_SERVER['REQUEST_METHOD'] === 'POST';
     // Retrieve registration token from Bearer Authorization header.
-    $authheader = moodle\mod\lti\OAuthUtil::get_headers()['Authorization'] ?? '';
+    $authheader = moodle\ltix\OAuthUtil::get_headers()['Authorization'] ?? '';
     if (!($authheader && substr($authheader, 0, 7) == 'Bearer ')) {
         $message = 'missing_registration_token';
         $code = 401;
@@ -53,15 +53,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' or ($_SERVER['REQUEST_METHOD'] === 'GE
                 $registrationpayload = json_decode(file_get_contents('php://input'), true);
                 $config = registration_helper::get()->registration_to_config($registrationpayload, $tokenres['clientid']);
                 if ($type->id) {
-                    lti_update_type($type, clone $config);
+                    \core_ltix\helper::update_type($type, clone $config);
                     $typeid = $type->id;
                 } else {
-                    $typeid = lti_add_type($type, clone $config);
+                    $typeid = \core_ltix\helper::add_type($type, clone $config);
                 }
                 header('Content-Type: application/json; charset=utf-8');
                 $message = json_encode(registration_helper::get()->config_to_registration((object)$config, $typeid));
             } else if ($type) {
-                $config = lti_get_type_config($type->id);
+                $config = \core_ltix\helper::get_type_config($type->id);
                 header('Content-Type: application/json; charset=utf-8');
                 $message = json_encode(registration_helper::get()->config_to_registration((object)$config, $type->id, $type));
             } else {

@@ -15,26 +15,42 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Post installation and migration code.
+ * A scheduled task for lti module.
  *
- * @package    mod_lti
+ * @package    core_ltix
  * @copyright  2019 Stephen Vickers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace core_ltix\task;
+
+use core\task\scheduled_task;
 
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Stub for database installation.
+ * Class containing the scheduled task for lti module.
+ *
+ * @package    core_ltix
+ * @copyright  2018 Stephen Vickers
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-function xmldb_lti_install() {
-    global $CFG, $OUTPUT;
+class clean_access_tokens extends scheduled_task {
 
-    // Create the private key.
-    require_once($CFG->dirroot . '/mod/lti/upgradelib.php');
+    /**
+     * Get a descriptive name for this task (shown to admins).
+     *
+     * @return string
+     */
+    public function get_name() {
+        return get_string('cleanaccesstokens', 'core_ltix');
+    }
 
-    $warning = mod_lti_verify_private_key();
-    if (!empty($warning)) {
-        echo $OUTPUT->notification($warning, 'notifyproblem');
+    /**
+     * Run lti cron.
+     */
+    public function execute() {
+        global $DB;
+
+        $DB->delete_records_select('lti_access_tokens', 'validuntil < ?', [time()]);
     }
 }

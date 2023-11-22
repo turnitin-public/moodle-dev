@@ -25,11 +25,12 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-require_once($CFG->dirroot.'/mod/lti/OAuthBody.php');
+require_once($CFG->dirroot.'/ltix/OAuthBody.php');
 require_once($CFG->dirroot.'/mod/lti/locallib.php');
+require_once($CFG->dirroot.'/ltix/constants.php');
 
 // TODO: Switch to core oauthlib once implemented - MDL-30149.
-use moodle\mod\lti as lti;
+use moodle\ltix as lti;
 
 define('LTI_ITEM_TYPE', 'mod');
 define('LTI_ITEM_MODULE', 'lti');
@@ -144,7 +145,7 @@ function lti_accepts_grades($ltiinstance) {
     $ltitype = $DB->get_record('lti_types', array('id' => $ltiinstance->typeid));
 
     if (empty($ltitype->toolproxyid)) {
-        $typeconfig = lti_get_config($ltiinstance);
+        $typeconfig = \core_ltix\helper::get_config($ltiinstance);
 
         $typeacceptgrades = isset($typeconfig['acceptgrades']) ? $typeconfig['acceptgrades'] : LTI_SETTING_DELEGATE;
 
@@ -278,7 +279,7 @@ function lti_verify_message($key, $sharedsecrets, $body, $headers = null) {
  * @throws Exception
  */
 function lti_verify_sourcedid($ltiinstance, $parsed) {
-    $sourceid = lti_build_sourcedid($parsed->instanceid, $parsed->userid,
+    $sourceid = \core_ltix\helper::build_sourcedid($parsed->instanceid, $parsed->userid,
         $ltiinstance->servicesalt, $parsed->typeid, $parsed->launchid);
 
     if ($sourceid->hash != $parsed->sourcedidhash) {

@@ -52,6 +52,7 @@ defined('MOODLE_INTERNAL') || die;
 global $CFG;
 require_once($CFG->libdir.'/formslib.php');
 require_once($CFG->dirroot.'/mod/lti/locallib.php');
+require_once($CFG->dirroot.'/ltix/constants.php');
 
 /**
  * LTI Edit Form
@@ -372,7 +373,7 @@ class mod_lti_edit_types_form extends moodleform {
      */
     public function get_lti_advantage_services(&$mform) {
         // For each service add the label and get the array of configuration.
-        $services = lti_get_services();
+        $services = \core_ltix\helper::get_services();
         $mform->addElement('header', 'services', get_string('services', 'lti'));
         foreach ($services as $service) {
             /** @var \mod_lti\local\ltiservice\service_base $service */
@@ -394,9 +395,7 @@ class mod_lti_edit_types_form extends moodleform {
 
         // LTI2 tools do not contain a ltiversion field.
         if (isset($data['lti_ltiversion']) && $data['lti_ltiversion'] == LTI_VERSION_1P3) {
-            require_once($CFG->dirroot . '/mod/lti/upgradelib.php');
-
-            $warning = mod_lti_verify_private_key();
+            $warning = \core_ltix\oauth_helper::verify_private_key();
             if (!empty($warning)) {
                 $errors['lti_ltiversion'] = $warning;
                 return $errors;

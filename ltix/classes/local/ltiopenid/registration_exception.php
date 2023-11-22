@@ -15,24 +15,18 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This file defines tasks performed by the plugin.
+ * This library exposes functions for LTI Dynamic Registration.
  *
- * @package    mod_lti
- * @copyright  2019 Stephen Vickers
+ * @package    core_ltix
+ * @copyright  2020 Claude Vervoort (Cengage), Carlos Costa, Adrian Hutchinson (Macgraw Hill)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+namespace core_ltix\local\ltiopenid;
 
-defined('MOODLE_INTERNAL') || die();
-
-// List of tasks.
-$tasks = array(
-    array(
-        'classname' => 'mod_lti\task\clean_access_tokens',
-        'blocking' => 0,
-        'minute' => 'R',
-        'hour' => 'R',
-        'day' => '*',
-        'dayofweek' => '*',
-        'month' => '*'
-    )
-);
+/**
+ * Exception when transforming the registration to LTI config.
+ *
+ * Code is the HTTP Error code.
+ */
+class registration_exception extends \Exception {
+}

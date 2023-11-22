@@ -26,6 +26,7 @@
 require_once('../../config.php');
 require_once($CFG->dirroot.'/mod/lti/lib.php');
 require_once($CFG->dirroot.'/mod/lti/locallib.php');
+require_once($CFG->dirroot.'/ltix/constants.php');
 
 $courseid = required_param('course', PARAM_INT);
 $instanceid = optional_param('instanceid', 0, PARAM_INT);
@@ -81,7 +82,7 @@ if (!empty($errormsg)) {
         echo '<br /><br />';
         $links = new stdClass();
 
-        if (has_capability('mod/lti:addcoursetool', $contextcourse)) {
+        if (has_capability('moodle/ltix:addcoursetool', $contextcourse)) {
             $coursetooleditor = new moodle_url('mod/lti/coursetools.php', ['id' => $courseid]);
             $links->course_tool_editor = $coursetooleditor->out(false);
 

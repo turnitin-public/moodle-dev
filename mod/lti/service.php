@@ -32,19 +32,19 @@ require_once($CFG->dirroot.'/mod/lti/servicelib.php');
 
 // TODO: Switch to core oauthlib once implemented - MDL-30149.
 use mod_lti\service_exception_handler;
-use moodle\mod\lti as lti;
+use moodle\ltix as lti;
 use ltiservice_basicoutcomes\local\service\basicoutcomes;
 
 $rawbody = file_get_contents("php://input");
 
-$logrequests  = lti_should_log_request($rawbody);
+$logrequests  = \core_ltix\helper::should_log_request($rawbody);
 $errorhandler = new service_exception_handler($logrequests);
 
 // Register our own error handler so we can always send valid XML response.
 set_exception_handler(array($errorhandler, 'handle'));
 
 if ($logrequests) {
-    lti_log_request($rawbody);
+    \core_ltix\helper::log_request($rawbody);
 }
 
 $ok = true;
@@ -55,15 +55,15 @@ $consumerkey = lti\get_oauth_key_from_headers(null, array(basicoutcomes::SCOPE_B
 if ($consumerkey === false) {
     throw new Exception('Missing or invalid consumer key or access token.');
 } else if (is_string($consumerkey)) {
-    $toolproxy = lti_get_tool_proxy_from_guid($consumerkey);
+    $toolproxy = \core_ltix\helper::get_tool_proxy_from_guid($consumerkey);
     if ($toolproxy !== false) {
         $secrets = array($toolproxy->secret);
     } else if (!empty($tool)) {
         $secrets = array($typeconfig['password']);
     } else {
-        $secrets = lti_get_shared_secrets_by_key($consumerkey);
+        $secrets = \core_ltix\helper::get_shared_secrets_by_key($consumerkey);
     }
-    $sharedsecret = lti_verify_message($consumerkey, lti_get_shared_secrets_by_key($consumerkey), $rawbody);
+    $sharedsecret = lti_verify_message($consumerkey, \core_ltix\helper::get_shared_secrets_by_key($consumerkey), $rawbody);
     if ($sharedsecret === false) {
         throw new Exception('Message signature not valid');
     }

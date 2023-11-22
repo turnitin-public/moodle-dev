@@ -30,6 +30,7 @@ require_once('../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->dirroot.'/mod/lti/register_form.php');
 require_once($CFG->dirroot.'/mod/lti/locallib.php');
+require_once($CFG->dirroot.'/ltix/constants.php');
 
 $action       = optional_param('action', null, PARAM_ALPHANUMEXT);
 $id           = optional_param('id', null, PARAM_INT);
@@ -64,7 +65,7 @@ if (!empty($returnurl)) {
 require_sesskey();
 
 if ($action == 'delete') {
-    lti_delete_tool_proxy($id);
+    \core_ltix\helper::delete_tool_proxy($id);
     redirect($redirect);
 }
 
@@ -81,7 +82,7 @@ $form = new mod_lti_register_types_form($pageurl, (object)$data);
 if ($form->is_cancelled()) {
     redirect($redirect);
 } else if ($data = $form->get_data()) {
-    $id = lti_add_tool_proxy($data);
+    $id = \core_ltix\helper::add_tool_proxy($data);
     redirect($redirect);
 } else {
     $PAGE->set_title(get_string('toolregistration', 'lti'));
@@ -91,7 +92,7 @@ if ($form->is_cancelled()) {
     echo $OUTPUT->heading(get_string('toolregistration', 'lti'));
     echo $OUTPUT->box_start('generalbox');
     if ($action == 'update') {
-        $toolproxy = lti_get_tool_proxy_config($id);
+        $toolproxy = \core_ltix\helper::get_tool_proxy_config($id);
         $form->set_data($toolproxy);
         if ($toolproxy->state == LTI_TOOL_PROXY_STATE_ACCEPTED) {
             $form->disable_fields();

@@ -199,6 +199,8 @@ class lineitem_test extends \advanced_testcase {
      * Creates a new LTI Tool Type.
      */
     private function create_type() {
+        global $CFG;
+        require_once($CFG->dirroot . '/ltix/constants.php');
         $type = new \stdClass();
         $type->state = LTI_TOOL_STATE_CONFIGURED;
         $type->name = "Test tool";

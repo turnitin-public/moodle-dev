@@ -28,11 +28,11 @@ namespace ltiservice_toolproxy\local\resources;
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->dirroot . '/mod/lti/OAuth.php');
-require_once($CFG->dirroot . '/mod/lti/TrivialStore.php');
+require_once($CFG->dirroot . '/ltix/OAuth.php');
+require_once($CFG->dirroot . '/ltix/TrivialStore.php');
 
 // TODO: Switch to core oauthlib once implemented - MDL-30149.
-use moodle\mod\lti as lti;
+use moodle\ltix as lti;
 
 /**
  * A resource implementing the Tool Proxy.
@@ -127,7 +127,7 @@ class toolproxy extends \mod_lti\local\ltiservice\resource_base {
             $profileservice->set_tool_proxy($toolproxy);
             $context = $profileservice->get_service_path() . $profileservice->get_resources()[0]->get_path() . '#';
             $offeredservices = explode("\n", $toolproxy->serviceoffered);
-            $services = lti_get_services();
+            $services = \core_ltix\tool_helper::get_services();
             $tpservices = $toolproxyjson->security_contract->tool_service;
             $errors = array();
             foreach ($tpservices as $service) {
@@ -242,10 +242,10 @@ class toolproxy extends \mod_lti\local\ltiservice\resource_base {
                     }
                 }
 
-                $ok = $ok && (lti_add_type($type, $config) !== false);
+                $ok = $ok && (\core_ltix\types_helper::add_type($type, $config) !== false);
             }
             if (isset($toolproxyjson->custom)) {
-                lti_set_tool_settings($toolproxyjson->custom, $toolproxy->id);
+                \core_ltix\tool_helper::set_tool_settings($toolproxyjson->custom, $toolproxy->id);
             }
         }
 
@@ -274,7 +274,7 @@ EOD;
                 $toolproxy->state = LTI_TOOL_PROXY_STATE_REJECTED;
                 $response->set_code(400);
             }
-            lti_update_tool_proxy($toolproxy);
+            \core_ltix\tool_helper::update_tool_proxy($toolproxy);
         } else {
             $response->set_code(400);
         }

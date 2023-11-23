@@ -30,6 +30,7 @@ require_once('../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->dirroot.'/mod/lti/edit_form.php');
 require_once($CFG->dirroot.'/mod/lti/locallib.php');
+require_once($CFG->dirroot.'/ltix/constants.php');
 
 $action       = optional_param('action', '', PARAM_ALPHANUMEXT);
 $id           = optional_param('id', '', PARAM_INT);
@@ -48,7 +49,7 @@ require_sesskey();
 // Check this is for a tool created from a tool proxy.
 $err = empty($id);
 if (!$err) {
-    $type = lti_get_type_type_config($id);
+    $type = \core_ltix\types_helper::get_type_type_config($id);
     $err = empty($type->toolproxyid);
 }
 if ($err) {
@@ -77,14 +78,14 @@ if (!empty($returnurl)) {
 }
 
 if ($action == 'accept') {
-    lti_set_state_for_type($id, LTI_TOOL_STATE_CONFIGURED);
+    \core_ltix\types_helper::set_state_for_type($id, LTI_TOOL_STATE_CONFIGURED);
     redirect($redirect);
 } else if (($action == 'reject') || ($action == 'delete')) {
-    lti_set_state_for_type($id, LTI_TOOL_STATE_REJECTED);
+    \core_ltix\types_helper::set_state_for_type($id, LTI_TOOL_STATE_REJECTED);
     redirect($redirect);
 }
 
-if (lti_request_is_using_ssl() && !empty($type->lti_secureicon)) {
+if (\core_ltix\tool_helper::request_is_using_ssl() && !empty($type->lti_secureicon)) {
     $type->oldicon = $type->lti_secureicon;
 } else {
     $type->oldicon = $type->lti_icon;
@@ -96,10 +97,10 @@ if ($data = $form->get_data()) {
     $type = new stdClass();
     if (!empty($id)) {
         $type->id = $id;
-        lti_update_type($type, $data);
+        \core_ltix\types_helper::update_type($type, $data);
     } else {
         $type->state = LTI_TOOL_STATE_CONFIGURED;
-        lti_add_type($type, $data);
+        \core_ltix\types_helper::add_type($type, $data);
     }
     redirect($redirect);
 } else if ($form->is_cancelled()) {

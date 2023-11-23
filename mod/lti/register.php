@@ -26,6 +26,7 @@
 require_once('../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 require_once($CFG->dirroot.'/mod/lti/locallib.php');
+require_once($CFG->dirroot.'/ltix/constants.php');
 
 $id = required_param('id', PARAM_INT);
 $tab = optional_param('tab', '', PARAM_ALPHAEXT);
@@ -51,7 +52,7 @@ foreach ($toolproxies as $key => $toolproxy) {
 
 $redirect = new moodle_url('/mod/lti/toolproxies.php');
 if ($duplicate) {
-    redirect($redirect,  get_string('duplicateregurl', 'lti'));
+    redirect($redirect,  get_string('duplicateregurl', 'core_ltix'));
 }
 
 

@@ -50,6 +50,7 @@ require_once('../../config.php');
 require_once($CFG->libdir.'/completionlib.php');
 require_once($CFG->dirroot.'/mod/lti/lib.php');
 require_once($CFG->dirroot.'/mod/lti/locallib.php');
+require_once($CFG->dirroot.'/ltix/constants.php');
 
 $id = optional_param('id', 0, PARAM_INT); // Course Module ID, or
 $l  = optional_param('l', 0, PARAM_INT);  // lti ID.
@@ -69,11 +70,11 @@ if ($l) {  // Two ways to specify the module.
 $course = $DB->get_record('course', array('id' => $cm->course), '*', MUST_EXIST);
 
 $typeid = $lti->typeid;
-if (empty($typeid) && ($tool = lti_get_tool_by_url_match($lti->toolurl))) {
+if (empty($typeid) && ($tool = \core_ltix\tool_helper::get_tool_by_url_match($lti->toolurl))) {
     $typeid = $tool->id;
 }
 if ($typeid) {
-    $toolconfig = lti_get_type_config($typeid);
+    $toolconfig = \core_ltix\types_helper::get_type_config($typeid);
     $missingtooltype = empty($toolconfig);
     if (!$missingtooltype) {
         $toolurl = $toolconfig['toolurl'];
@@ -137,7 +138,7 @@ $activityheader->set_attrs($header ?? []);
 echo $OUTPUT->header();
 
 if ($typeid) {
-    $config = lti_get_type_type_config($typeid);
+    $config = \core_ltix\types_helper::get_type_type_config($typeid);
 } else {
     $config = new stdClass();
     $config->lti_ltiversion = LTI_VERSION_1;

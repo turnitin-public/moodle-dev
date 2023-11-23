@@ -32,8 +32,8 @@ require_once($CFG->dirroot.'/mod/lti/servicelib.php');
 
 // TODO: Switch to core oauthlib once implemented - MDL-30149.
 use mod_lti\service_exception_handler;
-use moodle\mod\lti as lti;
-use ltiservice_basicoutcomes\local\service\basicoutcomes;
+use moodle\ltix as lti;
+use ltixservice_basicoutcomes\local\service\basicoutcomes;
 
 $rawbody = file_get_contents("php://input");
 
@@ -55,7 +55,7 @@ $consumerkey = lti\get_oauth_key_from_headers(null, array(basicoutcomes::SCOPE_B
 if ($consumerkey === false) {
     throw new Exception('Missing or invalid consumer key or access token.');
 } else if (is_string($consumerkey)) {
-    $toolproxy = lti_get_tool_proxy_from_guid($consumerkey);
+    $toolproxy = \core_ltix\tool_helper::get_tool_proxy_from_guid($consumerkey);
     if ($toolproxy !== false) {
         $secrets = array($toolproxy->secret);
     } else if (!empty($tool)) {

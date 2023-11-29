@@ -24,6 +24,7 @@
         "gradereport": "grade\/report",
         "gradingform": "grade\/grading\/form",
         "ltixservice": "ltix\/service",
+        "ltixsource": "ltix\/source",
         "mlbackend": "lib\/mlbackend",
         "mnetservice": "mnet\/service",
         "webservice": "webservice",

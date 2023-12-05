@@ -75,10 +75,10 @@ class secondary extends view {
                 'coursebadges' => 7.1,
                 'newbadge' => 7.2,
                 'filtermanagement' => 9,
-                'unenrolself' => 10,
-                'coursetags' => 11,
-                'download' => 12,
-                'contextlocking' => 13,
+                'unenrolself' => 11,
+                'coursetags' => 12,
+                'download' => 13,
+                'contextlocking' => 14,
             ],
         ];
         $nodes['navigation'] = [
@@ -89,7 +89,8 @@ class secondary extends view {
                 'grades' => 2,
                 'badgesview' => 7,
                 'competencies' => 8,
-                'communication' => 14,
+                'communication' => 15,
+                'lticoursetools' => 10,
             ],
             self::TYPE_CUSTOM => [
                 'contentbank' => 5,

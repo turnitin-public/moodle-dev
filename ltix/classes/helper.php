@@ -2290,7 +2290,7 @@ class helper {
 
         return array($endpoint, $parms);
     }
- 
+
     /**
      * Launch an external tool activity.
      *
@@ -2827,12 +2827,12 @@ class helper {
     public static function get_tool_table($tools, $id) {
         global $OUTPUT;
         $html = '';
-    
+
         $typename = get_string('typename', 'lti');
         $baseurl = get_string('baseurl', 'lti');
         $action = get_string('action', 'lti');
         $createdon = get_string('createdon', 'lti');
-    
+
         if (!empty($tools)) {
             $html .= "
             <div id=\"{$id}_tools_container\" style=\"margin-top:.5em;margin-bottom:.5em\">
@@ -2846,13 +2846,13 @@ class helper {
                         </tr>
                     </thead>
             ";
-    
+
             foreach ($tools as $type) {
                 $date = userdate($type->timecreated, get_string('strftimedatefullshort', 'core_langconfig'));
                 $accept = get_string('accept', 'lti');
                 $update = get_string('update', 'lti');
                 $delete = get_string('delete', 'lti');
-    
+
                 if (empty($type->toolproxyid)) {
                     $baseurl = new \moodle_url('/mod/lti/typessettings.php', array(
                             'action' => 'accept',
@@ -2870,28 +2870,28 @@ class helper {
                         ));
                     $ref = $type->tpname;
                 }
-    
+
                 $accepthtml = $OUTPUT->action_icon($baseurl,
                         new \pix_icon('t/check', $accept, '', array('class' => 'iconsmall')), null,
                         array('title' => $accept, 'class' => 'editing_accept'));
-    
+
                 $deleteaction = 'delete';
-    
+
                 if ($type->state == LTI_TOOL_STATE_CONFIGURED) {
                     $accepthtml = '';
                 }
-    
+
                 if ($type->state != LTI_TOOL_STATE_REJECTED) {
                     $deleteaction = 'reject';
                     $delete = get_string('reject', 'lti');
                 }
-    
+
                 $updateurl = clone($baseurl);
                 $updateurl->param('action', 'update');
                 $updatehtml = $OUTPUT->action_icon($updateurl,
                         new \pix_icon('t/edit', $update, '', array('class' => 'iconsmall')), null,
                         array('title' => $update, 'class' => 'editing_update'));
-    
+
                 if (($type->state != LTI_TOOL_STATE_REJECTED) || empty($type->toolproxyid)) {
                     $deleteurl = clone($baseurl);
                     $deleteurl->param('action', $deleteaction);
@@ -2922,10 +2922,10 @@ class helper {
         } else {
             $html .= get_string('no_' . $id, 'lti');
         }
-    
+
         return $html;
     }
-    
+
     /**
      * This function builds the tab for a category of tool proxies
      *
@@ -2936,13 +2936,13 @@ class helper {
      */
     public static function get_tool_proxy_table($toolproxies, $id) {
         global $OUTPUT;
-    
+
         if (!empty($toolproxies)) {
             $typename = get_string('typename', 'lti');
             $url = get_string('registrationurl', 'lti');
             $action = get_string('action', 'lti');
             $createdon = get_string('createdon', 'lti');
-    
+
             $html = <<< EOD
             <div id="{$id}_tool_proxies_container" style="margin-top: 0.5em; margin-bottom: 0.5em">
                 <table id="{$id}_tool_proxies">
@@ -2960,40 +2960,40 @@ class helper {
                 $accept = get_string('register', 'lti');
                 $update = get_string('update', 'lti');
                 $delete = get_string('delete', 'lti');
-    
+
                 $baseurl = new \moodle_url('/mod/lti/registersettings.php', array(
                         'action' => 'accept',
                         'id' => $toolproxy->id,
                         'sesskey' => sesskey(),
                         'tab' => $id
                     ));
-    
+
                 $registerurl = new \moodle_url('/mod/lti/register.php', array(
                         'id' => $toolproxy->id,
                         'sesskey' => sesskey(),
                         'tab' => 'tool_proxy'
                     ));
-    
+
                 $accepthtml = $OUTPUT->action_icon($registerurl,
                         new \pix_icon('t/check', $accept, '', array('class' => 'iconsmall')), null,
                         array('title' => $accept, 'class' => 'editing_accept'));
-    
+
                 $deleteaction = 'delete';
-    
+
                 if ($toolproxy->state != LTI_TOOL_PROXY_STATE_CONFIGURED) {
                     $accepthtml = '';
                 }
-    
+
                 if (($toolproxy->state == LTI_TOOL_PROXY_STATE_CONFIGURED) || ($toolproxy->state == LTI_TOOL_PROXY_STATE_PENDING)) {
                     $delete = get_string('cancel', 'lti');
                 }
-    
+
                 $updateurl = clone($baseurl);
                 $updateurl->param('action', 'update');
                 $updatehtml = $OUTPUT->action_icon($updateurl,
                         new \pix_icon('t/edit', $update, '', array('class' => 'iconsmall')), null,
                         array('title' => $update, 'class' => 'editing_update'));
-    
+
                 $deleteurl = clone($baseurl);
                 $deleteurl->param('action', $deleteaction);
                 $deletehtml = $OUTPUT->action_icon($deleteurl,
@@ -3020,7 +3020,7 @@ class helper {
         } else {
             $html = get_string('no_' . $id, 'lti');
         }
-    
+
         return $html;
     }
 
@@ -3073,7 +3073,7 @@ class helper {
 
     public static function get_shared_secrets_by_key($key) {
         global $DB;
-    
+
         // Look up the shared secret for the specified key in both the types_config table (for configured tools)
         // And in the lti resource table for ad-hoc tools.
         $lti13 = LTI_VERSION_1P3;
@@ -3096,14 +3096,14 @@ class helper {
                   SELECT password AS value
                    FROM {lti}
                   WHERE resourcekey = :key3";
-    
+
         $sharedsecrets = $DB->get_records_sql($query, array('configured1' => LTI_TOOL_STATE_CONFIGURED, 'ltiversion' => $lti13,
             'configured2' => LTI_TOOL_STATE_CONFIGURED, 'key1' => $key, 'key2' => $key, 'key3' => $key));
-    
+
         $values = array_map(function($item) {
             return $item->value;
         }, $sharedsecrets);
-    
+
         // There should really only be one shared secret per key. But, we can't prevent
         // more than one getting entered. For instance, if the same key is used for two tool providers.
         return $values;
@@ -3326,7 +3326,7 @@ class helper {
         if (empty($lti->launchcontainer)) {
             $lti->launchcontainer = LTI_LAUNCH_CONTAINER_DEFAULT;
         }
-    
+
         if ($lti->launchcontainer == LTI_LAUNCH_CONTAINER_DEFAULT) {
             if (isset($toolconfig['launchcontainer'])) {
                 $launchcontainer = $toolconfig['launchcontainer'];
@@ -3334,20 +3334,20 @@ class helper {
         } else {
             $launchcontainer = $lti->launchcontainer;
         }
-    
+
         if (empty($launchcontainer) || $launchcontainer == LTI_LAUNCH_CONTAINER_DEFAULT) {
             $launchcontainer = LTI_LAUNCH_CONTAINER_EMBED_NO_BLOCKS;
         }
-    
+
         $devicetype = core_useragent::get_device_type();
-    
+
         // Scrolling within the object element doesn't work on iOS or Android
         // Opening the popup window also had some issues in testing
         // For mobile devices, always take up the entire screen to ensure the best experience.
         if ($devicetype === core_useragent::DEVICETYPE_MOBILE || $devicetype === core_useragent::DEVICETYPE_TABLET ) {
             $launchcontainer = LTI_LAUNCH_CONTAINER_REPLACE_MOODLE_WINDOW;
         }
-    
+
         return $launchcontainer;
     }
 

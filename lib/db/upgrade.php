@@ -3679,5 +3679,20 @@ privatefiles,moodle|/user/files.php';
         upgrade_main_savepoint(true, 2023100400.03);
     }
 
+    if ($oldversion < 2023100400.04) {
+        // Move all the service-specific type config for ltiservice_xx plugins to ltixservice_xx.
+        foreach (['gradesynchronization', 'memberships', 'toolsettings'] as $name) {
+            $oldsettingname = 'ltiservice_'.$name;
+            $newsettingname = 'ltixservice'.$name;
+            $sql = "UPDATE {lti_types_config};
+                       SET name = :newsettingname
+                     WHERE ". $DB->sql_like('name', $oldsettingname);
+            $DB->execute($sql, ['newsettingname' => $newsettingname]);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2023100400.04);
+    }
+
     return true;
 }

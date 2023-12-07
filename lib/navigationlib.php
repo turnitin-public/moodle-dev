@@ -2966,6 +2966,13 @@ class global_navigation extends navigation_node {
                     new pix_icon('i/badge', get_string('coursebadges', 'badges')));
         }
 
+        // LTI External tools.
+        $url = new moodle_url('/ltix/coursetools.php', ['id' => $course->id]);
+        $coursenode->add(get_string('courseexternaltools', 'ltix'), $url,
+            navigation_node::TYPE_SETTING, null, 'lticoursetools',
+            new pix_icon('i/settings', ''));
+
+
         // Check access to the course and competencies page.
         if ($navoptions->competencies) {
             // Just a link to course competency.

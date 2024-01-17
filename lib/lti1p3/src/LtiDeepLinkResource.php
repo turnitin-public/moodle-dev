@@ -125,6 +125,8 @@ class LtiDeepLinkResource
      */
     public function getTarget(): string
     {
+        trigger_error('Method '.__METHOD__.' is deprecated', E_USER_DEPRECATED);
+
         return $this->target;
     }
 
@@ -134,6 +136,8 @@ class LtiDeepLinkResource
      */
     public function setTarget(string $value): LtiDeepLinkResource
     {
+        trigger_error('Method '.__METHOD__.' is deprecated', E_USER_DEPRECATED);
+
         $this->target = $value;
 
         return $this;

@@ -43,6 +43,9 @@ class ServiceRequest implements IServiceRequest
     private $contentType = 'application/json';
     private $accept = 'application/json';
 
+    // Other
+    private $maskResponseLogs = false;
+
     public function __construct(string $method, string $url, $type = self::UNSUPPORTED)
     {
         $this->method = $method;
@@ -116,6 +119,18 @@ class ServiceRequest implements IServiceRequest
     public function setContentType(string $contentType): IServiceRequest
     {
         $this->contentType = $contentType;
+
+        return $this;
+    }
+
+    public function getMaskResponseLogs(): bool
+    {
+        return $this->maskResponseLogs;
+    }
+
+    public function setMaskResponseLogs(bool $shouldMask): IServiceRequest
+    {
+        $this->maskResponseLogs = $shouldMask;
 
         return $this;
     }

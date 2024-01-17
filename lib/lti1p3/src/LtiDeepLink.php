@@ -44,17 +44,12 @@ class LtiDeepLink
     }
 
     /**
-     * This method builds an auto-submitting HTML form to post the deep linking response message
-     * back to platform, as per LTI-DL 2.0 specification. The resulting HTML is then written to standard output,
-     * so calling this method will automatically send an HTTP response to conclude the content selection flow.
-     *
-     * @param  LtiDeepLinkResource[]  $resources The list of selected resources to be sent to the platform
-     *
-     * @todo Consider wrapping the content inside a well-formed HTML document,
-     * and returning it instead of directly writing to standard output
+     * @deprecated
      */
     public function outputResponseForm($resources)
     {
+        trigger_error('Method '.__METHOD__.' is deprecated', E_USER_DEPRECATED);
+
         $jwt = $this->getResponseJwt($resources);
         $formActionUrl = $this->deep_link_settings['deep_link_return_url'];
 

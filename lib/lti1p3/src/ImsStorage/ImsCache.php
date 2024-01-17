@@ -4,6 +4,9 @@ namespace Packback\Lti1p3\ImsStorage;
 
 use Packback\Lti1p3\Interfaces\ICache;
 
+/**
+ * @deprecated
+ */
 class ImsCache implements ICache
 {
     private $cache;

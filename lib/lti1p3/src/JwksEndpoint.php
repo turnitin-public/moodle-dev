@@ -6,6 +6,9 @@ use Firebase\JWT\JWT;
 use Packback\Lti1p3\Interfaces\IDatabase;
 use Packback\Lti1p3\Interfaces\ILtiRegistration;
 
+/**
+ * @todo Pin versions to v6.6 and php 8
+ */
 class JwksEndpoint
 {
     private $keys;
@@ -52,8 +55,13 @@ class JwksEndpoint
         return ['keys' => $jwks];
     }
 
+    /**
+     * @deprecated
+     */
     public function outputJwks()
     {
+        trigger_error('Method '.__METHOD__.' is deprecated', E_USER_DEPRECATED);
+
         echo json_encode($this->getPublicJwks());
     }
 }

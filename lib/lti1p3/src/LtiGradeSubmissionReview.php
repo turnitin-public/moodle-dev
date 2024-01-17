@@ -9,7 +9,7 @@ class LtiGradeSubmissionReview
     private $url;
     private $custom;
 
-    public function __construct(array $gradeSubmission = null)
+    public function __construct(?array $gradeSubmission = null)
     {
         $this->reviewable_status = $gradeSubmission['reviewableStatus'] ?? null;
         $this->label = $gradeSubmission['label'] ?? null;

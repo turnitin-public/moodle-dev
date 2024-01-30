@@ -43,19 +43,10 @@ class lti_cookie implements ICookie {
     }
 
     public function setCookie(string $name, string $value, $exp = 3600, $options = []): void {
-        $cookieoptions = [
-            'expires' => time() + $exp,
-        ];
-
-        // SameSite none and secure will be required for tools to work inside iframes.
-        $samesiteoptions = [
-            'samesite' => 'None',
-            'secure' => true,
-        ];
-
-        setcookie($name, $value, array_merge($cookieoptions, $samesiteoptions, $options));
+        $expiry = gmdate('D, d-M-Y H:i:s T', time() + $exp);
+        header("Set-Cookie: $name=$value; expires=$expiry; SameSite=None; Secure; Partitioned", false);
 
         // Set a second fallback cookie in the event that "SameSite" is not supported.
-        setcookie('LEGACY_'.$name, $value, array_merge($cookieoptions, $options));
+        header("Set-Cookie: LEGACY_$name=$value; expires=$expiry; SameSite=None; Secure; Partitioned", false);
     }
 }

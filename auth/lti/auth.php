@@ -124,6 +124,15 @@ class auth_plugin_lti extends \auth_plugin_base {
                 return;
             } else {
                 complete_user_login($user);
+                // catch the session update header and make it partitioned.
+                $sessheader = array_filter(headers_list(), function($val) {
+                    global $CFG;
+                    return str_contains($val, 'MoodleSession'.$CFG->sessioncookie);
+                });
+                if (!empty($sessheader)) {
+                    header_remove('Set-Cookie');
+                    header(reset($sessheader) . '; Partitioned;');
+                }
                 return;
             }
         }

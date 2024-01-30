@@ -31,6 +31,7 @@ use enrol_lti\local\ltiadvantage\lib\issuer_database;
 use enrol_lti\local\ltiadvantage\lib\launch_cache_session;
 use enrol_lti\local\ltiadvantage\repository\application_registration_repository;
 use enrol_lti\local\ltiadvantage\repository\deployment_repository;
+use enrol_lti\local\ltiadvantage\utility\openid_connect_helper;
 use Packback\Lti1p3\LtiOidcLogin;
 
 require_once(__DIR__."/../../config.php");
@@ -75,6 +76,9 @@ global $_REQUEST;
 if (empty($_REQUEST['client_id']) && !empty($_REQUEST['id'])) {
     $_REQUEST['client_id'] = $_REQUEST['id'];
 }
+
+// Before beginning the OIDC auth flow, make sure the MoodleSession cookie will be set in 3rd party contexts.
+openid_connect_helper::set_partitioned_sesscookie();
 
 // Now, do the OIDC login.
 $redirecturl = LtiOidcLogin::new(

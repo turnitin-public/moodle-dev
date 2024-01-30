@@ -26,15 +26,16 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use auth_lti\local\ltiadvantage\utility\cookie_helper;
 use enrol_lti\local\ltiadvantage\lib\lti_cookie;
 use enrol_lti\local\ltiadvantage\lib\issuer_database;
 use enrol_lti\local\ltiadvantage\lib\launch_cache_session;
 use enrol_lti\local\ltiadvantage\repository\application_registration_repository;
 use enrol_lti\local\ltiadvantage\repository\deployment_repository;
-use enrol_lti\local\ltiadvantage\utility\openid_connect_helper;
 use Packback\Lti1p3\LtiOidcLogin;
 
 require_once(__DIR__."/../../config.php");
+global $CFG;
 
 // Required fields for OIDC 3rd party initiated login.
 // See http://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login.
@@ -78,7 +79,7 @@ if (empty($_REQUEST['client_id']) && !empty($_REQUEST['id'])) {
 }
 
 // Before beginning the OIDC auth flow, make sure the MoodleSession cookie will be set in 3rd party contexts.
-openid_connect_helper::set_partitioned_sesscookie();
+cookie_helper::add_partitioning_to_cookie('MoodleSession'.$CFG->sessioncookie);
 
 // Now, do the OIDC login.
 $redirecturl = LtiOidcLogin::new(

@@ -15,6 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 use auth_lti\local\ltiadvantage\entity\user_migration_claim;
+use auth_lti\local\ltiadvantage\utility\cookie_helper;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -108,6 +109,7 @@ class auth_plugin_lti extends \auth_plugin_base {
     public function complete_login(array $launchdata, moodle_url $returnurl, int $provisioningmode,
             array $legacyconsumersecrets = []): void {
 
+        global $CFG;
         // The platform user is already linked with a user account.
         if ($this->get_user_binding($launchdata['iss'], $launchdata['sub'])) {
             // Always sync the PII, regardless of whether we're already authenticated as this user or not.
@@ -118,21 +120,14 @@ class auth_plugin_lti extends \auth_plugin_base {
                 global $USER;
                 if ($USER->id !== $user->id) {
                     complete_user_login($user);
+                    cookie_helper::add_partitioning_to_cookie('MoodleSession'.$CFG->sessioncookie);
                 }
                 // If the linked user is already logged in, skip the call to complete_user_login() because this affects deep linking
                 // workflows on sites publishing and consuming resources on the same site, due to the regenerated sesskey.
                 return;
             } else {
                 complete_user_login($user);
-                // catch the session update header and make it partitioned.
-                $sessheader = array_filter(headers_list(), function($val) {
-                    global $CFG;
-                    return str_contains($val, 'MoodleSession'.$CFG->sessioncookie);
-                });
-                if (!empty($sessheader)) {
-                    header_remove('Set-Cookie');
-                    header(reset($sessheader) . '; Partitioned;');
-                }
+                cookie_helper::add_partitioning_to_cookie('MoodleSession'.$CFG->sessioncookie);
                 return;
             }
         }
@@ -146,6 +141,7 @@ class auth_plugin_lti extends \auth_plugin_base {
             case self::PROVISIONING_MODE_AUTO_ONLY:
                 // Automatic provisioning - this will create/migrate a user account and log the user in.
                 complete_user_login($this->find_or_create_user_from_launch($launchdata, true, $legacyconsumersecrets));
+                cookie_helper::add_partitioning_to_cookie('MoodleSession'.$CFG->sessioncookie);
                 break;
             case self::PROVISIONING_MODE_PROMPT_NEW_EXISTING:
             case self::PROVISIONING_MODE_PROMPT_EXISTING_ONLY:

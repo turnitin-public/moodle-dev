@@ -171,8 +171,13 @@ class sync_tool_grades extends adhoc_task {
                                 'scoreMaximum' => $grademax,
                                 'tag' => 'grade',
                                 'resourceId' => $userresourcelink->get_resourceid(),
-                                'resourceLinkId' => $userresourcelink->get_resourcelinkid()
+                                'resourceLinkId' => $userresourcelink->get_resourcelinkid(),
                             ]));
+
+                            // Hack to trigger a put of the line item we just created.
+                            // The submission review property is added in LtiLineitem.php.
+                            $lineitem = $ags->updateLineitem($lineitem);
+
                             $response = $ags->putGrade($ltigrade, $lineitem);
                         } else {
                             // Let AGS find the coupled line item.

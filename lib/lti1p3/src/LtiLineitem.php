@@ -37,6 +37,11 @@ class LtiLineitem
             'tag' => $this->tag,
             'startDateTime' => $this->start_date_time,
             'endDateTime' => $this->end_date_time,
+            'submissionReview' => (object) [
+                'label' => 'test',
+                'url' => 'https://example.com',
+                'custom' => new \stdClass()
+            ]
         ], '\Packback\Lti1p3\Helpers\Helpers::checkIfNullValue'));
     }
 

@@ -1499,7 +1499,7 @@ function content_item_to_form(object $tool, object $typeconfig, object $item) : 
                     if (!empty($subreview->url)) {
                         $config->lineitemsubreviewurl = $subreview->url;
                     }
-                    if (isset($subreview->custom)) {
+                    if (!empty($subreview->custom)) {
                         $config->lineitemsubreviewparams = params_to_string($subreview->custom);
                     }
                 }
@@ -1512,7 +1512,7 @@ function content_item_to_form(object $tool, object $typeconfig, object $item) : 
     // Since 4.3, the launch container is dictated by the value set in tool configuration and isn't controllable by content items.
     $config->launchcontainer = LTI_LAUNCH_CONTAINER_DEFAULT;
 
-    if (isset($item->custom)) {
+    if (!empty($item->custom)) {
         $config->instructorcustomparameters = params_to_string($item->custom);
     }
 

@@ -34,6 +34,16 @@ class LtiDeepLink
             }, $resources),
         ];
 
+        // Hack to force set an empty object in the json in a few places. Ideally, empty props are omitted, but we've
+        // seen that isn't the case in at least a few tools.
+        $message_jwt['https://purl.imsglobal.org/spec/lti-dl/claim/content_items'][0]['custom'] = new \stdClass();
+        $message_jwt['https://purl.imsglobal.org/spec/lti-dl/claim/content_items'][0]['lineItem']['submissionReview'] =
+        (object) [
+            'label' => 'test',
+            'url' => 'https://example.com',
+            'custom' => new \stdClass()
+        ];
+
         // https://www.imsglobal.org/spec/lti-dl/v2p0/#deep-linking-request-message
         // 'data' is an optional property which, if it exists, must be returned by the tool
         if (isset($this->deep_link_settings['data'])) {

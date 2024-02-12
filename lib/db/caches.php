@@ -618,4 +618,7 @@ $definitions = array(
         'simpledata' => true,
         'staticacceleration' => true,
     ],
+    'ltix_keyset' => [
+        'mode' => cache_store::MODE_APPLICATION
+    ],
 );

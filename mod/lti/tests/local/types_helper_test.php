@@ -35,14 +35,14 @@
 namespace mod_lti\local;
 
 use core_ltix\lti_testcase;
-use core_ltix\helper;
+use mod_lti\local\types_helper as helper;
 
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->dirroot . '/mod/lti/locallib.php');
+require_once($CFG->dirroot . '/webservice/tests/helpers.php');
 require_once($CFG->dirroot . '/ltix/tests/lti_testcase.php');
-
 /**
  * Types helper tests.
  *

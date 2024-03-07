@@ -19,9 +19,15 @@ namespace core_ltix\external;
 use core_external\external_api;
 use core_ltix\lti_testcase;
 
+defined('MOODLE_INTERNAL') || die();
+
+global $CFG;
+require_once($CFG->dirroot . '/ltix/tests/lti_testcase.php');
+
 /**
  * PHPUnit tests for get_tool_types_and_proxies external function.
  *
+ * @coversDefaultClass \core_ltix\external\get_tool_types_and_proxies
  * @package    core_ltix
  * @author     Andrew Madden <andrewmadden@catalyst-au.net>
  * @copyright  2021 Catalyst IT
@@ -39,8 +45,9 @@ class get_tool_types_and_proxies_test extends lti_testcase {
 
     /**
      * Test get_tool_types_and_proxies.
+     * @covers ::execute
      */
-    public function test_mod_lti_get_tool_types_and_proxies() {
+    public function test_core_ltix_get_tool_types_and_proxies() {
         $proxy = $this->generate_tool_proxy(1);
         $this->generate_tool_type(1, $proxy->id);
 
@@ -60,8 +67,9 @@ class get_tool_types_and_proxies_test extends lti_testcase {
 
     /**
      * Test get_tool_types_and_proxies with multiple pages of tool types.
+     * @covers ::execute
      */
-    public function test_mod_lti_get_tool_types_and_proxies_with_multiple_pages() {
+    public function test_core_ltix_get_tool_types_and_proxies_with_multiple_pages() {
         for ($i = 0; $i < 3; $i++) {
             $proxy = $this->generate_tool_proxy($i);
             $this->generate_tool_type($i, $proxy->id);
@@ -78,8 +86,9 @@ class get_tool_types_and_proxies_test extends lti_testcase {
 
     /**
      * Test get_tool_types_and_proxies with multiple pages of tool types and offset.
+     * @covers ::execute
      */
-    public function test_mod_lti_get_tool_types_and_proxies_with_multiple_pages_last_page() {
+    public function test_core_ltix_get_tool_types_and_proxies_with_multiple_pages_last_page() {
         for ($i = 0; $i < 6; $i++) {
             $proxy = $this->generate_tool_proxy($i);
             $this->generate_tool_type($i, $proxy->id);
@@ -96,8 +105,9 @@ class get_tool_types_and_proxies_test extends lti_testcase {
 
     /**
      * Test get_tool_types_and_proxies without pagination.
+     * @covers ::execute
      */
-    public function test_mod_lti_get_tool_types_and_proxies_without_pagination() {
+    public function test_core_ltix_get_tool_types_and_proxies_without_pagination() {
         for ($i = 0; $i < 10; $i++) {
             $proxy = $this->generate_tool_proxy($i);
             $this->generate_tool_type($i, $proxy->id);

@@ -3167,8 +3167,7 @@ $functions = array(
     ],
 
     'core_ltix_get_tool_proxies' => [
-        'classname'     => 'core_ltix\external',
-        'methodname'    => 'get_tool_proxies',
+        'classname'     => 'core_ltix\external\get_tool_proxies',
         'description'   => 'Get a list of the tool proxies',
         'type'          => 'read',
         'capabilities'  => 'moodle/site:config',
@@ -3176,8 +3175,7 @@ $functions = array(
     ],
 
     'core_ltix_create_tool_proxy' => [
-        'classname'     => 'core_ltix\external',
-        'methodname'    => 'create_tool_proxy',
+        'classname'     => 'core_ltix\external\create_tool_proxy',
         'description'   => 'Create a tool proxy',
         'type'          => 'write',
         'capabilities'  => 'moodle/site:config',
@@ -3185,8 +3183,7 @@ $functions = array(
     ],
 
     'core_ltix_delete_tool_proxy' => [
-        'classname'     => 'core_ltix\external',
-        'methodname'    => 'delete_tool_proxy',
+        'classname'     => 'core_ltix\external\delete_tool_proxy',
         'description'   => 'Delete a tool proxy',
         'type'          => 'write',
         'capabilities'  => 'moodle/site:config',
@@ -3194,8 +3191,7 @@ $functions = array(
     ],
 
     'core_ltix_get_tool_proxy_registration_request' => [
-        'classname'     => 'core_ltix\external',
-        'methodname'    => 'get_tool_proxy_registration_request',
+        'classname'     => 'core_ltix\external\get_tool_proxy_registration_request',
         'description'   => 'Get a registration request for a tool proxy',
         'type'          => 'read',
         'capabilities'  => 'moodle/site:config',
@@ -3203,8 +3199,7 @@ $functions = array(
     ],
 
     'core_ltix_get_tool_types' => [
-        'classname'     => 'core_ltix\external',
-        'methodname'    => 'get_tool_types',
+        'classname'     => 'core_ltix\external\get_tool_types',
         'description'   => 'Get a list of the tool types',
         'type'          => 'read',
         'capabilities'  => 'moodle/site:config',
@@ -3228,8 +3223,7 @@ $functions = array(
     ],
 
     'core_ltix_create_tool_type' => [
-        'classname'     => 'core_ltix\external',
-        'methodname'    => 'create_tool_type',
+        'classname'     => 'core_ltix\external\create_tool_type',
         'description'   => 'Create a tool type',
         'type'          => 'write',
         'capabilities'  => 'moodle/site:config',
@@ -3237,8 +3231,7 @@ $functions = array(
     ],
 
     'core_ltix_update_tool_type' => [
-        'classname'     => 'core_ltix\external',
-        'methodname'    => 'update_tool_type',
+        'classname'     => 'core_ltix\external\update_tool_type',
         'description'   => 'Update a tool type',
         'type'          => 'write',
         'capabilities'  => 'moodle/site:config',
@@ -3246,8 +3239,7 @@ $functions = array(
     ],
 
     'core_ltix_delete_tool_type' => [
-        'classname'     => 'core_ltix\external',
-        'methodname'    => 'delete_tool_type',
+        'classname'     => 'core_ltix\external\delete_tool_type',
         'description'   => 'Delete a tool type',
         'type'          => 'write',
         'capabilities'  => 'moodle/site:config',
@@ -3271,8 +3263,7 @@ $functions = array(
     ],
 
     'core_ltix_is_cartridge' => [
-        'classname'     => 'core_ltix\external',
-        'methodname'    => 'is_cartridge',
+        'classname'     => 'core_ltix\external\is_cartridge',
         'description'   => 'Determine if the given url is for a cartridge',
         'type'          => 'read',
         'capabilities'  => 'moodle/site:config',

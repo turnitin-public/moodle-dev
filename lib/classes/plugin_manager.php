@@ -1717,7 +1717,7 @@ class core_plugin_manager {
             'media' => array('swf'),
             'portfolio' => array('picasa', 'boxnet'),
             'qformat' => array('blackboard', 'learnwise', 'examview', 'webct'),
-            'ltiservice' => array('basicoutcomes', 'memberships', 'profile'),
+            'ltiservice' => array('basicoutcomes', 'memberships', 'profile', 'toolproxy'),
             'message' => array('jabber'),
             'mod' => array('assignment'),
             'quizaccess' => array('safebrowser'),
@@ -1906,11 +1906,11 @@ class core_plugin_manager {
             ),
 
             'ltiservice' => array(
-                'gradebookservices', 'memberships', 'profile', 'toolproxy', 'toolsettings'
+                'gradebookservices', 'memberships', 'profile', 'toolsettings'
             ),
 
             'ltixservice' => [
-                'basicoutcomes', 'memberships', 'profile'
+                'basicoutcomes', 'memberships', 'profile', 'toolproxy'
             ],
 
             'mlbackend' => array(

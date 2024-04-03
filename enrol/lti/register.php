@@ -56,7 +56,8 @@ $openidconfigurl = required_param('openid_configuration', PARAM_URL);
 $regtoken = optional_param('registration_token', null, PARAM_RAW);
 
 // Moodle-specific token used to secure the dynamic registration URL.
-$token = required_param('token', PARAM_ALPHANUM);
+//$token = required_param('token', PARAM_ALPHANUM);
+$token = substr(array_key_first($_REQUEST), 6); // Hack to pull out the token from param with name 'token=abcde'.
 
 $appregservice = new application_registration_service(
     new application_registration_repository(),

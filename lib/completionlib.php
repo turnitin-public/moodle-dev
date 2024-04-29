@@ -90,6 +90,7 @@ define('COMPLETION_COMPLETE_FAIL', 3);
 
 /**
  * Indicates that the user has received a failing grade for a hidden grade item.
+ * @deprecated since Moodle 4.5 - This only serves to add confusion to an already confusing API.
  */
 define('COMPLETION_COMPLETE_FAIL_HIDDEN', 4);
 
@@ -732,11 +733,14 @@ class completion_info {
     /**
      * Fetches the completion state for an activity completion's require grade completion requirement.
      *
+     * @deprecated since Moodle 4.5
      * @param cm_info $cm The course module information.
      * @param int $userid The user ID.
      * @return int The completion state.
      */
     public function get_grade_completion(cm_info $cm, int $userid): int {
+        debugging('Function completion_info::get_grade_completion() is deprecated.', DEBUG_DEVELOPER);
+
         global $CFG;
 
         require_once($CFG->libdir . '/gradelib.php');
@@ -1128,6 +1132,54 @@ class completion_info {
         return $returnfilteredvalue($cacheddata[$cminfo->id]);
     }
 
+    protected function internal_get_user_grade(grade_item $item, int $userid): ?grade_grade {
+        // Hacky static cache for demo purposes.
+        static $usergrades = [];
+
+        $key = "{$item->id}_$userid";
+
+        if (!empty($sergrades[$key])) {
+            return $usergrades[$key];
+        }
+
+        global $CFG;
+        require_once($CFG->libdir . '/gradelib.php');
+
+        $grades = grade_grade::fetch_users_grades($item, [$userid], false);
+        if (!empty($grades)) {
+            if (count($grades) > 1) {
+                $this->internal_systemerror("Unexpected result: multiple grades for
+                            item '{$item->id}', user '{$userid}'");
+            }
+            $grade = reset($grades);
+            $usergrades[$key] = $grade;
+            return $grade;
+        }
+        return null;
+    }
+
+    protected function internal_get_cm_grade_item($cm): ?grade_item {
+        static $gradeitems = [];
+
+        $key = "mod_{$cm->modname}_{$cm->instance}";
+
+        if (!empty($gradeitems[$key])) {
+            return $gradeitems[$key];
+        }
+
+        global $CFG;
+        require_once($CFG->libdir . '/gradelib.php');
+        $item = grade_item::fetch([
+            'courseid' => $cm->course,
+            'itemtype' => 'mod',
+            'itemmodule' => $cm->modname,
+            'iteminstance' => $cm->instance,
+            'itemnumber' => $cm->completiongradeitemnumber
+        ]) ?: null;
+        $gradeitems[$key] = $item;
+        return $gradeitems[$key];
+    }
+
     /**
      * Get the latest completion state for each criteria used in the module
      *
@@ -1141,27 +1193,21 @@ class completion_info {
         $data = [];
         // Include in the completion info the grade completion, if necessary.
         if (!is_null($cm->completiongradeitemnumber)) {
-            $newstate = $this->get_grade_completion($cm, $userid);
-            $data['completiongrade'] = $newstate;
+            // Get the state of the 'completiongrade' criteria ONLY. I.e. This doesn't factor in passgrade yet.
+            $item = $this->internal_get_cm_grade_item($cm); // Grade item fetch using static cache.
+            $data['completiongrade'] = COMPLETION_INCOMPLETE;
+            if ($item) {
+                $grade = $this->internal_get_user_grade($item, $userid); // User grade fetch using static cache.
+                if ($grade) {
+                    $completiongradestate = $this->internal_get_completiongrade_state($cm, $item, $grade);
+                    $data['completiongrade'] = $completiongradestate;
 
-            if ($cm->completionpassgrade) {
-                // If we are asking to use pass grade completion but haven't set it properly,
-                // then default to COMPLETION_COMPLETE_PASS.
-                if ($newstate == COMPLETION_COMPLETE) {
-                    $newstate = COMPLETION_COMPLETE_PASS;
-                }
-
-                // No need to show failing status for the completiongrade condition when passing grade condition is set.
-                if (in_array($newstate, [COMPLETION_COMPLETE_FAIL, COMPLETION_COMPLETE_FAIL_HIDDEN])) {
-                    $data['completiongrade'] = COMPLETION_COMPLETE;
-
-                    // If the grade received by the user is a failing grade for a hidden grade item,
-                    // the 'Require passing grade' criterion is considered incomplete.
-                    if ($newstate == COMPLETION_COMPLETE_FAIL_HIDDEN) {
-                        $newstate = COMPLETION_INCOMPLETE;
+                    if ($cm->completionpassgrade) {
+                        $data['passgrade'] = COMPLETION_INCOMPLETE;
+                        $passgradestate = $this->internal_get_passgrade_state($cm, $item, $grade);
+                        $data['passgrade'] = $passgradestate;
                     }
                 }
-                $data['passgrade'] = $newstate;
             }
         }
 
@@ -1515,11 +1561,79 @@ class completion_info {
             // Grade being deleted, so only change could be to make it incomplete
             $possibleresult = COMPLETION_INCOMPLETE;
         } else {
-            $possibleresult = self::internal_get_grade_state($item, $grade);
+            //$possibleresult = self::internal_get_grade_state($item, $grade);
+            $possibleresult = $this->get_overall_grade_state($cm, $item, $grade);
         }
 
         // OK, let's update state based on this
         $this->update_state($cm, $possibleresult, $grade->userid, false, $isbulkupdate);
+    }
+
+    protected function internal_get_is_passing_grade($item, $grade): bool {
+        if (!$grade || (is_null($grade->finalgrade) && is_null($grade->rawgrade))) {
+            return false;
+        }
+        if ($item->gradepass) {
+            $score = !is_null($grade->finalgrade) ? $grade->finalgrade : $grade->rawgrade;
+            return $score >= $item->gradepass;
+        }
+        return false;
+    }
+
+    protected function internal_get_passgrade_state($cm, $item, $grade): int {
+        // Passing grade depends on first receiving a grade.
+        if (COMPLETION_INCOMPLETE === $this->internal_get_completiongrade_state($cm, $item, $grade)) {
+            return COMPLETION_INCOMPLETE;
+        }
+
+        // If a cm uses completionpassgrade, and is hidden, "require passing grade" criteria is still shown on the UI, effectively
+        // showing pass/fail to the user, as they can see whether they've met this criteria or not. So there's no benefit to using
+        // COMPLETION_COMPLETE here like there is when completionpassgrade isn't used (a case where we do want to omit pass/fail).
+        return $this->internal_get_is_passing_grade($item, $grade) ? COMPLETION_COMPLETE_PASS : COMPLETION_INCOMPLETE;
+    }
+
+    protected function internal_get_completiongrade_state($cm, $item, $grade): int {
+        // If no grade is supplied or the grade doesn't have an actual value, then the criteria is incomplete.
+        if (!$grade || (is_null($grade->finalgrade) && is_null($grade->rawgrade))) {
+            return COMPLETION_INCOMPLETE;
+        }
+
+        // The grade is valid so the completion state will be some variant of COMPLETION_COMPLETE.
+        // Just which one depends on the following rules (executed in this order):
+        //
+        // A) If:
+        // i) The course module has no "grade to pass" (item->gradepass) set (i.e. it's using the default value of
+        // 0.00000) or;
+        // ii) The course module is using the completion criteria "require passing grade" (cm->completionpassgrade) or;
+        // iii) The course module's grade item is hidden.
+        // Then the state must be set to COMPLETION_COMPLETE.
+        //
+        // PASS/FAIL indicator states are not used in these cases, since:
+        // i) The pass/fail state is irrelevant since no passing grade is set (any grade is passing) or;
+        // ii) The pass/fail state is reported in the completionpassgrade criteria state.
+        // iii) The pass/fail state is prevented, since using it would leak information about grades when grades aren't
+        // yet visible.
+        //
+        // B)
+        // If the above 3 aren't met, then the course module has a non-default grade to pass value and isn't using the
+        // completion criteria "requires passing grade" and isn't hidden, so PASS/FAIL indicators CAN be used.
+
+        // A).
+        $itemhasnonzeropassinggrade = fn($item) => $item->gradepass && $item->gradepass > 0.000009;
+        if (!$itemhasnonzeropassinggrade($item) || $cm->completionpassgrade || $item->hidden) {
+            return COMPLETION_COMPLETE;
+        }
+
+        // B).
+        return $this->internal_get_is_passing_grade($item, $grade) ? COMPLETION_COMPLETE_PASS :  COMPLETION_COMPLETE_FAIL;
+    }
+
+    protected function get_overall_grade_state($cm, $item, $grade): int {
+
+        if ($cm->completionpassgrade) {
+            return $this->internal_get_passgrade_state($cm, $item, $grade); // Checks internal_get_completiongrade_state internally.
+        }
+        return $this->internal_get_completiongrade_state($cm, $item, $grade);
     }
 
     /**
@@ -1529,12 +1643,16 @@ class completion_info {
      *
      * Internal function. Not private, so we can unit-test it.
      *
+     * @deprecated since Moodle 4.5
      * @param grade_item $item an instance of grade_item
      * @param grade_grade $grade an instance of grade_grade
      * @param bool $returnpassfail If course module has pass grade completion criteria
      * @return int Completion state e.g. COMPLETION_INCOMPLETE
      */
     public static function internal_get_grade_state($item, $grade, bool $returnpassfail = false) {
+
+        debugging('Function completion_info::internal_get_grade_state() is deprecated.', DEBUG_DEVELOPER);
+
         // If no grade is supplied or the grade doesn't have an actual value, then
         // this is not complete.
         if (!$grade || (is_null($grade->finalgrade) && is_null($grade->rawgrade))) {

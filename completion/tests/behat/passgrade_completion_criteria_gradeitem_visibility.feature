@@ -40,11 +40,11 @@ Feature: Students will be shown relevant completion state based on grade item vi
       | Test assignment name | student1 | 21.00 |
       | Test assignment name | student2 | 50.00 |
     And I am on the "Course 1" course page logged in as teacher1
-    And "Student First" user has completed "Test assignment name" activity
+    And "Student First" user has not completed "Test assignment name" activity
     And "Student Second" user has completed "Test assignment name" activity
     When I am on the "Course 1" course page logged in as student1
     And the "Receive a grade" completion condition of "Test assignment name" is displayed as "done"
-    And the "Receive a passing grade" completion condition of "Test assignment name" is displayed as "failed"
+    And the "Receive a passing grade" completion condition of "Test assignment name" is displayed as "todo"
     And I am on the "Course 1" course page logged in as student2
     Then the "Receive a grade" completion condition of "Test assignment name" is displayed as "done"
     And the "Receive a passing grade" completion condition of "Test assignment name" is displayed as "done"

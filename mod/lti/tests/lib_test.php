@@ -409,7 +409,7 @@ class lib_test extends \advanced_testcase {
             MOD_PURPOSE_CONTENT
         );
 
-        // The lti_get_lti_types_by_course method (used by the callbacks) assumes the global user.
+        // The get_lti_types_by_course method (used by the callbacks) assumes the global user.
         $this->setUser($teacher);
 
         // Teacher in course1 should be able to see the site preconfigured tool and the tool created in course1.

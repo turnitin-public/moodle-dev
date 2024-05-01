@@ -160,4 +160,16 @@ class custom_completion extends activity_custom_completion {
             'completionpassorattemptsexhausted',
         ];
     }
+
+    public function get_overridden_core_criteria(): array {
+
+        // Quiz overrides the "require passing grade" result if the custom criteria "require passing grade or complete all
+        // available attempts" is used. In such cases, the core criteria state will NOT be used.
+        if (!empty($this->cm->completionpassgrade) &&
+            !empty($this->cm->customdata['customcompletionrules']['completionpassorattemptsexhausted'])) {
+
+                return ['passgrade'];
+        }
+        return [];
+    }
 }

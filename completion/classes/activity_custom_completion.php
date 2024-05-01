@@ -155,6 +155,22 @@ abstract class activity_custom_completion {
     }
 
     /**
+     * Returns an array of strings describing core completion criteria which are superseded by module criteria.
+     *
+     * This dictates whether the core criteria is AND-ed with module criteria, or whether the module's criteria takes
+     * precedence. E.g. 'completionview' could be COMPLETION_INCOMPLETE for a given user/instance but a module may
+     * decide to implement a custom "view or submit" criteria, meaning core's 'completionview' would be superseded by
+     * the custom module criteria.
+     *
+     * If nothing is returned, the default AND-ing of core criteria and module custom criteria will continue to be used.
+     *
+     * @return array
+     */
+    public function get_overridden_core_criteria(): array {
+        return [];
+    }
+
+    /**
      * Fetches the module's custom completion class implementation if it's available.
      *
      * @param string $modname The activity module name. Usually from cm_info::modname.

@@ -68,5 +68,6 @@ Feature: Activity completion in the quiz activity with unlocked and re-grading.
     Then "Completed (achieved pass grade)" "icon" should not exist in the "Student 1" "table_row"
     And I log out
     And I am on the "Test quiz name" "quiz activity" page logged in as student1
+    And I pause
     And the "Receive a grade" completion condition of "Test quiz name" is displayed as "done"
     And the "Receive a passing grade" completion condition of "Test quiz name" is displayed as "failed"

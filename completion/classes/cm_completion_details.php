@@ -209,7 +209,7 @@ class cm_completion_details {
             // Successfull completion states depend on the completion settings.
             if (isset($this->completiondata->passgrade)) {
                 // Passing grade is required. Don't mark it as complete when state is COMPLETION_COMPLETE_FAIL.
-                $completionstates = [COMPLETION_COMPLETE, COMPLETION_COMPLETE_PASS];
+                $completionstates = [COMPLETION_COMPLETE, COMPLETION_COMPLETE_PASS, COMPLETION_COMPLETE_FAIL];
             } else {
                 // Any grade is required. Mark it as complete even when state is COMPLETION_COMPLETE_FAIL.
                 $completionstates = [COMPLETION_COMPLETE, COMPLETION_COMPLETE_PASS, COMPLETION_COMPLETE_FAIL];

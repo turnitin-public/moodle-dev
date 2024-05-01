@@ -696,6 +696,7 @@ class completion_info {
         $cminfo = cm_info::create($cm, $userid);
         $completionstate = $this->get_core_completion_state($cminfo, $userid);
 
+        $corecriteriaoverrides = [];
         if (plugin_supports('mod', $cminfo->modname, FEATURE_COMPLETION_HAS_RULES)) {
             $response = true;
             $cmcompletionclass = activity_custom_completion::get_cm_completion_class($cminfo->modname);
@@ -708,19 +709,49 @@ class completion_info {
             if (!$response) {
                 return COMPLETION_INCOMPLETE;
             }
+
+            // Ask the plugin for any core criteria it overrides based on its own custom completion rules.
+            $corecriteriaoverrides = $cmcompletion->get_overridden_core_criteria();
         }
 
         if ($completionstate) {
+
+            // Turns:
+            // ['completiongrade' => 1, 'passgrade' => 0]
+            // into:
+            // ['completiongrade' => ['completiongrade' => 1], 'passgrade' => ['passgrade' => 0]]
+            // to present the keys inside the array_reduce callback, letting us check them for plugin overrides.
+            array_walk($completionstate, function(&$item, $key){
+                $item = [$key => $item];
+            });
+
             // We have allowed the plugins to do it's thing and run their own checks.
             // We have now reached a state where we need to AND all the calculated results.
             // Preference for COMPLETION_COMPLETE_PASS over COMPLETION_COMPLETE for proper indication in reports.
-            $newstate = array_reduce($completionstate, function($carry, $value) {
-                if (in_array(COMPLETION_INCOMPLETE, [$carry, $value])) {
+            $newstate = array_reduce($completionstate, function($carry, $value) use ($corecriteriaoverrides, $cm, $userid) {
+
+                // The plugin has overridden an in-use core criteria, so ignore it here.
+                if (in_array(array_key_first($value), $corecriteriaoverrides)) {
+                    // Specific to passgrade, which uses the PASS/FAIL indicators if not for a hidden grade item.
+                    if ('passgrade' === array_key_first($value)) {
+                        // Need a way to know whether to use PASS/FAIL here, which we can't get from just COMPLETION_INCOMPLETE.
+                        if ($item = $this->internal_get_cm_grade_item($cm)) {
+                            if (!$item->hidden) {
+                                if ($grade = $this->internal_get_user_grade($item, $userid)) {
+                                    $ispassed = $this->internal_get_is_passing_grade($item, $grade);
+                                    return $ispassed ? COMPLETION_COMPLETE_PASS : COMPLETION_COMPLETE_FAIL;
+                                }
+                            }
+                        }
+                    }
+                    return COMPLETION_COMPLETE;
+                }
+                if (in_array(COMPLETION_INCOMPLETE, [$carry, reset($value)])) {
                     return COMPLETION_INCOMPLETE;
-                } else if (in_array(COMPLETION_COMPLETE_FAIL, [$carry, $value])) {
+                } else if (in_array(COMPLETION_COMPLETE_FAIL, [$carry, reset($value)])) {
                     return COMPLETION_COMPLETE_FAIL;
                 } else {
-                    return in_array(COMPLETION_COMPLETE_PASS, [$carry, $value]) ? COMPLETION_COMPLETE_PASS : $value;
+                    return in_array(COMPLETION_COMPLETE_PASS, [$carry, reset($value)]) ? COMPLETION_COMPLETE_PASS : reset($value);
                 }
 
             }, COMPLETION_COMPLETE);

@@ -110,7 +110,7 @@ Feature: Workshop submission and assessment with pass grade activity completion
   Scenario: Add and assess submissions in workshop with javascript enabled
     And I am on the "Course1" course page logged in as student1
     And the "Receive a grade" completion condition of "TestWorkshop" is displayed as "done"
-    And the "Receive a passing grade" completion condition of "TestWorkshop" is displayed as "failed"
+    And the "Receive a passing grade" completion condition of "TestWorkshop" is displayed as "todo"
     And I am on the "Course1" course page logged in as student2
     And the "Receive a grade" completion condition of "TestWorkshop" is displayed as "done"
     And the "Receive a passing grade" completion condition of "TestWorkshop" is displayed as "done"
@@ -121,7 +121,7 @@ Feature: Workshop submission and assessment with pass grade activity completion
     And the "Receive a grade" completion condition of "TestWorkshop" is displayed as "todo"
     And the "Receive a passing grade" completion condition of "TestWorkshop" is displayed as "todo"
     And I am on the "Course1" course page logged in as teacher1
-    And "Sam1 Student1" user has completed "TestWorkshop" activity
+    And "Sam1 Student1" user has not completed "TestWorkshop" activity
     And "Sam2 Student2" user has completed "TestWorkshop" activity
     And "Sam3 Student3" user has completed "TestWorkshop" activity
     And "Sam4 Student4" user has not completed "TestWorkshop" activity

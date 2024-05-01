@@ -15,9 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version information for the ltiservice_toolproxy service.
+ * Version information for the ltixservice_toolproxy service.
  *
- * @package    ltiservice_toolproxy
+ * @package    ltixservice_toolproxy
  * @copyright  2014 Vital Source Technologies http://vitalsource.com
  * @author     Stephen Vickers
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -26,10 +26,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-
 $plugin->version   = 2024042200;
 $plugin->requires  = 2024041600;
-$plugin->component = 'ltiservice_toolproxy';
+$plugin->component = 'ltixservice_toolproxy';
 $plugin->dependencies = [
     'ltixservice_profile' => 2024041600,
 ];

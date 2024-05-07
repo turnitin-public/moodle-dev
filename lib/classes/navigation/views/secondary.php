@@ -75,7 +75,7 @@ class secondary extends view {
                 'coursebadges' => 7.1,
                 'newbadge' => 7.2,
                 'filtermanagement' => 9,
-                'unenrolself' => 11,
+                'unenrolself' => 10,
                 'coursetags' => 12,
                 'download' => 13,
                 'contextlocking' => 14,
@@ -90,7 +90,7 @@ class secondary extends view {
                 'badgesview' => 7,
                 'competencies' => 8,
                 'communication' => 15,
-                'lticoursetools' => 10,
+                'lticoursetools' => 11,
             ],
             self::TYPE_CUSTOM => [
                 'contentbank' => 5,

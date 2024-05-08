@@ -2755,7 +2755,7 @@ class externallib_test extends externallib_advanced_testcase {
             foreach ($course['options'] as $option) {
                 $navoptions->{$option['name']} = $option['available'];
             }
-            $this->assertCount(9, $course['options']);
+            $this->assertCount(10, $course['options']);
             if ($course['id'] == SITEID) {
                 $this->assertTrue($navoptions->blogs);
                 $this->assertFalse($navoptions->notes);
@@ -2766,6 +2766,7 @@ class externallib_test extends externallib_advanced_testcase {
                 $this->assertFalse($navoptions->search);
                 $this->assertTrue($navoptions->competencies);
                 $this->assertFalse($navoptions->communication);
+                $this->assertFalse($navoptions->ltix);
             } else {
                 $this->assertTrue($navoptions->blogs);
                 $this->assertFalse($navoptions->notes);
@@ -2776,6 +2777,7 @@ class externallib_test extends externallib_advanced_testcase {
                 $this->assertFalse($navoptions->search);
                 $this->assertTrue($navoptions->competencies);
                 $this->assertFalse($navoptions->communication);
+                $this->assertFalse($navoptions->ltix);
             }
         }
     }

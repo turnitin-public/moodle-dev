@@ -28,3 +28,11 @@ courseexternaltoolsnoviewpermissions,mod_lti
 courseexternaltooliconalt,mod_lti
 courseexternaltools,mod_lti
 courseexternaltoolsinfo,mod_lti
+addtype,mod_lti
+external_tool_types,mod_lti
+main_admin,mod_lti
+toolproxy_help,mod_lti
+accept,mod_lti
+update,mod_lti
+delete,mod_lti
+reject,mod_lti

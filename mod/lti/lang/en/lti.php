@@ -48,7 +48,6 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-$string['accept'] = 'Accept';
 $string['accepted'] = 'Accepted';
 $string['accept_grades'] = 'Accept grades from the tool';
 $string['accept_grades_admin'] = 'Accept grades from the tool';
@@ -145,7 +144,6 @@ real estate to the tool, and others provide a more integrated feel with the Mood
         It is possible that browsers will prevent the new window from opening.';
 $string['delegate'] = 'Delegate to teacher';
 $string['delegate_tool'] = 'As specified in Deep Linking definition or Delegate to teacher';
-$string['delete'] = 'Delete';
 $string['delete_confirmation'] = 'Are you sure you want to delete this preconfigured tool?';
 $string['display_description'] = 'Display activity description when students access the tool';
 $string['display_description_help'] = 'Content from this tool is displayed embedded in a page in the course. This setting determines if the activity description is shown in that page.';
@@ -416,7 +414,6 @@ $string['registrationname'] = 'Tool provider name';
 $string['registrationname_help'] = 'Enter the name of the tool provider being registered.';
 $string['registrationurl'] = 'Registration URL';
 $string['registrationurl_help'] = 'The registration URL should be available from the tool provider as the location to which registration requests should be sent.';
-$string['reject'] = 'Reject';
 $string['rejected'] = 'Rejected';
 $string['resource'] = 'Resource';
 $string['resourcekey'] = 'Consumer key';
@@ -525,17 +522,6 @@ $string['tooldetailspublickeyseturl'] = 'Public keyset URL';
 $string['toolisbeingused'] = 'This tool is being used {$a} times';
 $string['toolisnotbeingused'] = 'This tool has not yet been used';
 $string['toolproxy'] = 'External tool registrations';
-$string['toolproxy_help'] = 'External tool registrations allow Moodle site administrators to configure external tools from a tool proxy obtained from a tool provider supporting LTI 2.0. A registration URL provided by the tool provider is all that is required to initiate the process. The capabilities and services offered to the tool provider are selected when configuring a new registration.
-
-Tool registrations listed on this page are separated into four categories:
-
-* **Configured** - These tool registrations have been set up but the registration process has not yet been started.
-* **Pending** - The registration process for these tool registrations has been started but has not completed. Open and save the settings to move it
-back to the \'Configured\' category.
-* **Accepted** - These tool registrations have been approved; the resources specified in the tool proxy will appear on the preconfigured tools page
-with an initial status of \'Pending\'.
-* **Rejected** - These tool registrations are ones which were rejected during the registration process. Open and save the settings to move it
-back to the \'Configured\' category so the registration process can be restarted.';
 $string['toolproxyregistration'] = 'External tool registration';
 $string['toolregistration'] = 'External tool registration';
 $string['toolsetup'] = 'External tool configuration';
@@ -574,7 +560,6 @@ $string['typename'] = 'Tool name';
 $string['typename_help'] = 'The tool name is used to identify the tool provider within Moodle. The name entered will be visible to teachers when adding external tools within courses.';
 $string['types'] = 'Types';
 $string['unknownstate'] = 'Unknown state';
-$string['update'] = 'Update';
 $string['validurl'] = 'A valid URL must start with http(s)://';
 $string['viewsubmissions'] = 'View submissions and grading screen';
 
@@ -609,3 +594,18 @@ $string['courseexternaltoolsnoviewpermissions'] = 'View course external tools';
 $string['courseexternaltooliconalt'] = 'Icon for {$a}';
 $string['courseexternaltools'] = 'LTI External tools';
 $string['courseexternaltoolsinfo'] = 'LTI External tools are add-on apps you can integrate into your course, such as interactive content or assessments. Your students can access and use them without leaving your course.';
+$string['toolproxy_help'] = 'External tool registrations allow Moodle site administrators to configure external tools from a tool proxy obtained from a tool provider supporting LTI 2.0. A registration URL provided by the tool provider is all that is required to initiate the process. The capabilities and services offered to the tool provider are selected when configuring a new registration.
+
+Tool registrations listed on this page are separated into four categories:
+
+* **Configured** - These tool registrations have been set up but the registration process has not yet been started.
+* **Pending** - The registration process for these tool registrations has been started but has not completed. Open and save the settings to move it
+back to the \'Configured\' category.
+* **Accepted** - These tool registrations have been approved; the resources specified in the tool proxy will appear on the preconfigured tools page
+with an initial status of \'Pending\'.
+* **Rejected** - These tool registrations are ones which were rejected during the registration process. Open and save the settings to move it
+back to the \'Configured\' category so the registration process can be restarted.';
+$string['accept'] = 'Accept';
+$string['update'] = 'Update';
+$string['delete'] = 'Delete';
+$string['reject'] = 'Reject';
